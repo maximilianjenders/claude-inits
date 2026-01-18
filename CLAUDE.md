@@ -67,3 +67,22 @@ Projects should maintain a `DIARY.md` file for:
 Use status markers: `RESOLVED`, `OPEN`, `SUPERSEDED`
 
 Never delete history - mark superseded decisions instead.
+
+## Code Quality Standards
+
+### Test-First Development
+
+All code must be working and covered by tests before moving to the next step:
+
+- **Unit tests:** Required for all business logic and utility functions
+- **Integration tests:** Required when components interact (APIs, databases, external services)
+- **Verification:** Tests must pass before proceeding to the next feature or task
+
+### Workflow
+
+1. Write or update tests for the intended behaviour
+2. Implement the code to make tests pass
+3. Verify all tests pass
+4. Only then move to the next step
+
+Do not accumulate untested code. Each logical unit of work should be tested before starting the next.
