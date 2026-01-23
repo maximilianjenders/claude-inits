@@ -56,17 +56,35 @@ Use these terms consistently:
 | whitelist | allowlist |
 | master (branch) | main |
 
-## Development Diary
+## Project Documentation
 
-Projects should maintain a `DIARY.md` file for:
-- Recording decisions and their reasoning (the WHY)
-- Tracking session progress
-- Noting issues encountered and their resolution status
-- Preserving context for future sessions
+Projects should maintain these documentation files:
 
-Use status markers: `RESOLVED`, `OPEN`, `SUPERSEDED`
+| File | Purpose | Update Frequency |
+|------|---------|------------------|
+| `STATUS.md` | Current state, TODOs, open questions, next steps | Every session |
+| `DECISIONS.md` | Architectural decisions with rationale | When decisions are made |
+| `GOTCHAS.md` | Pitfalls, troubleshooting, lessons learned | When issues are solved |
+| `CLAUDE.md` | Coding conventions (this file) | Rarely |
 
-Never delete history - mark superseded decisions instead.
+### STATUS.md
+- Maximum ~50 lines - keep it concise
+- Updated every session with current state
+- Completed TODOs are deleted (git has history)
+- Resolved questions move to DECISIONS.md
+
+### DECISIONS.md
+- Append-only - never delete decisions
+- Mark superseded decisions with status
+- Number decisions for cross-reference (D1, D2, etc.)
+- Always include the WHY, not just WHAT
+
+### GOTCHAS.md
+- Only add reusable fixes (not one-time issues)
+- Include copy-pasteable solutions
+- Group by: Codebase, Environment, Debugging
+
+Use `/update` at session end to maintain these files.
 
 ## Code Quality Standards
 
