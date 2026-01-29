@@ -2,7 +2,7 @@
 name: update-issue
 description: Update GitHub issue status (in-progress, ready-for-review, code-complete, blocked-failed)
 user_invocable: true
-arguments: "<issue-number-or-url> <status>"
+argument-hint: "<issue-number-or-url> <status>"
 ---
 
 # Update Issue
@@ -27,19 +27,22 @@ Update the workflow status of a GitHub issue.
 
 ## Status Transitions
 
-| Status | Labels | Meaning |
-|--------|--------|---------|
-| `in-progress` | Add `in-progress` | Currently being worked on |
-| `ready-for-review` | Remove `in-progress`, add `ready-for-review` | Implementation done, awaiting review |
-| `code-complete` | Remove `ready-for-review`, add `code-complete` | Done on feature branch, awaiting merge |
-| `blocked-failed` | Remove `in-progress`, add `blocked-failed` | Subagent failed after retry, skipped |
-| `done` | Close issue | Merged to master (usually automatic via PR) |
+| Status | Labels | Issue State | Meaning |
+|--------|--------|-------------|---------|
+| `in-progress` | Add `in-progress` | Open | Currently being worked on |
+| `ready-for-review` | Remove `in-progress`, add `ready-for-review` | Open | Implementation done, awaiting review |
+| `code-complete` | Remove `ready-for-review`, add `code-complete` | **Closed** | Done on feature branch, awaiting merge |
+| `blocked-failed` | Remove `in-progress`, add `blocked-failed` | Open | Subagent failed after retry, skipped |
+
+**Why close on code-complete?** GitHub's milestone progress bar only counts closed issues. Closing issues when implementation is done (not when merged) makes the progress bar show actual work completion.
 
 **Label flow:**
 ```
-(none) → in-progress → ready-for-review → code-complete → done
+(none) → in-progress → ready-for-review → code-complete (closed)
                    ↘ blocked-failed (on failure)
 ```
+
+The `code-complete` label distinguishes "done on branch" from "merged to master" (which has no label).
 
 ## Execution
 
@@ -53,14 +56,12 @@ gh issue edit $ISSUE_NUMBER --add-label "in-progress"
 # For ready-for-review
 gh issue edit $ISSUE_NUMBER --remove-label "in-progress" --add-label "ready-for-review"
 
-# For code-complete
+# For code-complete (CLOSE the issue + add label)
 gh issue edit $ISSUE_NUMBER --remove-label "ready-for-review" --add-label "code-complete"
+gh issue close $ISSUE_NUMBER
 
 # For blocked-failed
 gh issue edit $ISSUE_NUMBER --remove-label "in-progress" --add-label "blocked-failed"
-
-# For done (manual close - usually PR does this)
-gh issue close $ISSUE_NUMBER
 ```
 
 ## Milestone Update
@@ -72,7 +73,8 @@ After updating an issue, check if milestone status should change:
 MILESTONE=$(gh issue view $ISSUE_NUMBER --json milestone --jq '.milestone.title')
 
 # If first issue marked in-progress, milestone becomes [ACTIVE]
-# Check current milestone title prefix and suggest update if needed
+# Check if milestone is [READY] and should become [ACTIVE]
+# Status prefixes: [SKETCH], [SCOPED], [READY], [ACTIVE]
 ```
 
 ## Output Format
@@ -81,11 +83,10 @@ MILESTONE=$(gh issue view $ISSUE_NUMBER --json milestone --jq '.milestone.title'
 ## Updated Issue #15
 
 **Title:** Add retry suggestions endpoint
-**Status:** in-progress → code-complete
+**Status:** in-progress → code-complete (closed)
 **Milestone:** [ACTIVE] Phase 5: Variety Tracking
 
 ### Milestone Progress
-- 4 of 6 issues complete
-- 1 code-complete (this one)
-- 1 remaining
+- 5 of 6 issues closed (4 merged, 1 code-complete)
+- 1 remaining (open)
 ```

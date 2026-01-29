@@ -2,7 +2,7 @@
 name: create-milestone
 description: Create a GitHub milestone from an idea or plan, or populate an existing milestone with issues
 user_invocable: true
-arguments: "[title]"
+argument-hint: "[title]"
 ---
 
 # Create Milestone
@@ -20,12 +20,12 @@ Create or update a GitHub milestone for tracking a body of work.
 
 | Status Prefix | When to Use | Has Issues |
 |---------------|-------------|------------|
-| `[IDEA]` | Rough idea, needs design session | No |
-| `[DESIGNED]` | Design doc complete, needs implementation plan | No |
-| `[PLANNED]` | Implementation plan done, issues created | Yes |
+| `[SKETCH]` | Rough idea, needs design session | No |
+| `[SCOPED]` | Design doc complete, needs implementation plan | No |
+| `[READY]` | Implementation plan done, issues created | Yes |
 | `[ACTIVE]` | Work in progress | Yes |
 
-**Typical progression:** `[IDEA]` → `[DESIGNED]` → `[PLANNED]` → `[ACTIVE]`
+**Typical progression:** `[SKETCH]` → `[SCOPED]` → `[READY]` → `[ACTIVE]`
 
 ## Two Workflows
 
@@ -35,8 +35,8 @@ Use when starting fresh with an idea or design.
 
 1. **Get title:** Ask for milestone name if not provided
 2. **Determine status:**
-   - "Do you have a design doc?" → If no, `[IDEA]`
-   - "Do you have an implementation plan with tasks?" → If no, `[DESIGNED]`
+   - "Do you have a design doc?" → If no, `[SKETCH]`
+   - "Do you have an implementation plan with tasks?" → If no, `[SCOPED]`
    - If yes to both, proceed to Workflow B
 3. **Get details:**
    - Overview (2-3 sentences)
@@ -58,7 +58,7 @@ Use when an implementation plan is ready and you need to create issues.
 4. **Update milestone description** with:
    - Full issue list with dependencies
    - Dependency graph (ASCII tree)
-5. **Change status** to `[PLANNED]`
+5. **Change status** to `[READY]`
 
 ## Issue Dependencies
 
@@ -178,13 +178,13 @@ gh issue edit NUMBER --body "$UPDATED_BODY"
 
 | Type | Format | Example |
 |------|--------|---------|
-| Sequential phases | `[STATUS] Phase N: Name` | `[PLANNED] Phase 5: Variety Tracking` |
-| Independent work | `[STATUS] Category: Name` | `[IDEA] Infra: CI/CD Pipeline` |
-| Testing work | `[STATUS] Testing: Name` | `[DESIGNED] Testing: Playwright E2E` |
+| Sequential phases | `[STATUS] Phase N: Name` | `[READY] Phase 5: Variety Tracking` |
+| Independent work | `[STATUS] Category: Name` | `[SKETCH] Infra: CI/CD Pipeline` |
+| Testing work | `[STATUS] Testing: Name` | `[SCOPED] Testing: Playwright E2E` |
 
 ## Checklist for Populating Issues
 
-When transitioning from `[DESIGNED]` to `[PLANNED]`:
+When transitioning from `[SCOPED]` to `[READY]`:
 
 - [ ] Read the design doc's task breakdown
 - [ ] Identify the dependency graph (what blocks what)
@@ -192,7 +192,7 @@ When transitioning from `[DESIGNED]` to `[PLANNED]`:
 - [ ] Add `## Dependencies` section to each issue body
 - [ ] **Add bidirectional links** - go back and update earlier issues with "Blocks: #X" once dependent issues are created
 - [ ] Update milestone description with issue list and graph
-- [ ] Change milestone status prefix to `[PLANNED]`
+- [ ] Change milestone status prefix to `[READY]`
 
 ### Execution Order for Bidirectional Links
 

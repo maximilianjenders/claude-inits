@@ -36,8 +36,8 @@ gh api repos/:owner/:repo/milestones --jq '.[] | "\(.title) (\(.open_issues) ope
 # Issues in progress
 gh issue list --label "in-progress" --json number,title,milestone --jq '.[] | "#\(.number) \(.title) [\(.milestone.title // "no milestone")]"'
 
-# Code-complete issues (ready for PR/merge)
-gh issue list --label "code-complete" --json number,title,milestone --jq '.[] | "#\(.number) \(.title) [\(.milestone.title // "no milestone")]"'
+# Code-complete issues (closed, ready for PR/merge)
+gh issue list --state closed --label "code-complete" --json number,title,milestone --jq '.[] | "#\(.number) \(.title) [\(.milestone.title // "no milestone")]"'
 
 # Recent closed issues (last 5)
 gh issue list --state closed --limit 5 --json number,title,closedAt --jq '.[] | "#\(.number) \(.title) (closed \(.closedAt | split("T")[0]))"'
@@ -51,16 +51,16 @@ gh issue list --state closed --limit 5 --json number,title,closedAt --jq '.[] | 
 **Branch:** feature/phase5-variety-tracking
 
 ### Active Milestones
-- [ACTIVE] Phase 5: Variety Tracking (3 open, 2 closed)
-- [IDEA] Phase 6: Meal Planning (0 open, 0 closed)
+- [ACTIVE] Phase 5: Variety Tracking (1 open, 5 closed)
+- [SKETCH] Phase 6: Meal Planning (0 open, 0 closed)
 
 ### In Progress
 - #15 Add retry suggestions endpoint [Phase 5]
 
-### Code Complete (ready for merge)
+### Code Complete (closed, ready for merge)
 - #14 Settings schema extension [Phase 5]
 
-### Recently Completed
+### Merged (no code-complete label)
 - #13 Variety stats endpoint (closed 2026-01-28)
 - #12 Baby model updates (closed 2026-01-27)
 
@@ -69,6 +69,8 @@ gh issue list --state closed --limit 5 --json number,title,closedAt --jq '.[] | 
 2. Continue #15 (in-progress)
 3. Pick up next pending issue from Phase 5
 ```
+
+**Status prefixes:** `[SKETCH]`, `[SCOPED]`, `[READY]`, `[ACTIVE]`
 
 ## Fallback
 

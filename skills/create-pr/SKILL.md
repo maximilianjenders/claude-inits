@@ -2,7 +2,7 @@
 name: create-pr
 description: Create a pull request with AI review loop
 user_invocable: true
-arguments: "[base-branch]"
+argument-hint: "(base-branch)"
 ---
 
 # Create PR
@@ -46,7 +46,7 @@ git log origin/$BRANCH..HEAD
 2. **Create PR:**
    - Generate title from commits/milestone
    - Generate description with summary and linked issues
-   - Use `Closes #X` syntax for auto-close
+   - Use `Fixes #X` syntax (issues are already closed via `update-issue`)
 
 3. **AI Review Loop:**
    - Use `superpowers:requesting-code-review` skill
@@ -58,10 +58,17 @@ git log origin/$BRANCH..HEAD
    - If issues found: fix and push
    - Re-review until clean
 
-4. **Report:**
+4. **Run Tests:**
+   - Run `/run-tests` to verify all tests pass
+   - If tests fail: fix and re-run
+
+5. **Stop with Summary:**
    - PR URL
-   - Review status
-   - Next steps (manual testing, merge)
+   - Code review: passed/issues fixed
+   - Tests: passed/failed
+   - "Ready for manual testing. Run `/merge-pr` when ready to merge."
+
+**Note:** This skill does NOT merge. Use `/merge-pr` after manual testing.
 
 ## Execution
 
@@ -75,9 +82,29 @@ git diff --name-only master...HEAD
 # Create PR
 gh pr create --title "Title" --body "Description" --base master
 
-# After review passes
-echo "PR ready for manual testing. Deploy to staging with:"
-echo "/deploy-pi [project] staging $BRANCH"
+# Run tests after review passes
+# Use /run-tests skill
+```
+
+## Output Format
+
+```
+## PR Created
+
+**URL:** https://github.com/owner/repo/pull/42
+
+### Code Review
+✅ Passed (2 rounds - fixed formatting issues)
+
+### Tests
+✅ All tests passing
+- Backend: 24 passed
+- Frontend: 18 passed
+
+### Next Steps
+1. Deploy to staging: `/deploy-pi [project] staging`
+2. Manual testing on staging
+3. When ready: `/merge-pr`
 ```
 
 ## PR Description Template
@@ -88,10 +115,10 @@ echo "/deploy-pi [project] staging $BRANCH"
 - [Key change 2]
 
 ## Issues
-Closes #12, #13, #14
+Fixes #12, #13, #14
 
 ## Test Plan
-- [ ] Unit tests pass (`/run-tests`)
+- [x] Unit tests pass (`/run-tests`)
 - [ ] Manual testing on staging
 - [ ] E2E tests pass (if configured)
 
@@ -99,13 +126,15 @@ Closes #12, #13, #14
 [ACTIVE] Phase 5: Variety Tracking
 ```
 
+**Note:** Use `Fixes` not `Closes` - issues are already closed when marked `code-complete`.
+
 ## Linking Issues
 
-Parse milestone to find all `code-complete` issues and include them:
+Parse milestone to find all `code-complete` issues (which are now closed):
 
 ```bash
-# Get issues for this milestone with code-complete label
-gh issue list --milestone "Phase 5: Variety Tracking" --label "code-complete" --json number --jq '.[].number'
+# Get closed issues for this milestone with code-complete label
+gh issue list --milestone "Phase 5: Variety Tracking" --state closed --label "code-complete" --json number --jq '.[].number'
 ```
 
 ## Getting Design Doc for Review
