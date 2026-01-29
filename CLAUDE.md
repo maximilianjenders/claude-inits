@@ -87,6 +87,18 @@ Projects should maintain these documentation files:
 
 Use `/update` at session end to maintain these files.
 
+## Test Locations
+
+Standard locations for test files across projects:
+
+| Type | Location | Notes |
+|------|----------|-------|
+| Backend unit | `tests/test_*.py` or `backend/tests/test_*.py` | Pytest |
+| Frontend unit | `src/**/*.test.tsx` or `frontend/src/**/*.test.tsx` | Vitest/Jest |
+| E2E | `e2e/*.spec.ts` or `frontend/e2e/*.spec.ts` | Playwright |
+
+Use `/run-tests` to auto-detect and run all available test types.
+
 ## Code Quality Standards
 
 ### Type Safety
