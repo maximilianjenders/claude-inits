@@ -1,13 +1,13 @@
 ---
 name: create-milestone
-description: Create a GitHub milestone from an idea or plan
+description: Create a GitHub milestone from an idea or plan, or populate an existing milestone with issues
 user_invocable: true
 arguments: "[title]"
 ---
 
 # Create Milestone
 
-Create a GitHub milestone for tracking a body of work.
+Create or update a GitHub milestone for tracking a body of work.
 
 ## Usage
 
@@ -16,7 +16,7 @@ Create a GitHub milestone for tracking a body of work.
 /create-milestone "Phase 5: Variety Tracking"  # With title
 ```
 
-## Milestone Types
+## Milestone Lifecycle
 
 | Status Prefix | When to Use | Has Issues |
 |---------------|-------------|------------|
@@ -25,28 +25,103 @@ Create a GitHub milestone for tracking a body of work.
 | `[PLANNED]` | Implementation plan done, issues created | Yes |
 | `[ACTIVE]` | Work in progress | Yes |
 
-## Interactive Flow
+**Typical progression:** `[IDEA]` → `[DESIGNED]` → `[PLANNED]` → `[ACTIVE]`
+
+## Two Workflows
+
+### Workflow A: Create New Milestone
+
+Use when starting fresh with an idea or design.
 
 1. **Get title:** Ask for milestone name if not provided
 2. **Determine status:**
    - "Do you have a design doc?" → If no, `[IDEA]`
    - "Do you have an implementation plan with tasks?" → If no, `[DESIGNED]`
-   - If yes to both, `[PLANNED]`
+   - If yes to both, proceed to Workflow B
 3. **Get details:**
    - Overview (2-3 sentences)
    - Design doc link (if exists)
    - Branch name
    - Dependencies (requires/unlocks)
-4. **Create issues:** If `[PLANNED]`, prompt to create issues from plan
+4. **Create milestone** with placeholder for issues
 
-## Description Template
+### Workflow B: Populate Milestone with Issues
+
+Use when an implementation plan is ready and you need to create issues.
+
+1. **Find existing milestone** or create new one
+2. **Read the implementation plan** (design doc task breakdown)
+3. **Create issues** with:
+   - Clear title
+   - Acceptance criteria
+   - **Dependencies section** (see below)
+4. **Update milestone description** with:
+   - Full issue list with dependencies
+   - Dependency graph (ASCII tree)
+5. **Change status** to `[PLANNED]`
+
+## Issue Dependencies
+
+**Critical:** Every issue must document its dependencies with bidirectional links.
+
+### Dependency Rules
+
+1. **Blocked by:** Issues that must complete before this one can start
+2. **Blocks:** Issues that are waiting on this one to complete
+
+Both directions must be documented so you can navigate the graph from any issue.
+
+### Issue Body Template
+
+```markdown
+## Summary
+[What this task accomplishes]
+
+## Dependencies
+- Blocked by: #X (Brief description)
+- Blocks: #Y, #Z (Brief descriptions)
+
+## Acceptance Criteria
+- [ ] Criterion 1
+- [ ] Criterion 2
+
+## Design Reference
+See `docs/plans/YYYY-MM-DD-design-doc.md`
+```
+
+### Example: Bidirectional Links
+
+For this dependency chain: `#3 → #4 → #6`
+
+**Issue #3 (root):**
+```markdown
+## Dependencies
+- Blocked by: None (root task)
+- Blocks: #4 (Retry endpoint), #5 (Stats endpoint)
+```
+
+**Issue #4:**
+```markdown
+## Dependencies
+- Blocked by: #3 (Settings schema)
+- Blocks: #6 (Widget component)
+```
+
+**Issue #6 (leaf):**
+```markdown
+## Dependencies
+- Blocked by: #4 (Retry endpoint)
+- Blocks: None (leaf task)
+```
+
+### Milestone Description Template (with issues)
 
 ```markdown
 ## Overview
 [What this delivers]
 
 ## Design
-[Link to design doc] or "Needs design session"
+[Link to design doc]
 
 ## Branch
 `feature/branch-name`
@@ -56,19 +131,47 @@ Create a GitHub milestone for tracking a body of work.
 - Unlocks: [Next milestone or "None"]
 
 ## Issues
-[List of issues or "To be created after planning"]
+
+### Backend
+1. #3 Settings schema extension
+2. #4 Retry endpoint ← depends on #3
+3. #5 Stats endpoint ← depends on #3
+
+### Frontend
+4. #6 Widget component ← depends on #4
+5. #7 Page integration ← depends on #6
+
+## Dependency Graph
+```
+#3 Settings schema (ROOT)
+├── #4 Retry endpoint
+│   └── #6 Widget component
+│       └── #7 Page integration
+└── #5 Stats endpoint
+```
 ```
 
 ## Execution
 
 ```bash
-# Create milestone
+# Create new milestone
 gh api repos/:owner/:repo/milestones -X POST \
   -f title="[STATUS] Milestone Title" \
   -f description="$DESCRIPTION"
 
-# If creating issues, create each and link to milestone
-gh issue create --title "Task title" --body "Description" --milestone "Milestone Title" --label "feature"
+# Update existing milestone (change status, add issues list)
+gh api repos/:owner/:repo/milestones/NUMBER -X PATCH \
+  -f title="[NEW_STATUS] Milestone Title" \
+  -f description="$UPDATED_DESCRIPTION"
+
+# Create issue with milestone
+gh issue create \
+  --title "Task title" \
+  --body "$BODY_WITH_DEPENDENCIES" \
+  --milestone "[STATUS] Milestone Title"
+
+# Update issue to add dependencies after creation
+gh issue edit NUMBER --body "$UPDATED_BODY"
 ```
 
 ## Naming Conventions
@@ -78,3 +181,23 @@ gh issue create --title "Task title" --body "Description" --milestone "Milestone
 | Sequential phases | `[STATUS] Phase N: Name` | `[PLANNED] Phase 5: Variety Tracking` |
 | Independent work | `[STATUS] Category: Name` | `[IDEA] Infra: CI/CD Pipeline` |
 | Testing work | `[STATUS] Testing: Name` | `[DESIGNED] Testing: Playwright E2E` |
+
+## Checklist for Populating Issues
+
+When transitioning from `[DESIGNED]` to `[PLANNED]`:
+
+- [ ] Read the design doc's task breakdown
+- [ ] Identify the dependency graph (what blocks what)
+- [ ] Create issues in dependency order (root tasks first)
+- [ ] Add `## Dependencies` section to each issue body
+- [ ] **Add bidirectional links** - go back and update earlier issues with "Blocks: #X" once dependent issues are created
+- [ ] Update milestone description with issue list and graph
+- [ ] Change milestone status prefix to `[PLANNED]`
+
+### Execution Order for Bidirectional Links
+
+Since you can't link to issues that don't exist yet:
+
+1. Create all issues first (with "Blocked by" filled in)
+2. Go back and edit root/parent issues to add "Blocks" references
+3. Update milestone description with complete dependency graph
