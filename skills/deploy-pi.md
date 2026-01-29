@@ -20,7 +20,7 @@ Deploy applications to the Raspberry Pi.
 
 ## What This Does
 
-1. SSH to Pi (192.168.0.200)
+1. SSH to Pi (pi)
 2. Run `./build.sh` with the specified arguments
 3. Report success/failure
 
@@ -34,7 +34,7 @@ Deploy applications to the Raspberry Pi.
 Run this command via SSH:
 
 ```bash
-ssh max@192.168.0.200 "cd ~/pi-setup && ./build.sh $ARGS"
+ssh max@pi "cd ~/pi-setup && ./build.sh $ARGS"
 ```
 
 Where `$ARGS` is the arguments passed to this skill.
@@ -44,7 +44,7 @@ Where `$ARGS` is the arguments passed to this skill.
 After deploying to staging, you may want fresh prod data:
 
 ```bash
-ssh max@192.168.0.200 "~/pi-setup/scripts/copy-prod-to-staging.sh"
+ssh max@pi "~/pi-setup/scripts/copy-prod-to-staging.sh"
 ```
 
 ## Environments
