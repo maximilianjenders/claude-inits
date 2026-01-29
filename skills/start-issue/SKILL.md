@@ -2,7 +2,7 @@
 name: start-issue
 description: Begin work on a GitHub issue
 user_invocable: true
-arguments: "<issue-number-or-url>"
+argument-hint: "<issue-number-or-url>"
 ---
 
 # Start Issue
@@ -95,6 +95,31 @@ git branch --show-current
 ### 3. Already In-Progress Check
 - If issue already has `in-progress` label, note it
 - Check if there are other `in-progress` issues (context switch warning)
+
+### 4. Milestone Status Check
+If the issue has a milestone with `[READY]` prefix:
+- Check if any other issues in that milestone are `in-progress` or `code-complete`
+- If this is the **first issue being worked on**, update milestone from `[READY]` to `[ACTIVE]`
+
+```bash
+# Get milestone title and number
+MILESTONE_INFO=$(gh issue view $ISSUE_NUMBER --json milestone --jq '.milestone | "\(.number) \(.title)"')
+MILESTONE_NUM=$(echo "$MILESTONE_INFO" | cut -d' ' -f1)
+MILESTONE_TITLE=$(echo "$MILESTONE_INFO" | cut -d' ' -f2-)
+
+# If milestone is [READY], check if we should activate it
+if [[ "$MILESTONE_TITLE" == "[READY]"* ]]; then
+  # Check for any in-progress or code-complete issues in this milestone
+  ACTIVE_ISSUES=$(gh issue list --milestone "$MILESTONE_TITLE" --label "in-progress,code-complete" --json number --jq 'length')
+
+  if [ "$ACTIVE_ISSUES" -eq 0 ]; then
+    # This is the first issue - update milestone to [ACTIVE]
+    NEW_TITLE="${MILESTONE_TITLE/\[READY\]/[ACTIVE]}"
+    gh api "repos/:owner/:repo/milestones/$MILESTONE_NUM" --method PATCH -f title="$NEW_TITLE"
+    echo "✓ Updated milestone to $NEW_TITLE"
+  fi
+fi
+```
 
 ## Output Format
 

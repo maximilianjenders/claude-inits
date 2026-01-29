@@ -2,7 +2,7 @@
 name: start-milestone
 description: Execute all issues in a milestone using parallel subagents with crash recovery
 user_invocable: true
-arguments: "<milestone-number-or-title-or-url> [--retry-failed]"
+argument-hint: "[milestone-number]"
 ---
 
 # Start Milestone

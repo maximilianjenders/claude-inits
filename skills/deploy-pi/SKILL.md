@@ -2,7 +2,7 @@
 name: deploy-pi
 description: Deploy food-butler or spendee to Pi environments
 user_invocable: true
-arguments: "[project] [environment] [branch]"
+argument-hint: "[project] [environment] [branch]"
 ---
 
 # Deploy to Pi

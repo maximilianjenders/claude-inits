@@ -2,7 +2,7 @@
 name: run-tests
 description: Run available test suites with auto-detection
 user_invocable: true
-arguments: "[type]"
+argument-hint: "[type]"
 ---
 
 # Run Tests

@@ -2,7 +2,7 @@
 name: worktree
 description: Create or manage git worktrees for parallel work
 user_invocable: true
-arguments: "<action> [branch]"
+argument-hint: "<action> [branch]"
 ---
 
 # Worktree
