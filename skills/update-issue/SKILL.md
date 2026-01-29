@@ -1,6 +1,6 @@
 ---
 name: update-issue
-description: Update GitHub issue status (in-progress, code-complete)
+description: Update GitHub issue status (in-progress, ready-for-review, code-complete, blocked-failed)
 user_invocable: true
 arguments: "<issue-number-or-url> <status>"
 ---
@@ -13,8 +13,10 @@ Update the workflow status of a GitHub issue.
 
 ```
 /update-issue 15 in-progress
+/update-issue 15 ready-for-review
 /update-issue 15 code-complete
 /update-issue #15 done
+/update-issue 15 blocked-failed
 /update-issue https://github.com/owner/repo/issues/15 code-complete
 ```
 
@@ -28,8 +30,16 @@ Update the workflow status of a GitHub issue.
 | Status | Labels | Meaning |
 |--------|--------|---------|
 | `in-progress` | Add `in-progress` | Currently being worked on |
-| `code-complete` | Remove `in-progress`, add `code-complete` | Done on feature branch, awaiting merge |
+| `ready-for-review` | Remove `in-progress`, add `ready-for-review` | Implementation done, awaiting review |
+| `code-complete` | Remove `ready-for-review`, add `code-complete` | Done on feature branch, awaiting merge |
+| `blocked-failed` | Remove `in-progress`, add `blocked-failed` | Subagent failed after retry, skipped |
 | `done` | Close issue | Merged to master (usually automatic via PR) |
+
+**Label flow:**
+```
+(none) → in-progress → ready-for-review → code-complete → done
+                   ↘ blocked-failed (on failure)
+```
 
 ## Execution
 
@@ -40,8 +50,14 @@ ISSUE_NUMBER=...
 # For in-progress
 gh issue edit $ISSUE_NUMBER --add-label "in-progress"
 
+# For ready-for-review
+gh issue edit $ISSUE_NUMBER --remove-label "in-progress" --add-label "ready-for-review"
+
 # For code-complete
-gh issue edit $ISSUE_NUMBER --remove-label "in-progress" --add-label "code-complete"
+gh issue edit $ISSUE_NUMBER --remove-label "ready-for-review" --add-label "code-complete"
+
+# For blocked-failed
+gh issue edit $ISSUE_NUMBER --remove-label "in-progress" --add-label "blocked-failed"
 
 # For done (manual close - usually PR does this)
 gh issue close $ISSUE_NUMBER
