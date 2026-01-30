@@ -85,7 +85,11 @@ if [ -n "$MILESTONE" ]; then
 fi
 
 # 4. Stop staging/dev containers
-ssh max@192.168.0.200 "cd ~/pi-setup && docker compose --profile staging --profile dev stop"
+# Preferred: MCP
+pi_docker_stop("butler-staging")
+pi_docker_stop("butler-dev")
+# Fallback: SSH
+ssh max@pi.local "cd ~/pi-setup && docker compose --profile staging --profile dev stop"
 
 # 5. Switch to master and pull
 git checkout master

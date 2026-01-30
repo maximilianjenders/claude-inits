@@ -49,8 +49,14 @@ git branch --show-current
 
 ### 3. Deploy to Dev
 
+**Preferred: MCP**
+```
+pi_deploy("$PROJECT", "dev", "$BRANCH")
+```
+
+**Fallback: SSH**
 ```bash
-ssh max@pi "cd ~/pi-setup && ./build.sh $PROJECT dev $BRANCH"
+ssh max@pi.local "cd ~/pi-setup && ./build.sh $PROJECT dev $BRANCH"
 ```
 
 Wait for success message.
@@ -77,8 +83,30 @@ npm --prefix frontend run test:e2e
 
 - **Project not detected:** "Unknown project. Run /run-e2e from a project directory (food-butler or spendee)."
 - **No dev environment:** "Dev environment not configured for $PROJECT. See deployment-pipeline.md."
-- **Deploy fails:** Show SSH output and stop.
+- **Deploy fails:** Show output and stop.
 - **Tests fail:** Show Playwright output with failure details.
+
+## Debugging Flaky Tests
+
+Dev data persists between test runs. If tests are failing due to stale data from previous runs, reset dev data to fixtures:
+
+**Preferred: MCP**
+```
+pi_reset_dev("food-butler")
+```
+
+**Fallback: SSH**
+```bash
+ssh max@pi.local "rm -rf /data/butler/dev/* && docker restart butler-dev"
+```
+
+This wipes the database and re-seeds from fixtures on container restart.
+
+**When to reset:**
+- Tests failing inconsistently (flaky)
+- Tests expecting specific fixture data but finding modified data
+- After debugging sessions that created test data
+- Starting a fresh E2E testing cycle
 
 ## Prerequisites
 

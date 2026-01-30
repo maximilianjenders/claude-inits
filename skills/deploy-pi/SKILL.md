@@ -20,31 +20,36 @@ Deploy applications to the Raspberry Pi.
 
 ## What This Does
 
-1. SSH to Pi (pi)
+1. Deploy to Pi using MCP or SSH
 2. Run `./build.sh` with the specified arguments
 3. Report success/failure
 
-## Pre-requisites
-
-- SSH key access to Pi configured
-- Pi is reachable on the network
-
 ## Execution
 
-Run this command via SSH:
+**Preferred: Use Pi MCP tools** (if available):
 
-```bash
-ssh max@pi "cd ~/pi-setup && ./build.sh $ARGS"
+```
+pi_deploy("food-butler", "dev", "feature/phase5")
 ```
 
-Where `$ARGS` is the arguments passed to this skill.
+**Fallback: SSH** (if MCP not configured):
+
+```bash
+ssh max@pi.local "cd ~/pi-setup && ./build.sh $ARGS"
+```
 
 ## Refreshing Staging Data
 
 After deploying to staging, you may want fresh prod data:
 
+**Preferred: MCP**
+```
+pi_copy_prod_to_staging("food-butler")
+```
+
+**Fallback: SSH**
 ```bash
-ssh max@pi "~/pi-setup/scripts/copy-prod-to-staging.sh"
+ssh max@pi.local "~/pi-setup/scripts/copy-prod-to-staging.sh food-butler"
 ```
 
 ## Environments
