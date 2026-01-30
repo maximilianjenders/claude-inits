@@ -54,7 +54,11 @@ gh pr view $PR_NUMBER --json title,url,milestone,body
    - "Merge this PR and perform cleanup? (y/n)"
    - **Do NOT proceed without explicit confirmation**
 
-3. **On confirm, execute:**
+3. **On confirm, update documentation:**
+   - Invoke `/update-docs` to update CLAUDE.md and README.md based on the PR changes
+   - Stage any doc changes (they'll be included in the merge)
+
+4. **Execute merge and cleanup:**
    - Merge PR to master
    - Remove `code-complete` labels from linked issues
    - Close the milestone
@@ -67,38 +71,49 @@ gh pr view $PR_NUMBER --json title,url,milestone,body
 ## Execution
 
 ```bash
-# 1. Merge PR
+# 1. Update documentation (invoke /update-docs skill)
+# This will update CLAUDE.md and README.md based on PR changes
+# and stage any modifications
+```
+
+**IMPORTANT:** Before proceeding with merge, invoke the `/update-docs` skill. This ensures documentation is updated based on all changes in the PR. If docs are updated, commit them to the branch before merging.
+
+```bash
+# If update-docs made changes, commit them
+git diff --cached --quiet || git commit -m "(docs): Update documentation for PR #$PR_NUMBER"
+
+# 2. Merge PR
 gh pr merge $PR_NUMBER --merge --delete-branch
 
-# 2. Remove code-complete labels from linked issues
+# 3. Remove code-complete labels from linked issues
 # Parse issue numbers from PR body (Fixes #X, #Y, #Z)
 ISSUES=$(gh pr view $PR_NUMBER --json body --jq '.body' | grep -oE '#[0-9]+' | tr -d '#')
 for ISSUE in $ISSUES; do
   gh issue edit $ISSUE --remove-label "code-complete"
 done
 
-# 3. Close milestone
+# 4. Close milestone
 MILESTONE=$(gh pr view $PR_NUMBER --json milestone --jq '.milestone.title')
 if [ -n "$MILESTONE" ]; then
   MILESTONE_NUMBER=$(gh api repos/:owner/:repo/milestones --jq ".[] | select(.title == \"$MILESTONE\") | .number")
   gh api repos/:owner/:repo/milestones/$MILESTONE_NUMBER -X PATCH -f state="closed"
 fi
 
-# 4. Stop staging/dev containers
+# 5. Stop staging/dev containers
 # Preferred: MCP
 pi_docker_stop("butler-staging")
 pi_docker_stop("butler-dev")
 # Fallback: SSH
 ssh max@pi.local "cd ~/pi-setup && docker compose --profile staging --profile dev stop"
 
-# 5. Switch to master and pull
+# 6. Switch to master and pull
 git checkout master
 git pull
 
-# 6. Delete local branch (already deleted remote via --delete-branch)
+# 7. Delete local branch (already deleted remote via --delete-branch)
 git branch -d $BRANCH
 
-# 7. Delete worktree if exists
+# 8. Delete worktree if exists
 WORKTREE_PATH=".worktrees/${BRANCH#feature/}"
 if [ -d "$WORKTREE_PATH" ]; then
   git worktree remove "$WORKTREE_PATH"
@@ -121,6 +136,7 @@ fi
 **Milestone:** [ACTIVE] Phase 5: Variety Tracking (will be closed)
 
 **Cleanup actions:**
+- Update documentation (invoke /update-docs)
 - Merge PR to master
 - Remove `code-complete` labels from issues
 - Close milestone
@@ -140,6 +156,7 @@ Proceed? (This will merge to master)
 **Commit:** abc1234
 
 ### Cleanup Complete
+- [x] Updated documentation (CLAUDE.md, README.md)
 - [x] Removed `code-complete` label from #12, #13, #14
 - [x] Closed milestone: Phase 5: Variety Tracking
 - [x] Stopped staging/dev containers
