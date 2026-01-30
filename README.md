@@ -19,6 +19,70 @@ Custom skills for Claude Code that work across all my projects.
 | `update-docs` | Update project documentation |
 | `worktree` | Create git worktrees for parallel work |
 
+## CLAUDE.md Template
+
+Copy this section into your project's CLAUDE.md to enable the full workflow:
+
+````markdown
+## Session Startup
+
+When starting a new session or when asked "what's next?":
+
+1. Check GitHub milestones: `gh api repos/:owner/:repo/milestones`
+2. Check open issues: `gh issue list --state open`
+
+Milestone status prefixes:
+- `[SKETCH]` - Rough idea, needs design session
+- `[SCOPED]` - Design doc complete, needs implementation plan
+- `[READY]` - Issues created with dependencies, ready to build
+- `[ACTIVE]` - Work in progress
+
+## Development Workflow
+
+This project uses GitHub Issues/Milestones as the source of truth. Use these skills:
+
+| Task | Skill |
+|------|-------|
+| Start a session | `/start-session` |
+| Create milestone from plan | `/create-milestone` |
+| Execute milestone issues | `/start-milestone` |
+| Begin work on an issue | `/start-issue` |
+| Mark issue progress | `/update-issue` |
+| Open PR with review | `/create-pr` |
+| Merge PR and cleanup | `/merge-pr` |
+| Deploy to Pi for testing | `/deploy-pi` |
+| Run tests | `/run-tests` |
+| Work on parallel tasks | `/worktree` |
+
+### Issue Labels
+
+| Label | Meaning | Issue State |
+|-------|---------|-------------|
+| `in-progress` | Currently being worked on | Open |
+| `ready-for-review` | Implementation done, awaiting review | Open |
+| `code-complete` | Done on feature branch, awaiting merge | **Closed** |
+| `blocked-failed` | Subagent failed after retry, skipped | Open |
+
+**Label flow:**
+```
+(none) → in-progress → ready-for-review → code-complete (closed)
+                   ↘ blocked-failed (on failure)
+```
+
+Issues are closed when marked `code-complete` so GitHub's milestone progress bar shows actual progress. The `code-complete` label distinguishes "done on branch" from "merged to master" (no label).
+
+### Planning Workflow
+
+When creating implementation plans:
+
+1. `brainstorming` → Design doc (`docs/plans/YYYY-MM-DD-<name>-design.md`)
+2. `writing-plans` → Implementation plan (`docs/plans/YYYY-MM-DD-<name>-impl.md`)
+3. **Create GitHub issues from plan tasks** (do this immediately, not as a deferred task)
+4. Update milestone to `[READY]` status
+
+Issues should be created right after the implementation plan is written, linking each to the milestone.
+````
+
 ## Pi Infrastructure
 
 ### Current Workflow
