@@ -44,6 +44,7 @@ Use when starting fresh with an idea or design.
    - Branch name
    - Dependencies (requires/unlocks)
 4. **Create milestone** with placeholder for issues
+5. **Add milestone number to title** - immediately update the title to include `#N` for easy reference
 
 ### Workflow B: Populate Milestone with Issues
 
@@ -157,21 +158,26 @@ For this dependency chain: `#3 → #4 → #6`
 **IMPORTANT:** Always use `--milestone` when creating issues to link them to the milestone. Issues must be linked, not just reference the milestone in text.
 
 ```bash
-# Create new milestone
-gh api repos/:owner/:repo/milestones -X POST \
+# Create new milestone (returns JSON with milestone number)
+RESPONSE=$(gh api repos/:owner/:repo/milestones -X POST \
   -f title="[STATUS] Milestone Title" \
-  -f description="$DESCRIPTION"
+  -f description="$DESCRIPTION")
+MILESTONE_NUMBER=$(echo "$RESPONSE" | jq -r '.number')
+
+# IMMEDIATELY update title to include the milestone number for easy reference
+gh api repos/:owner/:repo/milestones/$MILESTONE_NUMBER -X PATCH \
+  -f title="[STATUS] #$MILESTONE_NUMBER Milestone Title"
 
 # Update existing milestone (change status, add issues list)
 gh api repos/:owner/:repo/milestones/NUMBER -X PATCH \
-  -f title="[NEW_STATUS] Milestone Title" \
+  -f title="[NEW_STATUS] #NUMBER Milestone Title" \
   -f description="$UPDATED_DESCRIPTION"
 
 # Create issue linked to milestone (--milestone is REQUIRED)
 gh issue create \
   --title "Task title" \
   --body "$BODY_WITH_DEPENDENCIES" \
-  --milestone "[STATUS] Milestone Title"
+  --milestone "[STATUS] #NUMBER Milestone Title"
 
 # Update issue to add dependencies after creation
 gh issue edit NUMBER --body "$UPDATED_BODY"
@@ -181,9 +187,11 @@ gh issue edit NUMBER --body "$UPDATED_BODY"
 
 | Type | Format | Example |
 |------|--------|---------|
-| Sequential phases | `[STATUS] Phase N: Name` | `[READY] Phase 5: Variety Tracking` |
-| Independent work | `[STATUS] Category: Name` | `[SKETCH] Infra: CI/CD Pipeline` |
-| Testing work | `[STATUS] Testing: Name` | `[SCOPED] Testing: Playwright E2E` |
+| Sequential phases | `[STATUS] #N Phase X: Name` | `[READY] #5 Phase 5: Variety Tracking` |
+| Independent work | `[STATUS] #N Category: Name` | `[SKETCH] #3 Infra: CI/CD Pipeline` |
+| Testing work | `[STATUS] #N Testing: Name` | `[SCOPED] #4 Testing: Playwright E2E` |
+
+**Note:** The `#N` is the GitHub milestone number, added after creation for easy reference.
 
 ## Checklist for Populating Issues
 
