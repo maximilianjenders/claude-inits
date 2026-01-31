@@ -42,6 +42,19 @@ PR_NUMBER=$(gh pr list --head "$BRANCH" --json number --jq '.[0].number')
 gh pr view $PR_NUMBER --json title,url,milestone,body
 ```
 
+## Checklist
+
+**CRITICAL: Follow this checklist in order. Do not skip steps.**
+
+- [ ] Show summary and get user confirmation
+- [ ] **Run `/update-docs`** (invoke skill, commit if changes)
+- [ ] Merge PR to master
+- [ ] Remove `code-complete` labels from linked issues
+- [ ] Close the milestone
+- [ ] Stop staging/dev containers on Pi
+- [ ] Delete branches and worktree
+- [ ] Switch to master and pull
+
 ## What This Does
 
 1. **Show summary** for human confirmation:
@@ -54,9 +67,10 @@ gh pr view $PR_NUMBER --json title,url,milestone,body
    - "Merge this PR and perform cleanup? (y/n)"
    - **Do NOT proceed without explicit confirmation**
 
-3. **On confirm, update documentation:**
-   - Invoke `/update-docs` to update CLAUDE.md and README.md based on the PR changes
-   - Stage any doc changes (they'll be included in the merge)
+3. **MANDATORY: Update documentation:**
+   - **Invoke `/update-docs` skill** before merging
+   - This updates CLAUDE.md and README.md based on PR changes
+   - If docs are updated, commit them to the branch before merging
 
 4. **Execute merge and cleanup:**
    - Merge PR to master
@@ -135,16 +149,17 @@ fi
 
 **Milestone:** [ACTIVE] Phase 5: Variety Tracking (will be closed)
 
-**Cleanup actions:**
-- Update documentation (invoke /update-docs)
-- Merge PR to master
+**Pre-merge steps:**
+1. Run `/update-docs` to update documentation
+
+**Post-merge cleanup:**
 - Remove `code-complete` labels from issues
 - Close milestone
 - Stop staging/dev containers on Pi
 - Delete branch `feature/phase5-variety-tracking`
 - Switch local to master
 
-Proceed? (This will merge to master)
+Proceed? (This will run /update-docs, then merge to master)
 ```
 
 ## Output Format
