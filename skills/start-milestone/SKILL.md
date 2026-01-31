@@ -51,7 +51,9 @@ Execute all issues in a GitHub milestone using parallel subagents with crash rec
 
 ## Branch & Worktree Setup
 
-### Detection
+**CRITICAL: You MUST use `AskUserQuestion` to ask about branching strategy before proceeding. Never skip this step.**
+
+### Step 1: Detect Current State
 
 ```bash
 # Check if in a worktree
@@ -66,24 +68,41 @@ git worktree list
 git branch --show-current
 ```
 
-### Decision Matrix
+### Step 2: Parse Branch Name
 
-| Current State | Action |
-|---------------|--------|
-| In worktree for correct branch | Proceed |
-| In worktree for wrong branch | Warn: "You're in worktree for X, but milestone uses Y. Switch?" |
-| On `master` | Ask: "Create worktree or switch to `feature/X`?" |
-| On correct feature branch | Ask: "Continue here or create worktree?" |
-| On wrong feature branch | Ask: "Switch to `feature/X`? Or need cleanup first?" |
-| Worktree exists for target branch | Ask: "Worktree exists at `.worktrees/X/` - use that?" |
+Parse from milestone description (`## Branch` section) to determine the target branch.
 
-### Branch Name
+### Step 3: Ask User (MANDATORY)
 
-Parse from milestone description (`## Branch` section).
+**You MUST use `AskUserQuestion` to ask how to proceed.** Present options based on current state:
 
-### Worktree Creation
+| Current State | Options to Present |
+|---------------|-------------------|
+| On `master` | 1. Create worktree for `feature/X` (Recommended) 2. Create branch `feature/X` and switch 3. Continue on master |
+| On correct feature branch | 1. Continue on this branch (Recommended) 2. Create worktree instead |
+| On wrong feature branch | 1. Create worktree for `feature/X` (Recommended) 2. Switch to `feature/X` 3. Need cleanup first |
+| In worktree for correct branch | 1. Continue in this worktree (Recommended) 2. Return to main repo |
+| In worktree for wrong branch | 1. Create new worktree for `feature/X` (Recommended) 2. Switch worktree |
+| Worktree exists for target | 1. Use existing worktree at `.worktrees/X/` (Recommended) 2. Create fresh worktree 3. Work in current location |
 
-If worktree chosen, invoke `/worktree create feature/branch-name`.
+**Example AskUserQuestion call:**
+```
+header: "Branch setup"
+question: "How would you like to work on this milestone?"
+options:
+  - label: "Create worktree (Recommended)"
+    description: "Isolated workspace at .worktrees/feature-x/"
+  - label: "Create branch"
+    description: "Switch current workspace to feature/x"
+  - label: "Continue on master"
+    description: "Work directly on master branch"
+```
+
+### Step 4: Execute Choice
+
+- If worktree chosen: invoke `/worktree create feature/branch-name`
+- If branch chosen: `git checkout -b feature/branch-name` or `git checkout feature/branch-name`
+- If continue chosen: proceed with current state
 
 ## Dependency Graph & Parallel Execution
 
@@ -230,8 +249,10 @@ gh issue edit $ISSUE --remove-label "in-progress" --add-label "blocked-failed"
 When starting a milestone:
 
 - [ ] Parse milestone identifier (number, title, or URL)
-- [ ] Fetch milestone details and branch name
-- [ ] Setup branch/worktree as needed
+- [ ] Fetch milestone details and parse branch name from description
+- [ ] Detect current git state (branch, worktree, existing worktrees)
+- [ ] **ASK USER about branching strategy using `AskUserQuestion`** (MANDATORY - never skip)
+- [ ] Execute user's branch/worktree choice
 - [ ] Query all issues and their labels (recovery check)
 - [ ] Build dependency graph from issue bodies
 - [ ] Dispatch root tasks (no blockers) up to concurrency limit
