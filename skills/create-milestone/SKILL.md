@@ -79,6 +79,9 @@ Both directions must be documented so you can navigate the graph from any issue.
 ## Summary
 [What this task accomplishes]
 
+## Milestone
+[Phase X: Title](../../milestone/N)
+
 ## Dependencies
 - Blocked by: #X (Brief description)
 - Blocks: #Y, #Z (Brief descriptions)
@@ -91,12 +94,17 @@ Both directions must be documented so you can navigate the graph from any issue.
 See `docs/plans/YYYY-MM-DD-design-doc.md`
 ```
 
+**Note:** The milestone link uses relative path `../../milestone/N` which works from any issue page.
+
 ### Example: Bidirectional Links
 
 For this dependency chain: `#3 → #4 → #6`
 
 **Issue #3 (root):**
 ```markdown
+## Milestone
+[Phase 5: Variety Tracking](../../milestone/5)
+
 ## Dependencies
 - Blocked by: None (root task)
 - Blocks: #4 (Retry endpoint), #5 (Stats endpoint)
@@ -104,6 +112,9 @@ For this dependency chain: `#3 → #4 → #6`
 
 **Issue #4:**
 ```markdown
+## Milestone
+[Phase 5: Variety Tracking](../../milestone/5)
+
 ## Dependencies
 - Blocked by: #3 (Settings schema)
 - Blocks: #6 (Widget component)
@@ -111,6 +122,9 @@ For this dependency chain: `#3 → #4 → #6`
 
 **Issue #6 (leaf):**
 ```markdown
+## Milestone
+[Phase 5: Variety Tracking](../../milestone/5)
+
 ## Dependencies
 - Blocked by: #4 (Retry endpoint)
 - Blocks: None (leaf task)
@@ -201,6 +215,7 @@ When transitioning from `[SCOPED]` to `[READY]`:
 - [ ] Identify the dependency graph (what blocks what)
 - [ ] Create issues in dependency order (root tasks first)
 - [ ] **Use `--milestone` flag** on every `gh issue create` to link issues to the milestone
+- [ ] Add `## Milestone` section with clickable link `[Title](../../milestone/N)`
 - [ ] Add `## Dependencies` section to each issue body
 - [ ] **Add bidirectional links** - go back and update earlier issues with "Blocks: #X" once dependent issues are created
 - [ ] Update milestone description with issue list and graph

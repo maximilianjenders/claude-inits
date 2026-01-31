@@ -97,31 +97,30 @@ Include the actual milestone number so the user can copy-paste directly. Both op
 
 ## Pi Infrastructure
 
-### Current Workflow
+### Pi MCP Server
 
-Skills like `deploy-pi` and `run-e2e` use SSH to execute commands on the Pi:
+The Pi MCP server provides direct tool access without SSH permission prompts. Skills like `deploy-pi` and `run-e2e` use these tools automatically.
 
+**Setup:** Add to global Claude config (one-time):
 ```bash
-ssh max@pi.local "cd ~/pi-setup && ./build.sh food-butler dev feature/xyz"
+claude mcp add pi /Users/max/Gits/pi-setup/mcp/start.sh --scope user
 ```
 
-**Hostname:** Use `pi.local` (mDNS) - works with or without Tailscale.
+**Available Tools:**
 
-### Future: MCP Server (Planned)
+| Tool | Description |
+|------|-------------|
+| `pi_docker_ps` | List containers |
+| `pi_docker_logs` | View container logs |
+| `pi_docker_restart` | Restart container |
+| `pi_docker_stop` | Stop container |
+| `pi_deploy` | Run build.sh |
+| `pi_read_file` | Read file on Pi |
+| `pi_git_pull` | Pull ~/pi-setup |
+| `pi_reset_dev` | Wipe dev data and reseed |
+| `pi_copy_prod_to_staging` | Copy prod data to staging |
 
-A Pi MCP server will provide direct tool access without SSH permission prompts:
-
-| Tool | Description | Auto-allow |
-|------|-------------|------------|
-| `pi_docker_ps` | List containers | Yes |
-| `pi_docker_logs` | View container logs | Yes |
-| `pi_docker_restart` | Restart container | Yes |
-| `pi_docker_stop` | Stop container | Yes |
-| `pi_deploy` | Run build.sh | Yes |
-| `pi_read_file` | Read file on Pi | Yes |
-| `pi_git_pull` | Pull ~/pi-setup | Yes |
-| `pi_reset_dev` | Wipe dev data and reseed | Yes |
-| `pi_copy_prod_to_staging` | Copy prod data to staging | Yes |
+**Hostname:** Uses `pi.local` (mDNS) - works with or without Tailscale.
 
 See `pi-setup/docs/plans/2026-01-30-pi-mcp-server-design.md` for implementation details.
 

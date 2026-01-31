@@ -62,10 +62,19 @@ git log origin/$BRANCH..HEAD
    - Run `/run-tests` to verify all tests pass
    - If tests fail: fix and re-run
 
-5. **Stop with Summary:**
+5. **Deploy to Dev and Run E2E Tests:**
+   - Detect project from current working directory
+   - Deploy current branch to dev using MCP: `pi_deploy("[project]", "dev", "[branch]")`
+   - Wait for container to be healthy
+   - Run E2E tests: `npm --prefix frontend run test:e2e`
+   - If E2E tests fail: report failures (do not auto-fix)
+
+6. **Stop with Summary:**
    - PR URL
    - Code review: passed/issues fixed
    - Tests: passed/failed
+   - E2E tests: passed/failed
+   - Cleanup actions reminder
    - "Ready for manual testing. Run `/merge-pr` when ready to merge."
 
 **Note:** This skill does NOT merge. Use `/merge-pr` after manual testing.
@@ -86,6 +95,30 @@ gh pr create --title "Title" --body "Description" --base master
 # Use /run-tests skill
 ```
 
+### Deploy to Dev and Run E2E
+
+After PR is created and tests pass:
+
+```bash
+# 1. Detect project from current working directory
+# - Contains "food-butler" → food-butler
+# - Contains "spendee" → spendee
+
+# 2. Get current branch
+BRANCH=$(git branch --show-current)
+
+# 3. Deploy to dev using MCP (preferred)
+pi_deploy("[project]", "dev", "$BRANCH")
+
+# 4. Health check
+curl --retry 10 --retry-delay 3 --retry-connrefused -s http://[project]-dev.home/api/health
+
+# 5. Run E2E tests
+npm --prefix frontend run test:e2e
+```
+
+If E2E tests fail, report the failures but do not auto-fix. The user may need to investigate.
+
 ## Output Format
 
 ```
@@ -101,10 +134,21 @@ gh pr create --title "Title" --body "Description" --base master
 - Backend: 24 passed
 - Frontend: 18 passed
 
+### E2E Tests
+✅ All E2E tests passing
+- 12 passed
+
 ### Next Steps
 1. Deploy to staging: `/deploy-pi [project] staging`
-2. Manual testing on staging
+2. Manual testing on staging: http://[project]-staging.home
 3. When ready: `/merge-pr`
+
+### Cleanup Actions (after merge)
+- Merge PR to master
+- Remove ready-for-review labels from issues
+- Close milestone
+- Stop dev container on Pi
+- Stop staging container on Pi
 ```
 
 ## PR Description Template
@@ -119,8 +163,8 @@ Fixes #12, #13, #14
 
 ## Test Plan
 - [x] Unit tests pass (`/run-tests`)
+- [x] E2E tests pass (dev environment)
 - [ ] Manual testing on staging
-- [ ] E2E tests pass (if configured)
 
 ## Milestone
 [ACTIVE] Phase 5: Variety Tracking
