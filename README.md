@@ -75,10 +75,9 @@ Issues are closed when marked `code-complete` so GitHub's milestone progress bar
 
 When creating implementation plans:
 
-1. `brainstorming` → Design doc (`docs/plans/YYYY-MM-DD-<name>-design.md`)
+1. `brainstorming` → Design doc (`docs/plans/YYYY-MM-DD-<name>-design.md`) → **Update milestone to `[SCOPED]`**
 2. `writing-plans` → Implementation plan (`docs/plans/YYYY-MM-DD-<name>-impl.md`)
-3. **Create GitHub issues from plan tasks** (do this immediately, not as a deferred task)
-4. Update milestone to `[READY]` status
+3. **Create GitHub issues from plan tasks** (do this immediately, not as a deferred task) → **Update milestone to `[READY]`**
 
 Issues should be created right after the implementation plan is written, linking each to the milestone.
 
