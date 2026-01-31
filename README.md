@@ -81,6 +81,19 @@ When creating implementation plans:
 4. Update milestone to `[READY]` status
 
 Issues should be created right after the implementation plan is written, linking each to the milestone.
+
+### Plan Execution (overrides writing-plans options)
+
+When `writing-plans` offers execution options after creating GitHub issues, **ignore those options** and offer:
+
+**"Plan complete with GitHub issues. Ready to execute with `/start-milestone`. Options:**
+
+1. **This session** - I'll run `/start-milestone <number>` now
+2. **New session** - Open a new Claude session and paste: `/start-milestone <number>`
+
+**Which approach?"**
+
+Include the actual milestone number so the user can copy-paste directly. Both options use `/start-milestone` for parallel subagent execution with crash recovery and automatic label management.
 ````
 
 ## Pi Infrastructure
