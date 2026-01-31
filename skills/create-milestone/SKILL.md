@@ -55,6 +55,7 @@ Use when an implementation plan is ready and you need to create issues.
    - Clear title
    - Acceptance criteria
    - **Dependencies section** (see below)
+   - **`--milestone` flag** to link the issue to the milestone (REQUIRED)
 4. **Update milestone description** with:
    - Full issue list with dependencies
    - Dependency graph (ASCII tree)
@@ -153,6 +154,8 @@ For this dependency chain: `#3 → #4 → #6`
 
 ## Execution
 
+**IMPORTANT:** Always use `--milestone` when creating issues to link them to the milestone. Issues must be linked, not just reference the milestone in text.
+
 ```bash
 # Create new milestone
 gh api repos/:owner/:repo/milestones -X POST \
@@ -164,7 +167,7 @@ gh api repos/:owner/:repo/milestones/NUMBER -X PATCH \
   -f title="[NEW_STATUS] Milestone Title" \
   -f description="$UPDATED_DESCRIPTION"
 
-# Create issue with milestone
+# Create issue linked to milestone (--milestone is REQUIRED)
 gh issue create \
   --title "Task title" \
   --body "$BODY_WITH_DEPENDENCIES" \
@@ -189,6 +192,7 @@ When transitioning from `[SCOPED]` to `[READY]`:
 - [ ] Read the design doc's task breakdown
 - [ ] Identify the dependency graph (what blocks what)
 - [ ] Create issues in dependency order (root tasks first)
+- [ ] **Use `--milestone` flag** on every `gh issue create` to link issues to the milestone
 - [ ] Add `## Dependencies` section to each issue body
 - [ ] **Add bidirectional links** - go back and update earlier issues with "Blocks: #X" once dependent issues are created
 - [ ] Update milestone description with issue list and graph
