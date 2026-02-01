@@ -49,6 +49,26 @@ The `code-complete` label distinguishes "done on branch" from "merged to master"
 
 ## Execution
 
+**Preferred: MCP**
+```
+# For in-progress
+mcp__workflow__gh_bulk_issues(action="label", issues=[15], label="in-progress")
+
+# For ready-for-review
+mcp__workflow__gh_bulk_issues(action="unlabel", issues=[15], label="in-progress")
+mcp__workflow__gh_bulk_issues(action="label", issues=[15], label="ready-for-review")
+
+# For code-complete (CLOSE the issue + add label)
+mcp__workflow__gh_bulk_issues(action="unlabel", issues=[15], label="ready-for-review")
+mcp__workflow__gh_bulk_issues(action="label", issues=[15], label="code-complete")
+mcp__workflow__gh_bulk_issues(action="close", issues=[15])
+
+# For blocked-failed
+mcp__workflow__gh_bulk_issues(action="unlabel", issues=[15], label="in-progress")
+mcp__workflow__gh_bulk_issues(action="label", issues=[15], label="blocked-failed")
+```
+
+**Fallback: Bash**
 ```bash
 # Parse issue number from arg (handle URL or number)
 ISSUE_NUMBER=...
@@ -71,6 +91,16 @@ gh issue edit $ISSUE_NUMBER --remove-label "in-progress" --add-label "blocked-fa
 
 After updating an issue, check if milestone status should change:
 
+**Preferred: MCP**
+```
+# Get all issues in milestone to check status
+mcp__workflow__gh_milestone_issues(milestone="Milestone Title", state="all")
+
+# If first issue marked in-progress, rename milestone to [ACTIVE]
+mcp__workflow__gh_milestone(action="rename", identifier="5", new_title="[ACTIVE] Milestone Title")
+```
+
+**Fallback: Bash**
 ```bash
 # Get milestone for this issue
 MILESTONE=$(gh issue view $ISSUE_NUMBER --json milestone --jq '.milestone.title')

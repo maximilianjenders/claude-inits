@@ -33,6 +33,18 @@ Extract issue number from argument:
 
 ## Execution
 
+**Preferred: MCP**
+```
+# Get current git state (branch, worktrees)
+mcp__workflow__git_state()
+
+# Add in-progress label
+mcp__workflow__gh_bulk_issues(action="label", issues=[15], label="in-progress")
+
+# Note: For issue details, use gh CLI - no MCP equivalent for single issue view
+```
+
+**Fallback: Bash**
 ```bash
 # Fetch issue details
 gh issue view $ISSUE_NUMBER
@@ -54,9 +66,17 @@ Before marking as in-progress:
 ### 1. Branch/Worktree Check
 
 Detect current environment:
+
+**Preferred: MCP**
+```
+mcp__workflow__git_state()
+```
+Returns: branch, is_worktree, worktree_path, pr, worktrees[], matching_branches[]
+
+**Fallback: Bash**
 ```bash
-# Use shared script for git state detection
-~/.claude/scripts/git-state.sh
+git branch --show-current
+git worktree list
 ```
 
 **Decision tree:**
@@ -91,6 +111,16 @@ If the issue has a milestone with `[READY]` prefix:
 - Check if any other issues in that milestone are `in-progress` or `code-complete`
 - If this is the **first issue being worked on**, update milestone from `[READY]` to `[ACTIVE]`
 
+**Preferred: MCP**
+```
+# Get all issues in milestone (check for in-progress/code-complete labels)
+mcp__workflow__gh_milestone_issues(milestone="[READY] Milestone Title", state="all")
+
+# If no active issues found, rename milestone to [ACTIVE]
+mcp__workflow__gh_milestone(action="rename", identifier="5", new_title="[ACTIVE] Milestone Title")
+```
+
+**Fallback: Bash**
 ```bash
 # Get milestone title and number
 MILESTONE_INFO=$(gh issue view $ISSUE_NUMBER --json milestone --jq '.milestone | "\(.number) \(.title)"')

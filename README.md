@@ -19,22 +19,42 @@ Custom skills for Claude Code that work across all my projects.
 | `update-docs` | Update project documentation |
 | `worktree` | Create git worktrees for parallel work |
 
-## Scripts
+## MCP Servers
 
-Helper scripts symlinked to `~/.claude/scripts/` for auto-whitelisting.
+This repo provides two MCP servers for automated GitHub and Pi operations:
 
-| Script | Purpose |
-|--------|---------|
-| `git-state.sh` | Detect branch, worktree status, existing worktrees |
-| `gh-bulk-label.sh` | Bulk add/remove labels from issues |
-| `gh-milestone.sh` | Close/open/rename milestones |
-| `gh-milestone-issues.sh` | List issues in a milestone with filters |
-| `extract-issue-numbers.sh` | Extract issue numbers from text |
-| `check-docs.sh` | Check if standard docs exist (CLAUDE.md, etc) |
+### Workflow MCP Server (`mcp/workflow/`)
 
-**Setup:** `ln -s /Users/max/Gits/claude-inits/scripts ~/.claude/scripts`
+GitHub operations without permission prompts.
 
-See `scripts/README.md` for usage details.
+**Setup:**
+```bash
+claude mcp add workflow node /Users/max/Gits/claude-inits/mcp/workflow/server.js --scope user
+```
+
+**Available Tools:**
+
+| Tool | Description |
+|------|-------------|
+| `git_state` | Detect branch, worktree status, existing worktrees |
+| `gh_milestone` | Find, close, open, rename milestones |
+| `gh_milestone_issues` | List issues in a milestone with filters |
+| `gh_bulk_issues` | Create, label, unlabel, close, reopen issues |
+| `gh_update_issue` | Update single issue (title, body, labels, assignees) |
+| `gh_pr_review_issue` | Create issue from PR review findings |
+| `gh_create_pr` | Create pull request with full metadata |
+| `gh_merge_pr` | Merge PR with various strategies |
+
+### Pi MCP Server (`mcp/pi/`)
+
+Raspberry Pi container management.
+
+**Setup:**
+```bash
+claude mcp add pi node /Users/max/Gits/claude-inits/mcp/pi/server.js --scope user
+```
+
+See [Pi Infrastructure](#pi-infrastructure) section for available tools.
 
 ## CLAUDE.md Template
 
@@ -71,18 +91,21 @@ This project uses GitHub Issues/Milestones as the source of truth. Use these ski
 | Run tests | `/run-tests` |
 | Work on parallel tasks | `/worktree` |
 
-### Helper Scripts
+### MCP Tools (Preferred)
 
-Pre-approved scripts at `~/.claude/scripts/` for common operations:
+When MCP servers are configured, use these tools instead of `gh` CLI:
 
-| Script | Usage |
-|--------|-------|
-| `git-state.sh` | `~/.claude/scripts/git-state.sh` - Detect branch, worktree status |
-| `gh-bulk-label.sh` | `~/.claude/scripts/gh-bulk-label.sh add\|remove <label> <issues...>` |
-| `gh-milestone.sh` | `~/.claude/scripts/gh-milestone.sh find\|close\|open\|rename <number\|title>` |
-| `gh-milestone-issues.sh` | `~/.claude/scripts/gh-milestone-issues.sh "<milestone>" [state] [label]` |
-| `extract-issue-numbers.sh` | `~/.claude/scripts/extract-issue-numbers.sh "<text>"` or via pipe |
-| `check-docs.sh` | `~/.claude/scripts/check-docs.sh [directory]` |
+| Tool | Purpose | Replaces |
+|------|---------|----------|
+| `mcp__workflow__git_state()` | Branch, worktree status | `git branch`, `git worktree list` |
+| `mcp__workflow__gh_milestone(action, identifier)` | Find/close/open/rename milestones | `gh api milestones` |
+| `mcp__workflow__gh_milestone_issues(milestone, state, label)` | List issues with filters | `gh issue list --milestone` |
+| `mcp__workflow__gh_bulk_issues(action, issues, label)` | Bulk label/close/create | `gh issue edit`, `gh issue create` |
+| `mcp__workflow__gh_update_issue(issue, ...)` | Update single issue | `gh issue edit` |
+| `mcp__workflow__gh_create_pr(title, body, ...)` | Create PR | `gh pr create` |
+| `mcp__workflow__gh_merge_pr(pr, method, ...)` | Merge PR | `gh pr merge` |
+
+**Fallback:** If MCP tools are unavailable, skills include `gh` CLI commands as fallback.
 
 ### Issue Labels
 

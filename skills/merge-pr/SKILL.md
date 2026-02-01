@@ -94,6 +94,37 @@ gh pr view $PR_NUMBER --json title,url,milestone,body
 
 **IMPORTANT:** Before proceeding with merge, invoke the `/update-docs` skill. This ensures documentation is updated based on all changes in the PR. If docs are updated, commit them to the branch before merging.
 
+**Preferred: MCP for GitHub operations**
+```
+# If update-docs made changes, commit them (use git)
+git diff --cached --quiet || git commit -m "(docs): Update documentation for PR #$PR_NUMBER"
+
+# 2. Merge PR
+mcp__workflow__gh_merge_pr(pr=42, method="merge", delete_branch=true)
+
+# 3. Remove code-complete labels from linked issues (bulk operation)
+mcp__workflow__gh_bulk_issues(action="unlabel", issues=[12, 13, 14], label="code-complete")
+
+# 4. Close milestone
+mcp__workflow__gh_milestone(action="close", identifier="5")
+
+# 5. Stop staging/dev containers
+mcp__pi__pi_docker_stop(container="butler-staging")
+mcp__pi__pi_docker_stop(container="butler-dev")
+
+# 6-8. Git cleanup (use git commands)
+git checkout master
+git pull
+git branch -d $BRANCH
+git worktree remove ".worktrees/${BRANCH#feature/}"  # if exists
+
+# 9. Deploy to production
+mcp__pi__pi_deploy(app="food-butler", env="prod")
+# or
+mcp__pi__pi_deploy(app="spendee", env="prod")
+```
+
+**Fallback: Bash**
 ```bash
 # If update-docs made changes, commit them
 git diff --cached --quiet || git commit -m "(docs): Update documentation for PR #$PR_NUMBER"
@@ -115,11 +146,7 @@ if [ -n "$MILESTONE" ]; then
   gh api repos/:owner/:repo/milestones/$MILESTONE_NUMBER -X PATCH -f state="closed"
 fi
 
-# 5. Stop staging/dev containers
-# Preferred: MCP
-pi_docker_stop("butler-staging")
-pi_docker_stop("butler-dev")
-# Fallback: SSH
+# 5. Stop staging/dev containers (SSH fallback)
 ssh max@pi.local "cd ~/pi-setup && docker compose --profile staging --profile dev stop"
 
 # 6. Switch to master and pull
@@ -135,12 +162,8 @@ if [ -d "$WORKTREE_PATH" ]; then
   git worktree remove "$WORKTREE_PATH"
 fi
 
-# 9. Deploy to production
-# Determine app from repo name or PR context
-# Preferred: MCP
-pi_deploy(app="food-butler", env="prod")
-# or
-pi_deploy(app="spendee", env="prod")
+# 9. Deploy to production (SSH fallback)
+ssh max@pi.local "cd ~/pi-setup && ./build.sh food-butler prod"
 ```
 
 ## Confirmation Prompt

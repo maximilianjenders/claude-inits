@@ -169,8 +169,38 @@ For this dependency chain: `#3 → #4 → #6`
 
 ## Execution
 
-**IMPORTANT:** Always use `--milestone` when creating issues to link them to the milestone. Issues must be linked, not just reference the milestone in text.
+**IMPORTANT:** Always link issues to the milestone. Issues must be linked, not just reference the milestone in text.
 
+**Preferred: MCP**
+```
+# Create issues in bulk with milestone and dependencies
+# Note: Milestone creation still requires gh CLI - no MCP equivalent yet
+mcp__workflow__gh_bulk_issues(
+    action="create",
+    milestone="[STATUS] #5 Milestone Title",
+    new_issues=[
+        {
+            "title": "Task 1: Root task",
+            "body": "## Summary\n...\n## Dependencies\n- Blocked by: None",
+            "labels": ["feature"]
+        },
+        {
+            "title": "Task 2: Depends on Task 1",
+            "body": "## Summary\n...\n## Dependencies\n- Blocked by: #X",
+            "labels": ["feature"],
+            "blocked_by_indices": [0]  # References first issue in this batch
+        }
+    ]
+)
+
+# Update existing milestone title/status
+mcp__workflow__gh_milestone(action="rename", identifier="5", new_title="[READY] #5 Milestone Title")
+
+# Update issue body (e.g., to add bidirectional dependency links)
+mcp__workflow__gh_update_issue(issue=15, body="$UPDATED_BODY")
+```
+
+**Fallback: Bash**
 ```bash
 # Create new milestone (returns JSON with milestone number)
 RESPONSE=$(gh api repos/:owner/:repo/milestones -X POST \

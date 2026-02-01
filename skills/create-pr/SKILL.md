@@ -95,6 +95,27 @@ git log origin/$BRANCH..HEAD
 
 ## Execution
 
+**Preferred: MCP**
+```
+# Create PR with full metadata
+mcp__workflow__gh_create_pr(
+    title="PR Title",
+    body="Description with ## Summary and ## Issues sections",
+    base="master",
+    milestone="Milestone Title",
+    labels=["feature"]
+)
+
+# Create issues for review findings
+mcp__workflow__gh_pr_review_issue(
+    title="Finding title",
+    body="Details of the issue",
+    milestone="Milestone Title",
+    pr_number=42
+)
+```
+
+**Fallback: Bash**
 ```bash
 # Get commits for PR description
 git log master..HEAD --oneline
@@ -190,6 +211,13 @@ Fixes #12, #13, #14
 
 Parse milestone to find all `code-complete` issues (which are now closed):
 
+**Preferred: MCP**
+```
+# Get all issues in milestone with labels (filter for code-complete in code)
+mcp__workflow__gh_milestone_issues(milestone="Phase 5: Variety Tracking", state="closed", label="code-complete")
+```
+
+**Fallback: Bash**
 ```bash
 # Get closed issues for this milestone with code-complete label
 gh issue list --milestone "Phase 5: Variety Tracking" --state closed --label "code-complete" --json number --jq '.[].number'
@@ -199,6 +227,14 @@ gh issue list --milestone "Phase 5: Variety Tracking" --state closed --label "co
 
 Extract design doc path from milestone description:
 
+**Preferred: MCP**
+```
+# Get milestone details including description
+mcp__workflow__gh_milestone(action="find", identifier="Phase 5")
+```
+Parse the description field to extract design doc path.
+
+**Fallback: Bash**
 ```bash
 # Get milestone description and parse design doc link
 gh api repos/:owner/:repo/milestones --jq '.[] | select(.title | contains("Phase 5")) | .description' | grep -oE '\./docs/plans/[^)]+\.md'

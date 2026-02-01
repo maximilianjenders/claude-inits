@@ -24,8 +24,21 @@ Query GitHub Issues/Milestones to understand current project state when starting
 
 ## Execution
 
-Run these queries:
+**Preferred: MCP**
+```
+# Current git state (branch, worktrees, PR status)
+mcp__workflow__git_state()
 
+# Open milestones - use find to list all, then filter
+mcp__workflow__gh_milestone(action="find", identifier="*")
+
+# Issues by milestone (gets all issues with labels in one call)
+# For each open milestone:
+mcp__workflow__gh_milestone_issues(milestone="Milestone Title", state="all")
+```
+Filter issues by label in code: `in-progress`, `code-complete`, `blocked-failed`
+
+**Fallback: Bash**
 ```bash
 # Current branch
 git branch --show-current

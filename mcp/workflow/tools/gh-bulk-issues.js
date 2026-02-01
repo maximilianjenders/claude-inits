@@ -98,7 +98,7 @@ async function handleCreate(args) {
       fullBody = `${body}\n\n## Dependencies\n\n${blockerLines}`;
     }
 
-    const ghArgs = ["issue", "create", "--title", title, "--body", fullBody, "--json", "number,url"];
+    const ghArgs = ["issue", "create", "--title", title, "--body", fullBody];
 
     if (milestone) {
       ghArgs.push("--milestone", milestone);
@@ -112,8 +112,10 @@ async function handleCreate(args) {
 
     try {
       const { stdout } = await gh(ghArgs);
-      const result = JSON.parse(stdout);
-      createdIssues.push({ index: i, number: result.number, url: result.url, title });
+      // gh issue create outputs the URL like: https://github.com/owner/repo/issues/123
+      const url = stdout.trim();
+      const number = parseInt(url.split("/").pop(), 10);
+      createdIssues.push({ index: i, number, url, title });
     } catch (error) {
       createdIssues.push({ index: i, error: error.message, title });
     }

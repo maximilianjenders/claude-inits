@@ -56,12 +56,19 @@ Execute all issues in a GitHub milestone using parallel subagents with crash rec
 
 ### Step 1: Detect Current State
 
-```bash
-# Use shared script for git state detection
-~/.claude/scripts/git-state.sh
+**Preferred: MCP**
 ```
+mcp__workflow__git_state()
+```
+Returns: branch, is_worktree, worktree_path, pr, worktrees[], matching_branches[]
 
-This outputs: current branch, worktree status, existing worktrees, and matching branches.
+**Fallback: Bash**
+```bash
+git branch --show-current
+git worktree list
+git rev-parse --is-inside-work-tree
+git branch -r --list "origin/*" | grep -E "feature/"
+```
 
 ### Step 2: Parse Branch Name
 
@@ -144,6 +151,13 @@ GitHub labels only (single source of truth, no local cache).
 
 ### On Startup Query
 
+**Preferred: MCP** (single call returns all issues with labels)
+```
+mcp__workflow__gh_milestone_issues(milestone="Milestone Name", state="all")
+```
+Returns all issues with their labels - filter in code by label to determine state.
+
+**Fallback: Bash**
 ```bash
 gh issue list --milestone "Milestone Name" --label "in-progress"
 gh issue list --milestone "Milestone Name" --label "ready-for-review"
@@ -206,6 +220,18 @@ Automatically run `/create-pr`.
 
 ### Startup
 
+**Preferred: MCP**
+```
+# Fetch milestone details (by number or title)
+mcp__workflow__gh_milestone(action="find", identifier="5")
+# or
+mcp__workflow__gh_milestone(action="find", identifier="Phase 5: Variety Tracking")
+
+# Fetch all issues with full metadata (single call)
+mcp__workflow__gh_milestone_issues(milestone="Milestone Name", state="all")
+```
+
+**Fallback: Bash**
 ```bash
 # Parse milestone (handle number, title, or URL)
 MILESTONE_NUMBER=...
@@ -219,6 +245,26 @@ gh issue list --milestone $MILESTONE_NUMBER --state all --json number,title,body
 
 ### Label Updates
 
+**Preferred: MCP** (supports bulk operations)
+```
+# Mark in-progress
+mcp__workflow__gh_bulk_issues(action="label", issues=[15], label="in-progress")
+
+# Mark ready-for-review (remove old, add new in two calls)
+mcp__workflow__gh_bulk_issues(action="unlabel", issues=[15], label="in-progress")
+mcp__workflow__gh_bulk_issues(action="label", issues=[15], label="ready-for-review")
+
+# Mark code-complete (remove label, then close)
+mcp__workflow__gh_bulk_issues(action="unlabel", issues=[15], label="ready-for-review")
+mcp__workflow__gh_bulk_issues(action="label", issues=[15], label="code-complete")
+mcp__workflow__gh_bulk_issues(action="close", issues=[15])
+
+# Mark blocked-failed
+mcp__workflow__gh_bulk_issues(action="unlabel", issues=[15], label="in-progress")
+mcp__workflow__gh_bulk_issues(action="label", issues=[15], label="blocked-failed")
+```
+
+**Fallback: Bash**
 ```bash
 # Mark in-progress
 gh issue edit $ISSUE --add-label "in-progress"
