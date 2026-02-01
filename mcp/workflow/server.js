@@ -61,6 +61,7 @@ async function loadTools() {
     "./tools/gh-milestone.js",
     "./tools/gh-milestone-issues.js",
     "./tools/gh-bulk-issues.js",
+    "./tools/gh-pr-review-issue.js",
   ];
 
   for (const modulePath of toolModules) {
