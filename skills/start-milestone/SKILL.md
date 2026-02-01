@@ -22,9 +22,10 @@ Execute all issues in a GitHub milestone using parallel subagents with crash rec
 
 1. Parse milestone, fetch issues, build dependency graph
 2. Setup branch/worktree
-3. Check for crash recovery (resume in-progress issues)
-4. Execute issues in parallel (respecting dependencies)
-5. On completion: auto-create PR or prompt user if failures
+3. **Update milestone status to `[ACTIVE]`** (if currently `[READY]`)
+4. Check for crash recovery (resume in-progress issues)
+5. Execute issues in parallel (respecting dependencies)
+6. On completion: auto-create PR or prompt user if failures
 
 ## GitHub Labels
 
@@ -105,6 +106,38 @@ options:
 - If worktree chosen: invoke `/worktree create feature/branch-name`
 - If branch chosen: `git checkout -b feature/branch-name` or `git checkout feature/branch-name`
 - If continue chosen: proceed with current state
+
+## Milestone Status Update
+
+**CRITICAL: Update milestone to `[ACTIVE]` before dispatching any issues.**
+
+After branch/worktree setup is complete, check if the milestone needs status update:
+
+**Preferred: MCP**
+```
+# Check current milestone title
+mcp__workflow__gh_milestone(action="find", identifier="5")
+
+# If title starts with [READY], rename to [ACTIVE]
+mcp__workflow__gh_milestone(action="rename", identifier="5", new_title="[ACTIVE] #5 Milestone Title")
+```
+
+**Fallback: Bash**
+```bash
+# Get current milestone title
+MILESTONE_TITLE=$(gh api repos/:owner/:repo/milestones/5 --jq '.title')
+
+# If [READY], update to [ACTIVE]
+if [[ "$MILESTONE_TITLE" == "[READY]"* ]]; then
+  NEW_TITLE="${MILESTONE_TITLE/\[READY\]/[ACTIVE]}"
+  gh api repos/:owner/:repo/milestones/5 --method PATCH -f title="$NEW_TITLE"
+fi
+```
+
+**When to update:**
+- Update from `[READY]` → `[ACTIVE]` when starting fresh execution
+- Skip if already `[ACTIVE]` (crash recovery scenario)
+- Skip if `[SKETCH]` or `[SCOPED]` (shouldn't be executing these)
 
 ## Dependency Graph & Parallel Execution
 
@@ -294,6 +327,7 @@ When starting a milestone:
 - [ ] Detect current git state (branch, worktree, existing worktrees)
 - [ ] **ASK USER about branching strategy using `AskUserQuestion`** (MANDATORY - never skip)
 - [ ] Execute user's branch/worktree choice
+- [ ] **Update milestone status from `[READY]` to `[ACTIVE]`** (MANDATORY - do this before dispatching issues)
 - [ ] Query all issues and their labels (recovery check)
 - [ ] Build dependency graph from issue bodies
 - [ ] Dispatch root tasks (no blockers) up to concurrency limit
