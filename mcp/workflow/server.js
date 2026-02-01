@@ -60,6 +60,7 @@ async function loadTools() {
     "./tools/git-state.js",
     "./tools/gh-milestone.js",
     "./tools/gh-milestone-issues.js",
+    "./tools/gh-bulk-issues.js",
   ];
 
   for (const modulePath of toolModules) {
