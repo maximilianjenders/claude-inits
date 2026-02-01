@@ -54,6 +54,7 @@ gh pr view $PR_NUMBER --json title,url,milestone,body
 - [ ] Stop staging/dev containers on Pi
 - [ ] Delete branches and worktree
 - [ ] Switch to master and pull
+- [ ] Deploy to production
 
 ## What This Does
 
@@ -81,6 +82,7 @@ gh pr view $PR_NUMBER --json title,url,milestone,body
    - Switch local to master and pull
    - Delete local feature branch
    - Delete worktree if exists
+   - Deploy to production
 
 ## Execution
 
@@ -132,6 +134,13 @@ WORKTREE_PATH=".worktrees/${BRANCH#feature/}"
 if [ -d "$WORKTREE_PATH" ]; then
   git worktree remove "$WORKTREE_PATH"
 fi
+
+# 9. Deploy to production
+# Determine app from repo name or PR context
+# Preferred: MCP
+pi_deploy(app="food-butler", env="prod")
+# or
+pi_deploy(app="spendee", env="prod")
 ```
 
 ## Confirmation Prompt
@@ -158,8 +167,9 @@ fi
 - Stop staging/dev containers on Pi
 - Delete branch `feature/phase5-variety-tracking`
 - Switch local to master
+- Deploy to production
 
-Proceed? (This will run /update-docs, then merge to master)
+Proceed? (This will run /update-docs, then merge and deploy to prod)
 ```
 
 ## Output Format
@@ -178,6 +188,7 @@ Proceed? (This will run /update-docs, then merge to master)
 - [x] Deleted branch: feature/phase5-variety-tracking
 - [x] Switched to master and pulled
 - [x] Removed worktree: .worktrees/phase5-variety-tracking
+- [x] Deployed to production
 
 ### What's Next
 Run `/start-session` to see current project state.
@@ -189,5 +200,6 @@ Run `/start-session` to see current project state.
 - If SSH to Pi fails: continue with other cleanup, report warning
 - If branch delete fails: report warning, continue
 - If milestone close fails: report warning, continue
+- If prod deploy fails: report error prominently (this is critical)
 
 Always report what succeeded and what failed.
