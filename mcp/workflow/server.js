@@ -59,6 +59,7 @@ async function loadTools() {
   const toolModules = [
     "./tools/git-state.js",
     "./tools/gh-milestone.js",
+    "./tools/gh-milestone-issues.js",
   ];
 
   for (const modulePath of toolModules) {
