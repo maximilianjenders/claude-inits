@@ -1,6 +1,6 @@
 ---
 name: create-milestone
-description: Create a GitHub milestone from an idea or plan, or populate an existing milestone with issues
+description: Create GitHub issues from implementation plans. Use automatically after writing-implementation-tasks completes, or when populating a milestone with issues
 user_invocable: true
 argument-hint: "[title]"
 ---
