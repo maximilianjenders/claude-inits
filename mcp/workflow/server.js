@@ -1,0 +1,69 @@
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+} from "@modelcontextprotocol/sdk/types.js";
+
+// Tool definitions (will be populated by tool modules)
+const TOOLS = [];
+
+// Tool handlers (will be populated by tool modules)
+const toolHandlers = {};
+
+// Helper to register tools
+function registerTool(definition, handler) {
+  TOOLS.push(definition);
+  toolHandlers[definition.name] = handler;
+}
+
+// Create and configure the MCP server
+const server = new Server(
+  {
+    name: "workflow-mcp-server",
+    version: "1.0.0",
+  },
+  {
+    capabilities: {
+      tools: {},
+    },
+  }
+);
+
+// Register tool list handler
+server.setRequestHandler(ListToolsRequestSchema, async () => {
+  return { tools: TOOLS };
+});
+
+// Register tool call handler
+server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  const { name, arguments: args } = request.params;
+
+  const handler = toolHandlers[name];
+  if (!handler) {
+    throw new Error(`Unknown tool: ${name}`);
+  }
+
+  try {
+    return await handler(args || {});
+  } catch (error) {
+    return {
+      content: [{ type: "text", text: `Error: ${error.message}` }],
+      isError: true,
+    };
+  }
+});
+
+// Start the server
+async function main() {
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+  console.error("Workflow MCP server running on stdio");
+}
+
+main().catch((error) => {
+  console.error("Fatal error:", error);
+  process.exit(1);
+});
+
+export { registerTool, server };
