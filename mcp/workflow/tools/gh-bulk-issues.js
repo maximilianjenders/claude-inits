@@ -3,37 +3,140 @@ import { batchExecute } from "../lib/github-api.js";
 
 const definition = {
   name: "gh_bulk_issues",
-  description: "Bulk operations on multiple issues with retry logic",
+  description: "Bulk operations on issues: create, label, unlabel, close, reopen",
   inputSchema: {
     type: "object",
     properties: {
       action: {
         type: "string",
-        enum: ["label", "unlabel", "close", "reopen"],
+        enum: ["create", "label", "unlabel", "close", "reopen"],
         description: "Action to perform",
       },
       issues: {
         type: "array",
         items: { type: "number" },
-        description: "Array of issue numbers",
+        description: "Issue numbers (required for label/unlabel/close/reopen)",
+      },
+      new_issues: {
+        type: "array",
+        description: "Issues to create (required for create action)",
+        items: {
+          type: "object",
+          properties: {
+            title: { type: "string", description: "Issue title" },
+            body: { type: "string", description: "Issue body (markdown)" },
+            labels: {
+              type: "array",
+              items: { type: "string" },
+              description: "Labels to add",
+            },
+            blocked_by_indices: {
+              type: "array",
+              items: { type: "number" },
+              description: "0-based indices of issues in this batch that block this one",
+            },
+            blocked_by_issues: {
+              type: "array",
+              items: { type: "number" },
+              description: "Existing issue numbers that block this one",
+            },
+          },
+          required: ["title", "body"],
+        },
+      },
+      milestone: {
+        type: "string",
+        description: "Milestone title or number (for create action)",
       },
       label: {
         type: "string",
-        description: "Label to add/remove (required for label/unlabel actions)",
+        description: "Label to add/remove (for label/unlabel/close actions)",
       },
       comment: {
         type: "string",
-        description: "Comment to add when closing (optional)",
+        description: "Comment to add when closing",
       },
     },
-    required: ["action", "issues"],
+    required: ["action"],
   },
 };
 
-async function handler(args) {
+async function handleCreate(args) {
+  const { new_issues, milestone } = args;
+
+  if (!new_issues || new_issues.length === 0) {
+    throw new Error("new_issues is required for create action");
+  }
+
+  // Track created issue numbers for dependency resolution
+  const createdIssues = [];
+
+  for (let i = 0; i < new_issues.length; i++) {
+    const issue = new_issues[i];
+    const { title, body, labels, blocked_by_indices, blocked_by_issues } = issue;
+
+    // Build dependency section
+    const blockers = [];
+
+    if (blocked_by_issues && blocked_by_issues.length > 0) {
+      for (const num of blocked_by_issues) {
+        blockers.push(`#${num}`);
+      }
+    }
+
+    if (blocked_by_indices && blocked_by_indices.length > 0) {
+      for (const idx of blocked_by_indices) {
+        if (idx >= 0 && idx < createdIssues.length) {
+          blockers.push(`#${createdIssues[idx].number}`);
+        }
+      }
+    }
+
+    let fullBody = body;
+    if (blockers.length > 0) {
+      const blockerLines = blockers.map((b) => `- Blocked by: ${b}`).join("\n");
+      fullBody = `${body}\n\n## Dependencies\n\n${blockerLines}`;
+    }
+
+    const ghArgs = ["issue", "create", "--title", title, "--body", fullBody, "--json", "number,url"];
+
+    if (milestone) {
+      ghArgs.push("--milestone", milestone);
+    }
+
+    if (labels && labels.length > 0) {
+      for (const label of labels) {
+        ghArgs.push("--label", label);
+      }
+    }
+
+    try {
+      const { stdout } = await gh(ghArgs);
+      const result = JSON.parse(stdout);
+      createdIssues.push({ index: i, number: result.number, url: result.url, title });
+    } catch (error) {
+      createdIssues.push({ index: i, error: error.message, title });
+    }
+  }
+
+  const successful = createdIssues.filter((i) => !i.error);
+  const failed = createdIssues.filter((i) => i.error);
+
+  return {
+    created: successful.length,
+    failed: failed.length,
+    issues: createdIssues,
+    summary: `${successful.length}/${new_issues.length} created successfully`,
+  };
+}
+
+async function handleModify(args) {
   const { action, issues, label, comment } = args;
 
-  // Validate label is provided for label/unlabel actions
+  if (!issues || issues.length === 0) {
+    throw new Error(`issues array is required for ${action} action`);
+  }
+
   if ((action === "label" || action === "unlabel") && !label) {
     throw new Error(`label is required for ${action} action`);
   }
@@ -54,7 +157,6 @@ async function handler(args) {
         } else {
           await gh(["issue", "close", String(issueNumber)]);
         }
-        // Add label if provided (common pattern: close + add code-complete)
         if (label) {
           await gh(["issue", "edit", String(issueNumber), "--add-label", label]);
         }
@@ -63,16 +165,24 @@ async function handler(args) {
       case "reopen":
         await gh(["issue", "reopen", String(issueNumber)]);
         break;
-
-      default:
-        throw new Error(`Unknown action: ${action}`);
     }
   };
 
-  const results = await batchExecute(issues, executeAction);
+  return await batchExecute(issues, executeAction);
+}
+
+async function handler(args) {
+  const { action } = args;
+
+  let result;
+  if (action === "create") {
+    result = await handleCreate(args);
+  } else {
+    result = await handleModify(args);
+  }
 
   return {
-    content: [{ type: "text", text: JSON.stringify(results, null, 2) }],
+    content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
   };
 }
 
