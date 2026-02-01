@@ -54,8 +54,21 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 });
 
+// Load tools dynamically
+async function loadTools() {
+  const toolModules = [
+    "./tools/git-state.js",
+  ];
+
+  for (const modulePath of toolModules) {
+    const module = await import(modulePath);
+    registerTool(module.definition, module.handler);
+  }
+}
+
 // Start the server
 async function main() {
+  await loadTools();
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error("Workflow MCP server running on stdio");
