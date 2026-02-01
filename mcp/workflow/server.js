@@ -58,6 +58,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 async function loadTools() {
   const toolModules = [
     "./tools/git-state.js",
+    "./tools/gh-milestone.js",
   ];
 
   for (const modulePath of toolModules) {
