@@ -55,18 +55,8 @@ Before marking as in-progress:
 
 Detect current environment:
 ```bash
-# Check if we're in a worktree (git dir is a file, not directory)
-if [ -f .git ]; then
-  echo "In worktree: $(cat .git | sed 's/gitdir: //')"
-else
-  echo "In main working tree"
-fi
-
-# List existing worktrees
-git worktree list
-
-# Current branch
-git branch --show-current
+# Use shared script for git state detection
+~/.claude/scripts/git-state.sh
 ```
 
 **Decision tree:**

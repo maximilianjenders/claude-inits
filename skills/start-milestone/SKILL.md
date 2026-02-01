@@ -34,6 +34,7 @@ Execute all issues in a GitHub milestone using parallel subagents with crash rec
 | `ready-for-review` | `#F9D0C4` | Implementation done, awaiting review |
 | `code-complete` | - | Done on feature branch, waiting for PR merge |
 | `blocked-failed` | `#B60205` | Subagent failed after retry, skipped |
+| `pr-review` | `#FBCA04` | Issue created from PR code review findings |
 
 **Label flow per issue:**
 ```
@@ -56,17 +57,11 @@ Execute all issues in a GitHub milestone using parallel subagents with crash rec
 ### Step 1: Detect Current State
 
 ```bash
-# Check if in a worktree
-if [ -f .git ]; then
-  echo "In worktree: $(cat .git | sed 's/gitdir: //')"
-fi
-
-# Check existing worktrees
-git worktree list
-
-# Current branch
-git branch --show-current
+# Use shared script for git state detection
+~/.claude/scripts/git-state.sh
 ```
+
+This outputs: current branch, worktree status, existing worktrees, and matching branches.
 
 ### Step 2: Parse Branch Name
 

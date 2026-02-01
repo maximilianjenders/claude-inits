@@ -19,6 +19,23 @@ Custom skills for Claude Code that work across all my projects.
 | `update-docs` | Update project documentation |
 | `worktree` | Create git worktrees for parallel work |
 
+## Scripts
+
+Helper scripts symlinked to `~/.claude/scripts/` for auto-whitelisting.
+
+| Script | Purpose |
+|--------|---------|
+| `git-state.sh` | Detect branch, worktree status, existing worktrees |
+| `gh-bulk-label.sh` | Bulk add/remove labels from issues |
+| `gh-milestone.sh` | Close/open/rename milestones |
+| `gh-milestone-issues.sh` | List issues in a milestone with filters |
+| `extract-issue-numbers.sh` | Extract issue numbers from text |
+| `check-docs.sh` | Check if standard docs exist (CLAUDE.md, etc) |
+
+**Setup:** `ln -s /Users/max/Gits/claude-inits/scripts ~/.claude/scripts`
+
+See `scripts/README.md` for usage details.
+
 ## CLAUDE.md Template
 
 Copy this section into your project's CLAUDE.md to enable the full workflow:
@@ -54,6 +71,19 @@ This project uses GitHub Issues/Milestones as the source of truth. Use these ski
 | Run tests | `/run-tests` |
 | Work on parallel tasks | `/worktree` |
 
+### Helper Scripts
+
+Pre-approved scripts at `~/.claude/scripts/` for common operations:
+
+| Script | Usage |
+|--------|-------|
+| `git-state.sh` | `~/.claude/scripts/git-state.sh` - Detect branch, worktree status |
+| `gh-bulk-label.sh` | `~/.claude/scripts/gh-bulk-label.sh add\|remove <label> <issues...>` |
+| `gh-milestone.sh` | `~/.claude/scripts/gh-milestone.sh find\|close\|open\|rename <number\|title>` |
+| `gh-milestone-issues.sh` | `~/.claude/scripts/gh-milestone-issues.sh "<milestone>" [state] [label]` |
+| `extract-issue-numbers.sh` | `~/.claude/scripts/extract-issue-numbers.sh "<text>"` or via pipe |
+| `check-docs.sh` | `~/.claude/scripts/check-docs.sh [directory]` |
+
 ### Issue Labels
 
 | Label | Meaning | Issue State |
@@ -62,12 +92,15 @@ This project uses GitHub Issues/Milestones as the source of truth. Use these ski
 | `ready-for-review` | Implementation done, awaiting review | Open |
 | `code-complete` | Done on feature branch, awaiting merge | **Closed** |
 | `blocked-failed` | Subagent failed after retry, skipped | Open |
+| `pr-review` | Issue created from PR code review findings | Open/Closed |
 
 **Label flow:**
 ```
 (none) → in-progress → ready-for-review → code-complete (closed)
                    ↘ blocked-failed (on failure)
 ```
+
+The `pr-review` label marks issues created during `/create-pr` code review. These follow the same flow but are distinguished from original milestone scope.
 
 Issues are closed when marked `code-complete` so GitHub's milestone progress bar shows actual progress. The `code-complete` label distinguishes "done on branch" from "merged to master" (no label).
 

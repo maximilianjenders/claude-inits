@@ -48,21 +48,33 @@ git log origin/$BRANCH..HEAD
    - Generate description with summary and linked issues
    - Use `Fixes #X` syntax (issues are already closed via `update-issue`)
 
-3. **AI Review Loop:**
+3. **AI Review:**
    - Use `superpowers:requesting-code-review` skill
    - Provide context:
      - **Issue specs:** Acceptance criteria from linked issues
      - **Design doc:** Architecture/patterns from milestone's design doc (if exists)
      - **CLAUDE.md:** Project coding standards
    - Review for: spec compliance, design doc adherence, code quality, CLAUDE.md violations
-   - If issues found: fix and push
-   - Re-review until clean
 
-4. **Run Tests:**
+4. **Create Issues for Review Findings:**
+   - If review finds issues, create a GitHub issue for EACH finding
+   - Add issues to the same milestone
+   - Add `pr-review` label to distinguish from original scope
+   - Format: `[PR Review] <finding title>`
+   - Include in body: file, line, description, suggested fix
+
+5. **Resolve Review Issues:**
+   - For each `pr-review` issue, transition through normal workflow:
+     - Mark `in-progress` → implement fix → mark `ready-for-review` → verify → mark `code-complete`
+   - Use `/start-issue <number>` for each review issue
+   - Push fixes to the PR branch
+   - Continue until ALL `pr-review` issues are `code-complete`
+
+6. **Run Tests (after all review issues resolved):**
    - Run `/run-tests` to verify all tests pass
-   - If tests fail: fix and re-run
+   - If tests fail: create issue, fix, re-run
 
-5. **Deploy to Dev and Run E2E Tests:**
+7. **Deploy to Dev and Run E2E Tests:**
    - Detect project from current working directory
    - Deploy current branch to dev using MCP: `pi_deploy("[project]", "dev", "[branch]")`
    - Wait for container to be healthy

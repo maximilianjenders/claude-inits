@@ -44,6 +44,9 @@ Update the workflow status of a GitHub issue.
 
 The `code-complete` label distinguishes "done on branch" from "merged to master" (which has no label).
 
+**Additional labels:**
+- `pr-review` - Marks issues created from PR code review findings (used alongside status labels)
+
 ## Execution
 
 ```bash
