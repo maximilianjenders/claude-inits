@@ -58,6 +58,8 @@ git log origin/$BRANCH..HEAD
 
 4. **Create Issues for Review Findings:**
    - If review finds issues, create a GitHub issue for EACH finding
+   - **Fix both critical AND reasonable minor issues** (not just critical ones)
+   - Skip only trivial nitpicks (e.g., subjective style preferences with no clear benefit)
    - Add issues to the same milestone
    - Add `pr-review` label to distinguish from original scope
    - Format: `[PR Review] <finding title>`
