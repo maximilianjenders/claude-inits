@@ -12,6 +12,9 @@ const PI_HOST = "max@pi";
 const VALID_APPS = ["food-butler", "spendee"];
 const VALID_ENVS = ["prod", "staging", "dev"];
 
+// Allowed commands for docker exec/run (read-only operations)
+const ALLOWED_COMMANDS = ["cat", "ls", "head", "tail", "find", "grep", "env", "ps", "stat"];
+
 // App-specific configurations
 // To add a new app: add entry here with containerPrefix and seedCommand
 const APP_CONFIG = {
@@ -67,6 +70,14 @@ function validatePath(path) {
     throw new Error(`Path must be absolute: ${path}`);
   }
   return path;
+}
+
+function validateCommand(command) {
+  sanitizeInput(command);
+  if (!ALLOWED_COMMANDS.includes(command)) {
+    throw new Error(`Command not allowed: ${command}. Must be one of: ${ALLOWED_COMMANDS.join(", ")}`);
+  }
+  return command;
 }
 
 // Container name mapping (uses APP_CONFIG)
@@ -270,6 +281,70 @@ const TOOLS = [
       required: ["app"],
     },
   },
+  {
+    name: "pi_docker_inspect",
+    description: "Get metadata about a container or image (creation time, config, etc.)",
+    inputSchema: {
+      type: "object",
+      properties: {
+        target: {
+          type: "string",
+          description: "Container name or image reference",
+        },
+        format: {
+          type: "string",
+          description: "Go template format string (e.g., '{{.Config.Image}}', '{{.Created}}')",
+        },
+      },
+      required: ["target"],
+    },
+  },
+  {
+    name: "pi_docker_exec",
+    description: `Run a read-only command inside a running container. Allowed commands: ${ALLOWED_COMMANDS.join(", ")}`,
+    inputSchema: {
+      type: "object",
+      properties: {
+        container: {
+          type: "string",
+          description: "Container name",
+        },
+        command: {
+          type: "string",
+          description: `Command to run (must be one of: ${ALLOWED_COMMANDS.join(", ")})`,
+        },
+        args: {
+          type: "array",
+          items: { type: "string" },
+          description: "Arguments to pass to the command",
+        },
+      },
+      required: ["container", "command"],
+    },
+  },
+  {
+    name: "pi_docker_run",
+    description: `Run a read-only command in a temporary container from an image. Allowed commands: ${ALLOWED_COMMANDS.join(", ")}`,
+    inputSchema: {
+      type: "object",
+      properties: {
+        image: {
+          type: "string",
+          description: "Image reference (e.g., ghcr.io/user/repo:tag)",
+        },
+        command: {
+          type: "string",
+          description: `Command to run (must be one of: ${ALLOWED_COMMANDS.join(", ")})`,
+        },
+        args: {
+          type: "array",
+          items: { type: "string" },
+          description: "Arguments to pass to the command",
+        },
+      },
+      required: ["image", "command"],
+    },
+  },
 ];
 
 // Tool handlers (stubs - to be implemented in later issues)
@@ -373,6 +448,51 @@ const toolHandlers = {
     );
     return { content: [{ type: "text", text: formatResult(result) }] };
   },
+
+  pi_docker_inspect: async (args) => {
+    sanitizeInput(args.target);
+    let command = `docker inspect ${args.target}`;
+    if (args.format) {
+      sanitizeInput(args.format);
+      command += ` --format "${args.format}"`;
+    }
+    const result = await executeSSH(command);
+    return { content: [{ type: "text", text: formatResult(result) }] };
+  },
+
+  pi_docker_exec: async (args) => {
+    sanitizeInput(args.container);
+    validateCommand(args.command);
+
+    // Build command with args (no shell expansion)
+    const cmdParts = [`docker exec ${args.container} ${args.command}`];
+    if (args.args && args.args.length > 0) {
+      for (const arg of args.args) {
+        sanitizeInput(arg);
+        cmdParts.push(`"${arg}"`);
+      }
+    }
+
+    const result = await executeSSH(cmdParts.join(" "));
+    return { content: [{ type: "text", text: formatResult(result) }] };
+  },
+
+  pi_docker_run: async (args) => {
+    sanitizeInput(args.image);
+    validateCommand(args.command);
+
+    // Build command with args (no shell expansion)
+    const cmdParts = [`docker run --rm ${args.image} ${args.command}`];
+    if (args.args && args.args.length > 0) {
+      for (const arg of args.args) {
+        sanitizeInput(arg);
+        cmdParts.push(`"${arg}"`);
+      }
+    }
+
+    const result = await executeSSH(cmdParts.join(" "));
+    return { content: [{ type: "text", text: formatResult(result) }] };
+  },
 };
 
 // Create and configure the MCP server
@@ -430,9 +550,11 @@ export {
   validateApp,
   validateEnv,
   validatePath,
+  validateCommand,
   getContainerPrefix,
   getSeedCommand,
   executeSSH,
   formatResult,
   server,
+  ALLOWED_COMMANDS,
 };
