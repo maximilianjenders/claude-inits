@@ -1,152 +1,111 @@
-# Phase Reviewer Subagent Prompt Template
+# Phase Reviewer Prompt Template
 
-Use this template when dispatching a single review agent to review all changes from a phase before the orchestrator commits.
+Use this template when dispatching a review agent to review all changes from a phase before the orchestrator commits.
 
-**Why a separate reviewer?** Fresh context without implementation bias. Can see how all phase changes fit together and catch cross-issue inconsistencies.
+**Key difference from PR review:** Phase review happens on UNCOMMITTED changes. The reviewer checks `git diff`, not commits.
+
+## Dispatch Pattern
 
 ```
 Task tool (general-purpose):
-  description: "Review Phase N: [brief description]"
+  description: "Review Phase N changes"
   prompt: |
-    You are reviewing all implementation work from Phase N of milestone "[Milestone Title]".
+    Review the implementation work from Phase N of milestone "[Milestone Title]".
 
-    ## Issues in This Phase
+    ## Phase Context
 
-    [List each issue with number, title, and brief summary]
-    - #70: Category breakdown with ongoing month column
-    - #71: Make Other budget section collapsible
-    - #72: Remove month selector from dashboard
+    **Issues in this phase:**
+    - #70: [title] - [brief acceptance criteria summary]
+    - #71: [title] - [brief acceptance criteria summary]
+    - #72: [title] - [brief acceptance criteria summary]
 
-    ## Context
+    **Branch:** `feature/branch-name`
+    **Working directory:** [path]
 
-    Branch: `feature/branch-name`
-    Working directory: [path]
+    **Important:** These changes are UNCOMMITTED. Review using `git diff`, not commit history.
 
-    These issues have been implemented by parallel agents and marked `ready-for-review`.
-    Tests are passing. Self-review was done by each agent.
+    ## Your Task
 
-    Your job is to review ALL changes together before the orchestrator commits.
+    Use the `superpowers:requesting-code-review` skill to review these changes.
 
-    ## Before You Begin
+    Provide this context to the review:
+    1. **Scope:** The acceptance criteria for each issue listed above
+    2. **Standards:** Read CLAUDE.md for project coding standards
+    3. **Design doc:** [path to design doc if exists, or "None"]
 
-    **Read CLAUDE.md first** for project coding standards.
+    ## Phase-Specific Review Focus
 
-    ## Review Process
+    In addition to standard code review concerns, pay special attention to:
 
-    ### Step 1: Understand the Changes
-
-    View all uncommitted changes:
-    ```bash
-    git status
-    git diff
-    ```
-
-    For each issue, identify which files were changed.
-
-    ### Step 2: Review Each Issue
-
-    For each issue, verify:
-
-    **Correctness:**
-    - Does the implementation match the acceptance criteria?
-    - Are there logic errors or bugs?
-    - Are edge cases handled?
-
-    **Code Quality:**
-    - Is the code clean and readable?
-    - Are names clear and accurate?
-    - Does it follow existing patterns in the codebase?
-
-    **Code Standards (from CLAUDE.md):**
-    - Check "MUST ALWAYS", "SHOULD", "MUST NOT" rules
-    - Verify compliance with project conventions
-    - Check linked style guides if referenced
-
-    ### Step 3: Cross-Issue Review
-
-    Look at how the changes work together:
-
-    **Consistency:**
+    ### Cross-Issue Consistency
     - Do all issues use consistent patterns?
-    - Are naming conventions consistent across changes?
+    - Are naming conventions consistent across the changes?
     - Are similar problems solved the same way?
 
-    **Integration:**
-    - Do the changes integrate cleanly?
-    - Are there conflicts or overlaps?
-    - Does the combined result make sense?
+    ### Integration
+    - Do the changes from different issues work together?
+    - Are there conflicts or overlaps between issues?
+    - Does the combined result make sense as a whole?
 
-    ### Step 4: Run Verification
+    ### Uncommitted State
+    - Run `git diff` to see all changes
+    - Run `git status` to see which files are modified
+    - Changes span multiple issues - attribute correctly
+
+    ## Verification Commands
 
     ```bash
-    # Run full test suite
+    # View all uncommitted changes
+    git diff
+
+    # Run tests
     [project test command]
 
     # Run linters
     [project lint command]
-
-    # Run type checker if applicable
-    [project typecheck command]
     ```
 
-    ### Step 5: Deliver Verdict
+    ## Output Format
 
-    **If all issues pass review:**
+    After running the code review skill, report:
 
-    Report:
+    **If APPROVED:**
     ```
     ## Phase Review: APPROVED
 
-    All [N] issues pass review:
-    - #70: ✓ Correct, clean, follows patterns
-    - #71: ✓ Correct, clean, follows patterns
-    - #72: ✓ Correct, clean, follows patterns
+    All issues pass review. Ready for orchestrator to commit.
 
-    Cross-issue review: ✓ Consistent patterns, clean integration
+    Summary:
+    - #70: ✓ [brief note]
+    - #71: ✓ [brief note]
+    - #72: ✓ [brief note]
 
+    Cross-issue consistency: ✓
     Tests: ✓ All passing
-    Linting: ✓ Clean
-
-    Ready for orchestrator to commit.
     ```
 
-    **If issues need fixes:**
-
-    Report:
+    **If CHANGES REQUESTED:**
     ```
     ## Phase Review: CHANGES REQUESTED
 
     ### Issues Needing Fixes
 
-    **#70: Category breakdown**
-    - [ ] Issue: [describe problem]
-    - [ ] Fix: [describe what needs to change]
+    **#70: [title]**
+    - [ ] [specific issue and fix needed]
 
-    **#71: Collapsible section**
+    **#71: [title]**
     - ✓ Approved
 
-    **#72: Remove month selector**
-    - [ ] Issue: [describe problem]
-    - [ ] Fix: [describe what needs to change]
-
     ### Cross-Issue Concerns
-    - [Any consistency or integration issues]
+    - [any consistency or integration issues]
 
-    Implementation agents should fix the listed issues, then request re-review.
+    Fix agents should address the listed issues, then request re-review.
     ```
-
-    ## Important Notes
-
-    - **You are the quality gate** - Don't approve changes that don't meet standards
-    - **Be specific** - If requesting fixes, explain exactly what's wrong and how to fix it
-    - **Fresh eyes** - You haven't implemented this, so you can spot issues the implementers missed
-    - **Consider the whole** - Individual changes might be fine but not work well together
 ```
 
 ## Key Points
 
-- **Fresh context** - Reviewer has full context budget for review, no implementation fatigue
-- **See the whole phase** - Can catch cross-issue inconsistencies
-- **Quality gate** - Must approve before orchestrator commits
-- **Specific feedback** - If fixes needed, be clear about what and why
-- **Run verification** - Don't just read code, run tests and linters
+- **Uses `superpowers:requesting-code-review`** for consistent review standards
+- **Adds phase-specific context** (cross-issue consistency, uncommitted changes)
+- **Fresh agent** - no implementation bias, dedicated context for review
+- **Quality gate** - must approve before orchestrator commits
