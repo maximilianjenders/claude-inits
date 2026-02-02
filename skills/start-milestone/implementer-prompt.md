@@ -38,7 +38,12 @@ Task tool (general-purpose):
 
     ### Step 1: Mark Issue In-Progress
 
-    First, mark the issue as in-progress:
+    First, mark the issue as in-progress using the MCP workflow tool:
+    ```
+    mcp__workflow__gh_update_issue(issue=N, add_labels=["in-progress"])
+    ```
+
+    Fallback (if MCP unavailable):
     ```bash
     gh issue edit N --add-label "in-progress"
     ```
@@ -94,12 +99,24 @@ Task tool (general-purpose):
 
     If you find issues during self-review, fix them now.
 
-    ### Step 6: Mark Ready for Review
+    ### Step 6: Mark Code-Complete and Close
 
-    After self-review passes:
-    ```bash
-    gh issue edit N --remove-label "in-progress" --add-label "ready-for-review"
+    After self-review passes, mark the issue complete and close it using the MCP workflow tool:
     ```
+    mcp__workflow__gh_bulk_issues(action="close", issues=[N], label="code-complete", comment="Implemented in commit [SHA]")
+    ```
+
+    Fallback (if MCP unavailable):
+    ```bash
+    gh issue close N --comment "Implemented in commit [SHA]" && gh issue edit N --remove-label "in-progress" --add-label "code-complete"
+    ```
+
+    **Important:** Only mark code-complete if:
+    - All acceptance criteria are met
+    - Tests pass
+    - Self-review found no issues (or you fixed them)
+
+    If you cannot complete the issue, leave it open with `in-progress` label and report what's blocking you.
 
     ## Report Format
 
@@ -114,7 +131,7 @@ Task tool (general-purpose):
     ## Label Flow Reference
 
     ```
-    (none) → in-progress → ready-for-review → code-complete
+    (none) → in-progress → code-complete (closed)
                        ↘ blocked-failed (on failure)
     ```
 ```
