@@ -24,8 +24,80 @@ Execute all issues in a GitHub milestone using parallel subagents with crash rec
 2. Setup branch/worktree
 3. **Update milestone status to `[ACTIVE]`** (if currently `[READY]`)
 4. **Check for resume state** (verify commits match closed issues)
-5. Execute in phases (parallel implementation → review → commit)
-6. On completion: auto-create PR or prompt user if failures
+5. **Create task list** for user visibility
+6. Execute in phases (parallel implementation → review → commit)
+7. On completion: auto-create PR or prompt user if failures
+
+## Task List for Progress Tracking
+
+**IMPORTANT:** Always use `TaskCreate`/`TaskUpdate` so the user can see what's happening.
+
+### Milestone Header Task
+
+First, create a header task that shows which milestone is being executed:
+
+```
+TaskCreate:
+  subject: "Milestone #5: Dashboard & Navigation Redesign"
+  description: "Executing milestone #5 with 12 issues across 3 phases"
+  activeForm: "Executing milestone #5"
+  status: in_progress
+```
+
+This stays `in_progress` for the duration and gives the user context at a glance.
+
+### When to Create Tasks
+
+Create tasks at the START of each phase, before dispatching agents:
+
+```
+Phase 1 starts:
+  TaskCreate: "Implement #70: Category breakdown"
+  TaskCreate: "Implement #71: Collapsible section"
+  TaskCreate: "Implement #72: Remove month selector"
+```
+
+### Task Lifecycle
+
+| Event | Action |
+|-------|--------|
+| Dispatching agent | `TaskCreate` with `status: pending` |
+| Agent starts work | `TaskUpdate` to `in_progress` |
+| Agent completes | `TaskUpdate` to `completed` |
+| Agent fails | `TaskUpdate` to `completed` with failure note |
+| Starting review | `TaskCreate`: "Review Phase N changes" |
+| Starting commits | `TaskCreate`: "Commit Phase N" |
+
+### Task Format
+
+```
+TaskCreate:
+  subject: "Implement #70: Category breakdown"
+  description: "Implementing issue #70 for Phase 1"
+  activeForm: "Implementing #70"
+
+TaskUpdate:
+  taskId: <id>
+  status: "in_progress" | "completed"
+```
+
+### Example Task List View
+
+User sees:
+```
+Tasks:
+⏳ Milestone #5: Dashboard & Navigation Redesign (in_progress)
+  ✓ Implement #70: Category breakdown
+  ✓ Implement #71: Collapsible section
+  ⏳ Implement #72: Remove month selector (in_progress)
+  ○ Review Phase 1 changes (pending)
+  ○ Commit Phase 1 (pending)
+```
+
+This gives the user:
+- **Which milestone** is being worked on (title + number)
+- **Real-time progress** on individual issues
+- **Current phase** visibility
 
 ## GitHub Labels
 
@@ -319,6 +391,12 @@ Resume from: Phase 2 (review pending issues, then continue)
 
 ### Final State Query
 
+**Preferred: MCP**
+```
+mcp__workflow__gh_milestone_issues(milestone="Milestone Name", state="all")
+```
+
+**Fallback: Bash**
 ```bash
 gh issue list --milestone "Milestone Name" --state all --json number,title,labels,state
 ```
