@@ -39,15 +39,30 @@ Task tool (general-purpose):
 
     ### Step 2: Make Targeted Fixes
 
-    Fix ONLY what the reviewer requested. Do not:
-    - Refactor unrelated code
-    - Add features not mentioned
-    - "Improve" things the reviewer didn't mention
+    Address ALL feedback from the reviewer:
+
+    **Required fixes** (blocking issues):
+    - Bugs, logic errors, missing functionality
+    - Security issues
+    - Test failures
+
+    **Also fix** (non-blocking but important):
+    - Code standards violations mentioned by reviewer
+    - Maintainability concerns (unclear names, complex logic)
+    - Best practice suggestions
+    - Minor inconsistencies with codebase patterns
+
+    **Do not:**
+    - Refactor code the reviewer didn't mention
+    - Add features not in the original issue
+    - "Improve" things beyond reviewer feedback
 
     For each feedback item:
     1. Locate the code
     2. Make the specific fix
     3. Verify the fix addresses the feedback
+
+    When in doubt about whether to fix something, **fix it**. Reviewers mention things for a reason - even "minor" suggestions about naming or structure improve long-term maintainability.
 
     ### Step 3: Verify
 
