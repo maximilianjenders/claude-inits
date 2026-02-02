@@ -180,11 +180,16 @@ claude mcp add pi /Users/max/Gits/pi-setup/mcp/start.sh --scope user
 | `pi_docker_logs` | View container logs |
 | `pi_docker_restart` | Restart container |
 | `pi_docker_stop` | Stop container |
+| `pi_docker_inspect` | Get container/image metadata (creation time, config, image) |
+| `pi_docker_exec` | Run read-only command in running container |
+| `pi_docker_run` | Run read-only command in temporary container from image |
 | `pi_deploy` | Run build.sh |
 | `pi_read_file` | Read file on Pi |
 | `pi_git_pull` | Pull ~/pi-setup |
 | `pi_reset_dev` | Wipe dev data and reseed |
 | `pi_copy_prod_to_staging` | Copy prod data to staging |
+
+**Debug Commands:** `pi_docker_exec` and `pi_docker_run` are restricted to read-only commands: `cat`, `ls`, `head`, `tail`, `find`, `grep`, `env`, `ps`, `stat`.
 
 **Hostname:** Uses `pi.local` (mDNS) - works with or without Tailscale.
 
