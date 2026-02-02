@@ -15,6 +15,15 @@
 - [Key change 2]
 ```
 
+**When related to a GitHub issue, include the issue number after the type:**
+
+```
+(type) #123: Brief summary of main accomplishment
+
+- [Key change 1]
+- [Key change 2]
+```
+
 ### Commit Types
 
 - `feat` - New feature or capability added
@@ -27,14 +36,14 @@
 ### Examples
 
 ```
-(feat): Add user authentication system
+(feat) #42: Add user authentication system
 
 - Implement JWT-based auth flow
 - Add login and logout endpoints
 ```
 
 ```
-(fix): Resolve race condition in queue processor
+(fix) #87: Resolve race condition in queue processor
 
 - Add mutex lock around shared state
 ```
