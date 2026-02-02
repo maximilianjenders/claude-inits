@@ -26,6 +26,21 @@ Merge an approved PR to master and perform full cleanup.
 
 ## Pre-flight Checks
 
+**Preferred: MCP**
+```
+# Get current git state (includes branch)
+mcp__workflow__git_state()
+
+# If no PR number provided, find PR for current branch
+mcp__workflow__gh_pr(action="list", head="$BRANCH", limit=1)
+
+# Get PR details
+mcp__workflow__gh_pr(action="view", pr=42)
+# Or view current branch's PR (omit pr param):
+mcp__workflow__gh_pr(action="view")
+```
+
+**Fallback: Bash**
 ```bash
 # Parse PR number from arg (handle URL, number, or current branch)
 # If URL: extract number from path

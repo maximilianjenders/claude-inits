@@ -38,10 +38,11 @@ Extract issue number from argument:
 # Get current git state (branch, worktrees)
 mcp__workflow__git_state()
 
+# Fetch issue details (title, body, labels, milestone, state)
+mcp__workflow__gh_issue(action="view", issue=15)
+
 # Add in-progress label
 mcp__workflow__gh_bulk_issues(action="label", issues=[15], label="in-progress")
-
-# Note: For issue details, use gh CLI - no MCP equivalent for single issue view
 ```
 
 **Fallback: Bash**

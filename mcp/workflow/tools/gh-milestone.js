@@ -2,25 +2,30 @@ import { gh } from "../lib/exec.js";
 
 const definition = {
   name: "gh_milestone",
-  description: "Milestone operations: find, close, open, rename",
+  description: "Milestone operations: list, find, close, open, rename",
   inputSchema: {
     type: "object",
     properties: {
       action: {
         type: "string",
-        enum: ["find", "close", "open", "rename"],
+        enum: ["list", "find", "close", "open", "rename"],
         description: "Action to perform",
       },
       identifier: {
         type: "string",
-        description: "Milestone number or title pattern",
+        description: "Milestone number or title pattern (required for find/close/open/rename, ignored for list)",
+      },
+      state: {
+        type: "string",
+        enum: ["open", "closed", "all"],
+        description: "Filter by state (for list action, default: open)",
       },
       new_title: {
         type: "string",
         description: "New title (required for rename action)",
       },
     },
-    required: ["action", "identifier"],
+    required: ["action"],
   },
 };
 
@@ -50,8 +55,41 @@ async function findMilestone(identifier) {
   return JSON.parse(lines[0]);
 }
 
+async function listMilestones(state = "open") {
+  const stateParam = state === "all" ? "all" : state;
+  const { stdout } = await gh([
+    "api",
+    `repos/{owner}/{repo}/milestones?state=${stateParam}`,
+    "--jq",
+    ".[] | { number, title, state, open_issues, closed_issues, description }",
+  ]);
+
+  if (!stdout.trim()) {
+    return [];
+  }
+
+  // Parse NDJSON (one object per line)
+  return stdout
+    .trim()
+    .split("\n")
+    .map((line) => JSON.parse(line));
+}
+
 async function handler(args) {
-  const { action, identifier, new_title } = args;
+  const { action, identifier, new_title, state } = args;
+
+  // Handle list action separately (no identifier needed)
+  if (action === "list") {
+    const milestones = await listMilestones(state);
+    return {
+      content: [{ type: "text", text: JSON.stringify(milestones, null, 2) }],
+    };
+  }
+
+  // All other actions require identifier
+  if (!identifier) {
+    throw new Error(`identifier is required for ${action} action`);
+  }
 
   // Find the milestone first
   const milestone = await findMilestone(identifier);

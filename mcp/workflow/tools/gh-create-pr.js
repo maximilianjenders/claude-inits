@@ -63,16 +63,7 @@ async function handler(args) {
     reviewers,
   } = args;
 
-  const ghArgs = [
-    "pr",
-    "create",
-    "--title",
-    title,
-    "--body",
-    body,
-    "--json",
-    "number,url,headRefName,baseRefName",
-  ];
+  const ghArgs = ["pr", "create", "--title", title, "--body", body];
 
   if (base) {
     ghArgs.push("--base", base);
@@ -108,8 +99,26 @@ async function handler(args) {
     }
   }
 
-  const { stdout } = await gh(ghArgs);
-  const result = JSON.parse(stdout);
+  const { stdout: createOutput } = await gh(ghArgs);
+
+  // gh pr create outputs the PR URL on success
+  // Extract URL and fetch structured details
+  const urlMatch = createOutput.match(/https:\/\/github\.com\/[^\s]+\/pull\/\d+/);
+  if (!urlMatch) {
+    return {
+      content: [{ type: "text", text: `PR created:\n${createOutput}` }],
+    };
+  }
+
+  // Get structured PR data
+  const { stdout: viewOutput } = await gh([
+    "pr",
+    "view",
+    urlMatch[0],
+    "--json",
+    "number,url,headRefName,baseRefName",
+  ]);
+  const result = JSON.parse(viewOutput);
 
   return {
     content: [{ type: "text", text: JSON.stringify(result, null, 2) }],

@@ -112,13 +112,15 @@ mcp__workflow__gh_milestone(action="rename", identifier="5", new_title="[ACTIVE]
 
 **Fallback: Bash**
 ```bash
-# Get milestone for this issue
-MILESTONE=$(gh issue view $ISSUE_NUMBER --json milestone --jq '.milestone.title')
+# Get issue details including milestone
+gh issue view $ISSUE_NUMBER --json milestone --jq '.milestone.title'
 
 # If first issue marked in-progress, milestone becomes [ACTIVE]
 # Check if milestone is [READY] and should become [ACTIVE]
 # Status prefixes: [SKETCH], [SCOPED], [READY], [ACTIVE]
 ```
+
+**Note:** The MCP approach using `gh_milestone_issues` is preferred because it returns all issues with labels in one call, making it easy to check if any issues have `in-progress` or `code-complete` labels.
 
 ## Output Format
 

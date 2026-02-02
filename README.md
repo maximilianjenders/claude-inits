@@ -37,13 +37,15 @@ claude mcp add workflow node /Users/max/Gits/claude-inits/mcp/workflow/server.js
 | Tool | Description |
 |------|-------------|
 | `git_state` | Detect branch, worktree status, existing worktrees |
-| `gh_milestone` | Find, close, open, rename milestones |
+| `gh_milestone` | List, find, close, open, rename milestones |
 | `gh_milestone_issues` | List issues in a milestone with filters |
-| `gh_bulk_issues` | Create, label, unlabel, close, reopen issues |
+| `gh_bulk_issues` | Create, label, unlabel, close, reopen issues (bulk) |
 | `gh_update_issue` | Update single issue (title, body, labels, assignees) |
+| `gh_issue` | View single issue or list issues with filters |
 | `gh_pr_review_issue` | Create issue from PR review findings |
 | `gh_create_pr` | Create pull request with full metadata |
 | `gh_merge_pr` | Merge PR with various strategies |
+| `gh_pr` | View single PR or list PRs with filters |
 
 ### Pi MCP Server (`mcp/pi/`)
 
@@ -63,10 +65,7 @@ Copy this section into your project's CLAUDE.md to enable the full workflow:
 ````markdown
 ## Session Startup
 
-When starting a new session or when asked "what's next?":
-
-1. Check GitHub milestones: `gh api repos/:owner/:repo/milestones`
-2. Check open issues: `gh issue list --state open`
+When starting a new session or when asked "what's next?", use the `/start-session` skill to query GitHub for current project state.
 
 Milestone status prefixes:
 - `[SKETCH]` - Rough idea, needs design session
@@ -98,12 +97,14 @@ When MCP servers are configured, use these tools instead of `gh` CLI:
 | Tool | Purpose | Replaces |
 |------|---------|----------|
 | `mcp__workflow__git_state()` | Branch, worktree status | `git branch`, `git worktree list` |
-| `mcp__workflow__gh_milestone(action, identifier)` | Find/close/open/rename milestones | `gh api milestones` |
-| `mcp__workflow__gh_milestone_issues(milestone, state, label)` | List issues with filters | `gh issue list --milestone` |
+| `mcp__workflow__gh_milestone(action, ...)` | List/find/close/open/rename milestones | `gh api milestones` |
+| `mcp__workflow__gh_milestone_issues(milestone, state, label)` | List issues in milestone | `gh issue list --milestone` |
+| `mcp__workflow__gh_issue(action, ...)` | View/list issues with filters | `gh issue view`, `gh issue list` |
 | `mcp__workflow__gh_bulk_issues(action, issues, label)` | Bulk label/close/create | `gh issue edit`, `gh issue create` |
 | `mcp__workflow__gh_update_issue(issue, ...)` | Update single issue | `gh issue edit` |
 | `mcp__workflow__gh_create_pr(title, body, ...)` | Create PR | `gh pr create` |
 | `mcp__workflow__gh_merge_pr(pr, method, ...)` | Merge PR | `gh pr merge` |
+| `mcp__workflow__gh_pr(action, ...)` | View/list PRs with filters | `gh pr view`, `gh pr list` |
 
 **Fallback:** If MCP tools are unavailable, skills include `gh` CLI commands as fallback.
 
