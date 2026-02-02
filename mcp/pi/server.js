@@ -7,7 +7,8 @@ import {
 import { spawn } from "child_process";
 
 // Configuration
-const PI_HOST = "max@pi.local";
+// Use Tailscale MagicDNS name for remote access (pi.local only works on LAN)
+const PI_HOST = "max@pi";
 const VALID_APPS = ["food-butler", "spendee"];
 const VALID_ENVS = ["prod", "staging", "dev"];
 
