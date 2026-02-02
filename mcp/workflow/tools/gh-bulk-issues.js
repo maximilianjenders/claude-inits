@@ -7,6 +7,10 @@ const definition = {
   inputSchema: {
     type: "object",
     properties: {
+      cwd: {
+        type: "string",
+        description: "Working directory (defaults to MCP server cwd)",
+      },
       action: {
         type: "string",
         enum: ["create", "label", "unlabel", "close", "reopen"],
@@ -61,7 +65,7 @@ const definition = {
   },
 };
 
-async function handleCreate(args) {
+async function handleCreate(args, opts = {}) {
   const { new_issues, milestone } = args;
 
   if (!new_issues || new_issues.length === 0) {
@@ -111,7 +115,7 @@ async function handleCreate(args) {
     }
 
     try {
-      const { stdout } = await gh(ghArgs);
+      const { stdout } = await gh(ghArgs, opts);
       // gh issue create outputs the URL like: https://github.com/owner/repo/issues/123
       const url = stdout.trim();
       const number = parseInt(url.split("/").pop(), 10);
@@ -132,7 +136,7 @@ async function handleCreate(args) {
   };
 }
 
-async function handleModify(args) {
+async function handleModify(args, opts = {}) {
   const { action, issues, label, comment } = args;
 
   if (!issues || issues.length === 0) {
@@ -146,26 +150,26 @@ async function handleModify(args) {
   const executeAction = async (issueNumber) => {
     switch (action) {
       case "label":
-        await gh(["issue", "edit", String(issueNumber), "--add-label", label]);
+        await gh(["issue", "edit", String(issueNumber), "--add-label", label], opts);
         break;
 
       case "unlabel":
-        await gh(["issue", "edit", String(issueNumber), "--remove-label", label]);
+        await gh(["issue", "edit", String(issueNumber), "--remove-label", label], opts);
         break;
 
       case "close":
         if (comment) {
-          await gh(["issue", "close", String(issueNumber), "--comment", comment]);
+          await gh(["issue", "close", String(issueNumber), "--comment", comment], opts);
         } else {
-          await gh(["issue", "close", String(issueNumber)]);
+          await gh(["issue", "close", String(issueNumber)], opts);
         }
         if (label) {
-          await gh(["issue", "edit", String(issueNumber), "--add-label", label]);
+          await gh(["issue", "edit", String(issueNumber), "--add-label", label], opts);
         }
         break;
 
       case "reopen":
-        await gh(["issue", "reopen", String(issueNumber)]);
+        await gh(["issue", "reopen", String(issueNumber)], opts);
         break;
     }
   };
@@ -174,13 +178,14 @@ async function handleModify(args) {
 }
 
 async function handler(args) {
-  const { action } = args;
+  const { cwd, action } = args;
+  const opts = cwd ? { cwd } : {};
 
   let result;
   if (action === "create") {
-    result = await handleCreate(args);
+    result = await handleCreate(args, opts);
   } else {
-    result = await handleModify(args);
+    result = await handleModify(args, opts);
   }
 
   return {

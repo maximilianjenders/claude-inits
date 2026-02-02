@@ -6,6 +6,10 @@ const definition = {
   inputSchema: {
     type: "object",
     properties: {
+      cwd: {
+        type: "string",
+        description: "Working directory (defaults to MCP server cwd)",
+      },
       milestone: {
         type: "string",
         description: "Milestone title",
@@ -25,7 +29,8 @@ const definition = {
 };
 
 async function handler(args) {
-  const { milestone, state = "all", label } = args;
+  const { cwd, milestone, state = "all", label } = args;
+  const opts = cwd ? { cwd } : {};
 
   // Build gh issue list command
   const ghArgs = [
@@ -40,7 +45,7 @@ async function handler(args) {
     ghArgs.push("--label", label);
   }
 
-  const { stdout } = await gh(ghArgs);
+  const { stdout } = await gh(ghArgs, opts);
   const issues = stdout ? JSON.parse(stdout) : [];
 
   return {

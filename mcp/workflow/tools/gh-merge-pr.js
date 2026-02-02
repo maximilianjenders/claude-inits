@@ -6,6 +6,10 @@ const definition = {
   inputSchema: {
     type: "object",
     properties: {
+      cwd: {
+        type: "string",
+        description: "Working directory (defaults to MCP server cwd)",
+      },
       pr: {
         type: "number",
         description: "PR number to merge",
@@ -37,8 +41,9 @@ const definition = {
 };
 
 async function handler(args) {
-  const { pr, method, delete_branch, admin, subject, body } = args;
+  const { cwd, pr, method, delete_branch, admin, subject, body } = args;
 
+  const opts = cwd ? { cwd } : {};
   const ghArgs = ["pr", "merge", String(pr)];
 
   // Merge method
@@ -69,7 +74,7 @@ async function handler(args) {
     ghArgs.push("--body", body);
   }
 
-  await gh(ghArgs);
+  await gh(ghArgs, opts);
 
   // Get merge result info
   const { stdout } = await gh([
@@ -78,7 +83,7 @@ async function handler(args) {
     String(pr),
     "--json",
     "number,title,state,mergedAt,mergedBy,url",
-  ]);
+  ], opts);
 
   const result = JSON.parse(stdout);
 

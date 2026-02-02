@@ -6,6 +6,10 @@ const definition = {
   inputSchema: {
     type: "object",
     properties: {
+      cwd: {
+        type: "string",
+        description: "Working directory (defaults to MCP server cwd)",
+      },
       branch_pattern: {
         type: "string",
         description: "Pattern to match existing branches (optional)",
@@ -16,6 +20,9 @@ const definition = {
 };
 
 async function handler(args) {
+  const { cwd } = args;
+  const opts = cwd ? { cwd } : {};
+
   const result = {
     branch: null,
     is_worktree: false,
@@ -27,7 +34,7 @@ async function handler(args) {
 
   // Get current branch
   try {
-    const { stdout } = await git("branch --show-current");
+    const { stdout } = await git("branch --show-current", opts);
     result.branch = stdout;
   } catch (err) {
     // Detached HEAD or other issue
@@ -36,12 +43,12 @@ async function handler(args) {
 
   // Check if in a worktree
   try {
-    const { stdout } = await git("rev-parse --git-common-dir");
+    const { stdout } = await git("rev-parse --git-common-dir", opts);
     const commonDir = stdout;
-    const { stdout: gitDir } = await git("rev-parse --git-dir");
+    const { stdout: gitDir } = await git("rev-parse --git-dir", opts);
     result.is_worktree = commonDir !== gitDir && commonDir !== ".git";
     if (result.is_worktree) {
-      const { stdout: toplevel } = await git("rev-parse --show-toplevel");
+      const { stdout: toplevel } = await git("rev-parse --show-toplevel", opts);
       result.worktree_path = toplevel;
     }
   } catch (err) {
@@ -50,7 +57,7 @@ async function handler(args) {
 
   // List worktrees
   try {
-    const { stdout } = await git("worktree list --porcelain");
+    const { stdout } = await git("worktree list --porcelain", opts);
     const worktrees = [];
     const lines = stdout.split("\n");
     for (const line of lines) {
@@ -75,7 +82,7 @@ async function handler(args) {
         "--head", result.branch,
         "--json", "number,url",
         "--jq", ".[0]"
-      ]);
+      ], opts);
       if (stdout) {
         const pr = JSON.parse(stdout);
         result.pr = { number: pr.number, url: pr.url };
@@ -88,7 +95,7 @@ async function handler(args) {
   // Find matching branches if pattern provided
   if (args.branch_pattern) {
     try {
-      const { stdout } = await git(["branch", "-a", "--list", `*${args.branch_pattern}*`]);
+      const { stdout } = await git(["branch", "-a", "--list", `*${args.branch_pattern}*`], opts);
       result.matching_branches = stdout
         .split("\n")
         .map((b) => b.trim().replace(/^\* /, ""))

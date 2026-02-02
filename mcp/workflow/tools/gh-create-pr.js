@@ -6,6 +6,10 @@ const definition = {
   inputSchema: {
     type: "object",
     properties: {
+      cwd: {
+        type: "string",
+        description: "Working directory (defaults to MCP server cwd)",
+      },
       title: {
         type: "string",
         description: "PR title",
@@ -52,6 +56,7 @@ const definition = {
 
 async function handler(args) {
   const {
+    cwd,
     title,
     body,
     base,
@@ -63,6 +68,7 @@ async function handler(args) {
     reviewers,
   } = args;
 
+  const opts = cwd ? { cwd } : {};
   const ghArgs = ["pr", "create", "--title", title, "--body", body];
 
   if (base) {
@@ -99,7 +105,7 @@ async function handler(args) {
     }
   }
 
-  const { stdout: createOutput } = await gh(ghArgs);
+  const { stdout: createOutput } = await gh(ghArgs, opts);
 
   // gh pr create outputs the PR URL on success
   // Extract URL and fetch structured details
@@ -117,7 +123,7 @@ async function handler(args) {
     urlMatch[0],
     "--json",
     "number,url,headRefName,baseRefName",
-  ]);
+  ], opts);
   const result = JSON.parse(viewOutput);
 
   return {

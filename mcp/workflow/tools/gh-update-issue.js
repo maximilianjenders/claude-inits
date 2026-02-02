@@ -6,6 +6,10 @@ const definition = {
   inputSchema: {
     type: "object",
     properties: {
+      cwd: {
+        type: "string",
+        description: "Working directory (defaults to MCP server cwd)",
+      },
       issue: {
         type: "number",
         description: "Issue number to update",
@@ -49,6 +53,7 @@ const definition = {
 
 async function handler(args) {
   const {
+    cwd,
     issue,
     title,
     body,
@@ -59,6 +64,7 @@ async function handler(args) {
     remove_assignees,
   } = args;
 
+  const opts = cwd ? { cwd } : {};
   const ghArgs = ["issue", "edit", String(issue)];
 
   if (title) {
@@ -104,7 +110,7 @@ async function handler(args) {
     };
   }
 
-  await gh(ghArgs);
+  await gh(ghArgs, opts);
 
   // Fetch updated issue
   const { stdout } = await gh([
@@ -113,7 +119,7 @@ async function handler(args) {
     String(issue),
     "--json",
     "number,title,state,labels,milestone,assignees,url",
-  ]);
+  ], opts);
 
   const result = JSON.parse(stdout);
 

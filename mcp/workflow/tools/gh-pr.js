@@ -6,6 +6,10 @@ const definition = {
   inputSchema: {
     type: "object",
     properties: {
+      cwd: {
+        type: "string",
+        description: "Working directory (defaults to MCP server cwd)",
+      },
       action: {
         type: "string",
         enum: ["view", "list"],
@@ -41,7 +45,7 @@ const definition = {
   },
 };
 
-async function viewPR(pr) {
+async function viewPR(pr, opts = {}) {
   const ghArgs = [
     "pr",
     "view",
@@ -53,11 +57,11 @@ async function viewPR(pr) {
     ghArgs.splice(2, 0, String(pr));
   }
 
-  const { stdout } = await gh(ghArgs);
+  const { stdout } = await gh(ghArgs, opts);
   return JSON.parse(stdout);
 }
 
-async function listPRs({ head, base, state, author, limit }) {
+async function listPRs({ head, base, state, author, limit }, opts = {}) {
   const ghArgs = [
     "pr",
     "list",
@@ -85,22 +89,23 @@ async function listPRs({ head, base, state, author, limit }) {
     ghArgs.push("--limit", String(limit));
   }
 
-  const { stdout } = await gh(ghArgs);
+  const { stdout } = await gh(ghArgs, opts);
   return JSON.parse(stdout);
 }
 
 async function handler(args) {
-  const { action, pr, head, base, state, author, limit } = args;
+  const { cwd, action, pr, head, base, state, author, limit } = args;
+  const opts = cwd ? { cwd } : {};
 
   switch (action) {
     case "view":
-      const prData = await viewPR(pr);
+      const prData = await viewPR(pr, opts);
       return {
         content: [{ type: "text", text: JSON.stringify(prData, null, 2) }],
       };
 
     case "list":
-      const prs = await listPRs({ head, base, state, author, limit });
+      const prs = await listPRs({ head, base, state, author, limit }, opts);
       return {
         content: [{ type: "text", text: JSON.stringify(prs, null, 2) }],
       };

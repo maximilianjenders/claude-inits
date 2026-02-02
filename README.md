@@ -47,6 +47,21 @@ claude mcp add workflow node /Users/max/Gits/claude-inits/mcp/workflow/server.js
 | `gh_merge_pr` | Merge PR with various strategies |
 | `gh_pr` | View single PR or list PRs with filters |
 
+**Worktree Support:**
+
+All tools accept an optional `cwd` parameter to specify the working directory. This is important when working in git worktrees, as the MCP server runs in a fixed directory and doesn't inherit the Claude session's working directory.
+
+When calling MCP tools from a worktree, pass `cwd` with the worktree path:
+```javascript
+mcp__workflow__gh_create_pr({
+  cwd: "/path/to/worktree",
+  title: "...",
+  body: "..."
+})
+```
+
+Without `cwd`, commands like `gh pr create` will use the wrong branch (from the MCP server's directory, not your worktree).
+
 ### Pi MCP Server (`mcp/pi/`)
 
 Raspberry Pi container management.

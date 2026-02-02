@@ -6,6 +6,10 @@ const definition = {
   inputSchema: {
     type: "object",
     properties: {
+      cwd: {
+        type: "string",
+        description: "Working directory (defaults to MCP server cwd)",
+      },
       action: {
         type: "string",
         enum: ["list", "find", "close", "open", "rename"],
@@ -29,14 +33,14 @@ const definition = {
   },
 };
 
-async function findMilestone(identifier) {
+async function findMilestone(identifier, opts = {}) {
   // If it's a number, fetch directly
   if (/^\d+$/.test(identifier)) {
     const { stdout } = await gh([
       "api",
       `repos/{owner}/{repo}/milestones/${identifier}`,
       "--jq", '{ number, title, state, open_issues, closed_issues }'
-    ]);
+    ], opts);
     return JSON.parse(stdout);
   }
 
@@ -44,7 +48,7 @@ async function findMilestone(identifier) {
   const { stdout } = await gh([
     "api", "repos/{owner}/{repo}/milestones",
     "--jq", `.[] | select(.title | contains("${identifier}")) | { number, title, state, open_issues, closed_issues }`
-  ]);
+  ], opts);
 
   if (!stdout) {
     throw new Error(`No milestone found matching: ${identifier}`);
@@ -55,14 +59,14 @@ async function findMilestone(identifier) {
   return JSON.parse(lines[0]);
 }
 
-async function listMilestones(state = "open") {
+async function listMilestones(state = "open", opts = {}) {
   const stateParam = state === "all" ? "all" : state;
   const { stdout } = await gh([
     "api",
     `repos/{owner}/{repo}/milestones?state=${stateParam}`,
     "--jq",
     ".[] | { number, title, state, open_issues, closed_issues, description }",
-  ]);
+  ], opts);
 
   if (!stdout.trim()) {
     return [];
@@ -76,11 +80,12 @@ async function listMilestones(state = "open") {
 }
 
 async function handler(args) {
-  const { action, identifier, new_title, state } = args;
+  const { cwd, action, identifier, new_title, state } = args;
+  const opts = cwd ? { cwd } : {};
 
   // Handle list action separately (no identifier needed)
   if (action === "list") {
-    const milestones = await listMilestones(state);
+    const milestones = await listMilestones(state, opts);
     return {
       content: [{ type: "text", text: JSON.stringify(milestones, null, 2) }],
     };
@@ -92,7 +97,7 @@ async function handler(args) {
   }
 
   // Find the milestone first
-  const milestone = await findMilestone(identifier);
+  const milestone = await findMilestone(identifier, opts);
 
   switch (action) {
     case "find":
@@ -105,7 +110,7 @@ async function handler(args) {
         "api", "-X", "PATCH",
         `repos/{owner}/{repo}/milestones/${milestone.number}`,
         "-f", "state=closed"
-      ]);
+      ], opts);
       milestone.state = "closed";
       return {
         content: [{ type: "text", text: JSON.stringify(milestone, null, 2) }],
@@ -116,7 +121,7 @@ async function handler(args) {
         "api", "-X", "PATCH",
         `repos/{owner}/{repo}/milestones/${milestone.number}`,
         "-f", "state=open"
-      ]);
+      ], opts);
       milestone.state = "open";
       return {
         content: [{ type: "text", text: JSON.stringify(milestone, null, 2) }],
@@ -130,7 +135,7 @@ async function handler(args) {
         "api", "-X", "PATCH",
         `repos/{owner}/{repo}/milestones/${milestone.number}`,
         "-f", `title=${new_title}`
-      ]);
+      ], opts);
       milestone.title = new_title;
       return {
         content: [{ type: "text", text: JSON.stringify(milestone, null, 2) }],

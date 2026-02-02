@@ -6,6 +6,10 @@ const definition = {
   inputSchema: {
     type: "object",
     properties: {
+      cwd: {
+        type: "string",
+        description: "Working directory (defaults to MCP server cwd)",
+      },
       title: {
         type: "string",
         description: "Issue title (without [PR Review] prefix)",
@@ -28,7 +32,8 @@ const definition = {
 };
 
 async function handler(args) {
-  const { title, milestone, pr_number, body } = args;
+  const { cwd, title, milestone, pr_number, body } = args;
+  const opts = cwd ? { cwd } : {};
 
   // Build full body with source attribution
   const fullBody = `${body}
@@ -45,7 +50,7 @@ Found during PR #${pr_number} code review.`;
     "--label", "pr-review",
     "--milestone", milestone,
     "--json", "number,url"
-  ]);
+  ], opts);
 
   const result = JSON.parse(stdout);
 
