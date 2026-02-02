@@ -32,8 +32,8 @@ async function handler(args) {
     "issue", "list",
     "--milestone", milestone,
     "--state", state,
-    "--json", "number,title,state,labels",
-    "--jq", '[.[] | {number, title, state, labels: [.labels[].name]}]'
+    "--json", "number,title,state,labels,body",
+    "--jq", '[.[] | {number, title, state, labels: [.labels[].name], body}]'
   ];
 
   if (label) {
