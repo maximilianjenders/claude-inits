@@ -8,7 +8,7 @@ Custom skills for Claude Code that work across all my projects.
 |-------|---------|
 | `start-session` | Query GitHub for current project state |
 | `create-milestone` | Create GitHub milestone from plan |
-| `start-milestone` | Execute all issues in a milestone |
+| `start-milestone` | Execute milestone with phase-based parallel agents |
 | `start-issue` | Begin work on a GitHub issue |
 | `update-issue` | Update GitHub issue status |
 | `create-pr` | Create a pull request with AI review |
@@ -119,13 +119,22 @@ When MCP servers are configured, use these tools instead of `gh` CLI:
 
 **Label flow:**
 ```
-(none) → in-progress → ready-for-review → code-complete (closed)
-                   ↘ blocked-failed (on failure)
+Agent phase:
+  (none) → in-progress → ready-for-review
+           [working]     [done, not committed]
+
+Orchestrator phase (after review):
+  ready-for-review → code-complete (closed)
+  [commit]           [committed]
 ```
+
+**Who sets labels:**
+- `in-progress` / `ready-for-review` - Set by agents during implementation
+- `code-complete` - Set by orchestrator after committing
 
 The `pr-review` label marks issues created during `/create-pr` code review. These follow the same flow but are distinguished from original milestone scope.
 
-Issues are closed when marked `code-complete` so GitHub's milestone progress bar shows actual progress. The `code-complete` label distinguishes "done on branch" from "merged to master" (no label).
+Issues are closed when marked `code-complete` so GitHub's milestone progress bar shows actual progress. The `code-complete` label distinguishes "committed on branch" from "merged to master" (no label).
 
 ### Planning Workflow
 
