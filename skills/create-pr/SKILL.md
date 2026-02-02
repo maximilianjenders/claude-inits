@@ -83,13 +83,19 @@ git log origin/$BRANCH..HEAD
    - Run E2E tests: `npm --prefix frontend run test:e2e`
    - If E2E tests fail: report failures (do not auto-fix)
 
-6. **Stop with Summary:**
+8. **Deploy to Staging:**
+   - Deploy current branch to staging using MCP: `pi_deploy("[project]", "staging", "[branch]")`
+   - Wait for container to be healthy
+   - Report staging URL for manual testing
+
+9. **Stop with Summary:**
    - PR URL
    - Code review: passed/issues fixed
    - Tests: passed/failed
    - E2E tests: passed/failed
+   - Staging: deployed with URL
    - Cleanup actions reminder
-   - "Ready for manual testing. Run `/merge-pr` when ready to merge."
+   - "Ready for manual testing on staging. Run `/merge-pr` when ready to merge."
 
 **Note:** This skill does NOT merge. Use `/merge-pr` after manual testing.
 
@@ -150,6 +156,12 @@ curl --retry 10 --retry-delay 3 --retry-connrefused -s http://[project]-dev.home
 
 # 5. Run E2E tests
 npm --prefix frontend run test:e2e
+
+# 6. Deploy to staging using MCP
+pi_deploy("[project]", "staging", "$BRANCH")
+
+# 7. Health check
+curl --retry 10 --retry-delay 3 --retry-connrefused -s http://[project]-staging.home/api/health
 ```
 
 If E2E tests fail, report the failures but do not auto-fix. The user may need to investigate.
@@ -173,10 +185,13 @@ If E2E tests fail, report the failures but do not auto-fix. The user may need to
 ✅ All E2E tests passing
 - 12 passed
 
+### Staging
+✅ Deployed to staging
+- URL: http://[project]-staging.home
+
 ### Next Steps
-1. Deploy to staging: `/deploy-pi [project] staging`
-2. Manual testing on staging: http://[project]-staging.home
-3. When ready: `/merge-pr`
+1. Manual testing on staging: http://[project]-staging.home
+2. When ready: `/merge-pr`
 
 ### Cleanup Actions (after merge)
 - Merge PR to master
