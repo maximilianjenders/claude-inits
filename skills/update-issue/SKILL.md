@@ -27,22 +27,32 @@ Update the workflow status of a GitHub issue.
 
 ## Status Transitions
 
-| Status | Labels | Issue State | Meaning |
-|--------|--------|-------------|---------|
-| `in-progress` | Add `in-progress` | Open | Currently being worked on |
-| `ready-for-review` | Remove `in-progress`, add `ready-for-review` | Open | Implementation done, awaiting review |
-| `code-complete` | Remove `ready-for-review`, add `code-complete` | **Closed** | Done on feature branch, awaiting merge |
-| `blocked-failed` | Remove `in-progress`, add `blocked-failed` | Open | Subagent failed after retry, skipped |
+| Status | Labels | Issue State | Meaning | Who Sets |
+|--------|--------|-------------|---------|----------|
+| `in-progress` | Add `in-progress` | Open | Agent is working | Agent |
+| `ready-for-review` | Remove `in-progress`, add `ready-for-review` | Open | Agent done, awaiting review & commit | Agent |
+| `code-complete` | Remove `ready-for-review`, add `code-complete` | **Closed** | Orchestrator committed the work | Orchestrator |
+| `blocked-failed` | Remove `in-progress`, add `blocked-failed` | Open | Failed after retry, skipped | Agent/Orchestrator |
 
-**Why close on code-complete?** GitHub's milestone progress bar only counts closed issues. Closing issues when implementation is done (not when merged) makes the progress bar show actual work completion.
+**Why close on code-complete?** GitHub's milestone progress bar only counts closed issues. Closing issues when work is committed (not when merged) makes the progress bar show actual progress.
 
 **Label flow:**
 ```
-(none) → in-progress → ready-for-review → code-complete (closed)
-                   ↘ blocked-failed (on failure)
+Agent phase:
+  (none) → in-progress → ready-for-review
+           [working]     [done, not committed]
+
+Orchestrator phase (after review):
+  ready-for-review → code-complete (closed)
+  [commit]           [committed]
+
+Failure path:
+  in-progress → blocked-failed (on unrecoverable failure)
 ```
 
-The `code-complete` label distinguishes "done on branch" from "merged to master" (which has no label).
+The `code-complete` label distinguishes "committed on branch" from "merged to master" (which has no label).
+
+**Important:** In parallel execution workflows (`/start-milestone`), agents do NOT commit or close issues. The orchestrator commits after phase review passes, then marks `code-complete` and closes.
 
 **Additional labels:**
 - `pr-review` - Marks issues created from PR code review findings (used alongside status labels)

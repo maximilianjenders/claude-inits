@@ -2,6 +2,8 @@
 
 Use this template when dispatching a subagent to continue work on an in-progress issue after a crash or interruption.
 
+**IMPORTANT:** Like implementation agents, recovery agents do NOT commit or close issues. They complete the work, verify tests pass, and mark `ready-for-review`.
+
 ```
 Task tool (general-purpose):
   description: "Continue Issue #N: [issue title]"
@@ -22,14 +24,11 @@ Task tool (general-purpose):
 
     ### Prior Work Found
 
-    **Commits mentioning this issue:**
-    [List commits with SHAs and messages, or "None found"]
+    **Uncommitted changes:**
+    [List of files from git status/diff, or "None"]
 
     **Current test status:**
     [Test output summary, or "Unknown"]
-
-    **Files potentially modified:**
-    [List of files from git status/diff related to this work]
 
     ## Before You Begin
 
@@ -39,23 +38,18 @@ Task tool (general-purpose):
 
     Before continuing, you must understand what was done:
 
-    1. **Check existing commits:**
-       ```bash
-       git log --oneline --grep="#N" | head -10
-       ```
-
-    2. **Check current changes:**
+    1. **Check current changes:**
        ```bash
        git status
        git diff
        ```
 
-    3. **Run tests:**
+    2. **Run tests:**
        ```bash
        # Use project-specific test command from CLAUDE.md
        ```
 
-    4. **Review acceptance criteria:**
+    3. **Review acceptance criteria:**
        Which criteria are met? Which remain?
 
     ### Report Your Assessment
@@ -77,20 +71,12 @@ Task tool (general-purpose):
 
     ### Step 2: Verify
 
-    - Run all tests
+    - Run all tests (full suite)
     - Check that all acceptance criteria are met
     - Verify no regressions
+    - Run linters/formatters
 
-    ### Step 3: Commit
-
-    Commit any new work:
-    ```
-    (type): Brief summary
-
-    Refs #N
-    ```
-
-    ### Step 4: Self-Review
+    ### Step 3: Self-Review
 
     Review your work for completeness and quality:
 
@@ -106,16 +92,29 @@ Task tool (general-purpose):
     - Re-read the "MUST ALWAYS", "SHOULD", and "MUST NOT" sections
     - Verify compliance with each applicable rule
     - Check any linked style guides or conventions documents
-    - Run linters/formatters if specified
 
     Fix any issues found.
 
-    ### Step 5: Mark Ready for Review
+    ### Step 4: Mark Ready for Review
 
-    After self-review passes:
+    After self-review passes and all tests pass:
+    ```
+    mcp__workflow__gh_update_issue(issue=N, remove_labels=["in-progress"], add_labels=["ready-for-review"])
+    ```
+
+    Fallback (if MCP unavailable):
     ```bash
     gh issue edit N --remove-label "in-progress" --add-label "ready-for-review"
     ```
+
+    ### ⚠️ DO NOT Commit or Close
+
+    **You must NOT:**
+    - Run `git commit`
+    - Close the issue
+    - Mark as `code-complete`
+
+    The orchestrator will commit your changes after the phase review passes.
 
     ## Report Format
 
@@ -123,8 +122,7 @@ Task tool (general-purpose):
     - Assessment of prior work
     - What you implemented/completed
     - What you tested and test results
-    - Files changed
-    - Commits made (include SHAs)
+    - Files changed (list them for orchestrator to commit)
     - Any issues or concerns
 
     ## If Blocked
@@ -137,15 +135,22 @@ Task tool (general-purpose):
     ## Label Flow Reference
 
     ```
-    (none) → in-progress → ready-for-review → code-complete
-                       ↘ blocked-failed (on failure)
+    Your responsibility:
+      in-progress → ready-for-review
+      [continue]    [done, awaiting review & commit]
+
+    Orchestrator handles:
+      ready-for-review → code-complete (closed)
+      [after commit]
     ```
 ```
 
 ## Key Points
 
+- **DO NOT COMMIT** - Orchestrator commits after phase review
+- **DO NOT CLOSE ISSUES** - Orchestrator closes after committing
 - **Assess before acting** - Understand what was done before continuing
 - **Check test status** - Tests tell you what's working
 - **Report assessment first** - Don't assume you can continue
-- **Use same label flow** - Recovery follows the same workflow
+- **Report files changed** - Orchestrator needs this list to commit correctly
 - **Leave in-progress if blocked** - Don't mark ready if work can't complete

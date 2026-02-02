@@ -2,6 +2,8 @@
 
 Use this template when dispatching an implementation subagent for a milestone issue.
 
+**IMPORTANT:** Agents do NOT commit or close issues. They implement, test, self-review, and mark `ready-for-review`. The orchestrator handles commits and closing after phase review.
+
 ```
 Task tool (general-purpose):
   description: "Implement Issue #N: [issue title]"
@@ -59,22 +61,14 @@ Task tool (general-purpose):
 
     ### Step 3: Verify
 
-    - Run all tests
+    - Run all tests (full suite, not just new tests)
     - Check that acceptance criteria are met
     - Verify no regressions
+    - Run linters/formatters
 
-    ### Step 4: Commit
+    ### Step 4: Self-Review
 
-    Commit your work with a descriptive message:
-    ```
-    (type): Brief summary
-
-    Refs #N
-    ```
-
-    ### Step 5: Self-Review
-
-    Before reporting back, review your work:
+    Before marking ready, review your work:
 
     **Completeness:**
     - Did I fully implement everything in the acceptance criteria?
@@ -95,51 +89,67 @@ Task tool (general-purpose):
     - Re-read the "MUST ALWAYS", "SHOULD", and "MUST NOT" sections in CLAUDE.md
     - Verify compliance with each applicable rule
     - Check any linked style guides or conventions documents
-    - Run linters/formatters if specified in CLAUDE.md
 
     If you find issues during self-review, fix them now.
 
-    ### Step 6: Mark Code-Complete and Close
+    ### Step 5: Mark Ready for Review
 
-    After self-review passes, mark the issue complete and close it using the MCP workflow tool:
+    After self-review passes and all tests pass:
     ```
-    mcp__workflow__gh_bulk_issues(action="close", issues=[N], label="code-complete", comment="Implemented in commit [SHA]")
+    mcp__workflow__gh_update_issue(issue=N, remove_labels=["in-progress"], add_labels=["ready-for-review"])
     ```
 
     Fallback (if MCP unavailable):
     ```bash
-    gh issue close N --comment "Implemented in commit [SHA]" && gh issue edit N --remove-label "in-progress" --add-label "code-complete"
+    gh issue edit N --remove-label "in-progress" --add-label "ready-for-review"
     ```
 
-    **Important:** Only mark code-complete if:
+    **Important:** Only mark ready-for-review if:
     - All acceptance criteria are met
-    - Tests pass
+    - All tests pass
     - Self-review found no issues (or you fixed them)
 
-    If you cannot complete the issue, leave it open with `in-progress` label and report what's blocking you.
+    If you cannot complete the issue, leave it with `in-progress` label and report what's blocking you.
+
+    ### ⚠️ DO NOT Commit or Close
+
+    **You must NOT:**
+    - Run `git commit`
+    - Close the issue
+    - Mark as `code-complete`
+
+    The orchestrator will commit your changes after the phase review passes.
+    This prevents git conflicts when multiple agents work in parallel.
 
     ## Report Format
 
     When done, report:
     - What you implemented
     - What you tested and test results
-    - Files changed
-    - Commits made (include SHAs)
+    - Files changed (list them for orchestrator to commit)
     - Self-review findings (if any)
     - Any issues or concerns
 
     ## Label Flow Reference
 
     ```
-    (none) → in-progress → code-complete (closed)
-                       ↘ blocked-failed (on failure)
+    Your responsibility:
+      (none) → in-progress → ready-for-review
+               [working]     [done, awaiting review & commit]
+
+    Orchestrator handles:
+      ready-for-review → code-complete (closed)
+      [after commit]
     ```
 ```
 
 ## Key Points
 
+- **DO NOT COMMIT** - Orchestrator commits after phase review to avoid git conflicts
+- **DO NOT CLOSE ISSUES** - Orchestrator closes after committing
 - **Mark labels immediately** - Labels are the source of truth for progress tracking
 - **Follow TDD** - Write tests first, implement to pass
 - **Reference CLAUDE.md** - Project-specific commands and conventions
-- **Self-review before reporting** - Catch issues before handoff to review
+- **Self-review before marking ready** - Catch issues before handoff to review
 - **Ask questions early** - Don't guess on unclear requirements
+- **Report files changed** - Orchestrator needs this list to commit correctly
