@@ -28,6 +28,23 @@ Execute all issues in a GitHub milestone using parallel subagents with crash rec
 6. Execute in phases (parallel implementation → review → commit)
 7. On completion: auto-create PR or prompt user if failures
 
+## Continuous Execution
+
+**CRITICAL: Execute all phases automatically without stopping to ask for confirmation.**
+
+Once setup is complete and execution begins, proceed through ALL phases continuously:
+- Do NOT stop after each phase to ask "Should I continue?"
+- Do NOT ask for permission between phases
+- Do NOT pause to confirm progress
+
+**Only stop and ask the user when:**
+1. **Clarification needed** - Ambiguous requirements, conflicting specs, or unclear implementation details
+2. **Blocking error** - Something that cannot be automatically resolved (e.g., merge conflict requiring manual resolution)
+3. **Security/destructive concern** - Actions that could cause data loss or security issues
+4. **All issues complete** - At the end, when ready to create PR (or report failures)
+
+The task list provides real-time visibility into progress - users can see what's happening without being interrupted.
+
 ## Task List for Progress Tracking
 
 **IMPORTANT:** Always use `TaskCreate`/`TaskUpdate` so the user can see what's happening.
@@ -559,7 +576,7 @@ When starting/resuming a milestone:
 - [ ] Display resume state to user
 - [ ] Determine which phase to resume from
 
-### Phase Execution (repeat for each phase)
+### Phase Execution (repeat for each phase - NO STOPPING BETWEEN PHASES)
 - [ ] **Step 1: Implementation** - Dispatch parallel agents for unblocked issues
   - [ ] Agents mark in-progress → ready-for-review
   - [ ] Agents DO NOT commit
@@ -579,7 +596,7 @@ When starting/resuming a milestone:
     - [ ] `git commit -m "(type): Summary\n\nRefs #N"`
     - [ ] Mark code-complete + close issue
   - [ ] ✓ CHECKPOINT - safe to resume from here
-- [ ] Check for newly unblocked issues → next phase
+- [ ] **Immediately proceed to next phase** (do NOT ask user to continue)
 
 ### Completion
 - [ ] Verify all issues are code-complete or blocked-failed

@@ -103,6 +103,38 @@ Task tool (general-purpose):
     ```
 ```
 
+## Checklist
+
+**Follow this checklist for every phase review.**
+
+### Setup
+- [ ] Understand which issues are in this phase
+- [ ] Read acceptance criteria for each issue
+- [ ] Read CLAUDE.md for project standards
+- [ ] Read design doc (if exists)
+
+### Review Execution
+- [ ] Run `git diff` to see ALL uncommitted changes
+- [ ] Run `git status` to see modified files
+- [ ] Invoke `superpowers:requesting-code-review` skill
+- [ ] Run tests to verify they pass
+- [ ] Run linters
+
+### Phase-Specific Checks
+- [ ] **Cross-issue consistency:** Same patterns used across all issues?
+- [ ] **Naming conventions:** Consistent across changes?
+- [ ] **Integration:** Do changes from different issues work together?
+- [ ] **Conflicts/overlaps:** Any issues between changes?
+
+### Decision
+- [ ] If ALL checks pass → Report **APPROVED**
+- [ ] If ANY issues found → Report **CHANGES REQUESTED** with specific feedback per issue
+
+### Output
+- [ ] List each issue with ✓ (approved) or specific fixes needed
+- [ ] Note any cross-issue concerns
+- [ ] Include test results
+
 ## Key Points
 
 - **Uses `superpowers:requesting-code-review`** for consistent review standards

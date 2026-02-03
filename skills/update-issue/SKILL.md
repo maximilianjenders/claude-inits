@@ -122,6 +122,28 @@ gh issue view $ISSUE_NUMBER --json milestone --jq '.milestone.title'
 
 **Note:** The MCP approach using `gh_milestone_issues` is preferred because it returns all issues with labels in one call, making it easy to check if any issues have `in-progress` or `code-complete` labels.
 
+## Checklist
+
+**Verify the correct transition before executing.**
+
+### Status Transition Rules
+| From | To | Labels | Issue State | Valid? |
+|------|-----|--------|-------------|--------|
+| (none) | in-progress | +in-progress | Open | ✓ Agent starting |
+| in-progress | ready-for-review | -in-progress, +ready-for-review | Open | ✓ Agent done |
+| ready-for-review | code-complete | -ready-for-review, +code-complete | **Closed** | ✓ Orchestrator committed |
+| in-progress | blocked-failed | -in-progress, +blocked-failed | Open | ✓ Unrecoverable failure |
+
+### Before Updating
+- [ ] Verify current status (check existing labels)
+- [ ] Verify transition is valid (see table above)
+- [ ] For `code-complete`: confirm work was committed first
+
+### After Updating
+- [ ] Check if milestone status should change:
+  - First `in-progress` in `[READY]` milestone → update to `[ACTIVE]`
+- [ ] Report new status and milestone progress
+
 ## Output Format
 
 ```

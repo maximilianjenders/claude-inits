@@ -93,3 +93,33 @@ Report what was updated and why.
 - Normal feature work (button added, bug fixed)
 - Self-explanatory code changes
 - Information already in code comments
+
+## Checklist
+
+**Follow this checklist. Skip gracefully if no updates needed.**
+
+### Pre-work Verification
+- [ ] Check if CLAUDE.md exists
+- [ ] Check if README.md exists
+- [ ] If neither exists: warn and exit (don't create from scratch)
+
+### Gather Context
+- [ ] Run `git diff master...HEAD --stat` to see changed files
+- [ ] Review conversation for architectural decisions, new features, conventions
+
+### Classify Changes
+- [ ] New directories/file patterns → CLAUDE.md
+- [ ] New commands/scripts → CLAUDE.md
+- [ ] New conventions/rules → CLAUDE.md
+- [ ] New user-facing features → README.md
+- [ ] Architecture changes → Both files
+
+### Make Updates
+- [ ] Read current docs to understand structure
+- [ ] Edit only relevant sections (don't rewrite entire files)
+- [ ] Preserve existing formatting
+
+### Completion
+- [ ] If changes made: stage files (`git add`)
+- [ ] If no changes needed: report "No documentation updates needed"
+- [ ] Summarize what was updated and why

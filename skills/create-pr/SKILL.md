@@ -99,6 +99,41 @@ git log origin/$BRANCH..HEAD
 
 **Note:** This skill does NOT merge. Use `/merge-pr` after manual testing.
 
+## Checklist
+
+**CRITICAL: Follow this checklist in order. Execute all steps automatically without asking for confirmation between steps.**
+
+### Pre-flight
+- [ ] Verify on feature branch (not master)
+- [ ] Check for uncommitted changes
+- [ ] Verify branch is pushed to remote
+
+### PR Creation
+- [ ] Gather commits since branch diverged
+- [ ] List all changed files
+- [ ] Get linked issues from commits/milestone
+- [ ] Get milestone and design doc link
+- [ ] Create PR with title, description, linked issues
+
+### Code Review Loop (repeat until approved)
+- [ ] Invoke `superpowers:requesting-code-review` skill
+- [ ] If issues found: create GitHub issue for EACH finding with `pr-review` label
+- [ ] Fix ALL pr-review issues using `/start-issue` workflow
+- [ ] Re-run review after fixes
+- [ ] **Only exit loop when review passes with no new issues**
+
+### Testing
+- [ ] Run `/run-tests` - all tests must pass
+- [ ] Deploy to dev: `pi_deploy("[project]", "dev", "[branch]")`
+- [ ] Health check dev environment
+- [ ] Run E2E tests
+- [ ] Deploy to staging: `pi_deploy("[project]", "staging", "[branch]")`
+- [ ] Health check staging environment
+
+### Completion
+- [ ] Output summary with PR URL, review status, test results, staging URL
+- [ ] Remind user to run `/merge-pr` after manual testing
+
 ## Execution
 
 **Preferred: MCP**

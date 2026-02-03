@@ -117,6 +117,42 @@ Task tool (general-purpose):
     ```
 ```
 
+## Checklist
+
+**Follow this checklist in order.**
+
+### Understanding
+- [ ] Read reviewer feedback carefully
+- [ ] Understand what's wrong and why
+- [ ] **Ask if unclear** before proceeding
+
+### Fix Decision Tree
+For each feedback item, categorize and act:
+
+| Category | Action | Examples |
+|----------|--------|----------|
+| **Blocking** | MUST fix | Bugs, logic errors, security issues, test failures |
+| **Non-blocking** | ALSO fix | Code standards, naming, maintainability, best practices |
+| **Out of scope** | DO NOT fix | Refactoring not mentioned, features not requested |
+
+**When in doubt → fix it.** Reviewers mention things for a reason.
+
+### Execution
+- [ ] Locate code for each feedback item
+- [ ] Make the specific fix
+- [ ] Verify fix addresses feedback
+- [ ] Run tests (ensure no regressions)
+- [ ] Run linters
+
+### Completion
+- [ ] Mark `ready-for-review`
+- [ ] Report: each fix with file:line, test results
+
+### ⚠️ CRITICAL CONSTRAINTS
+- [ ] **I have NOT run `git commit`**
+- [ ] **I have NOT refactored code the reviewer didn't mention**
+- [ ] **I have NOT added features beyond original issue**
+
 ## Key Points
 
 - **Fix ONLY what's requested** - Don't scope creep

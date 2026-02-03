@@ -145,6 +145,38 @@ Task tool (general-purpose):
     ```
 ```
 
+## Checklist
+
+**CRITICAL: Assessment MUST happen before any implementation work.**
+
+### Assessment Phase (do this FIRST)
+- [ ] Run `git status` and `git diff` to see current changes
+- [ ] Run tests to see what's working
+- [ ] Review acceptance criteria - which are met? which remain?
+- [ ] **Report assessment to orchestrator before proceeding**
+- [ ] Determine: Can I continue, or do I need guidance?
+
+### Continue Implementation (only after assessment)
+- [ ] Pick up where previous work left off
+- [ ] Follow TDD for remaining work
+- [ ] Run full test suite
+- [ ] Check all acceptance criteria met
+- [ ] Run linters/formatters
+
+### Self-Review
+- [ ] All acceptance criteria met?
+- [ ] Code follows CLAUDE.md rules?
+- [ ] Issues found during review fixed?
+
+### Completion
+- [ ] Mark `ready-for-review` (swap labels)
+- [ ] Report: assessment, what completed, files changed, test results
+
+### ⚠️ CRITICAL CONSTRAINTS
+- [ ] **I have NOT run `git commit`**
+- [ ] **I have NOT closed the issue**
+- [ ] **If blocked, I left as `in-progress`** (not ready-for-review)
+
 ## Key Points
 
 - **DO NOT COMMIT** - Orchestrator commits after phase review

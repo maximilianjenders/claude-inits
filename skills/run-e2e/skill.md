@@ -108,6 +108,28 @@ This wipes the database and re-seeds from fixtures on container restart.
 - After debugging sessions that created test data
 - Starting a fresh E2E testing cycle
 
+## Checklist
+
+**Follow these steps in order. Do not skip health check.**
+
+### Setup
+- [ ] Detect project from working directory (food-butler or spendee)
+- [ ] Get branch (argument or `git branch --show-current`)
+
+### Deploy
+- [ ] Deploy to dev: `pi_deploy("$PROJECT", "dev", "$BRANCH")`
+- [ ] **Health check** (REQUIRED): `curl --retry 10 --retry-delay 3 http://$DEV_URL/api/health`
+- [ ] Verify health check passes before proceeding
+
+### Test
+- [ ] Run E2E tests: `npm --prefix frontend run test:e2e`
+- [ ] Capture test output
+
+### Report
+- [ ] If all pass: "E2E tests passed"
+- [ ] If any fail: Show Playwright output with failure details
+- [ ] If flaky: suggest `pi_reset_dev("$PROJECT")` to reset fixtures
+
 ## Prerequisites
 
 - SSH access to Pi configured

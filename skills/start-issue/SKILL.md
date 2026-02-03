@@ -142,6 +142,26 @@ if [[ "$MILESTONE_TITLE" == "[READY]"* ]]; then
 fi
 ```
 
+## Checklist
+
+**Follow this checklist in order before marking as in-progress.**
+
+### Context Gathering
+- [ ] Parse issue number from argument (number, `#N`, or URL)
+- [ ] Fetch issue details (title, body, labels, milestone)
+- [ ] Read acceptance criteria from issue body
+
+### Pre-flight Checks
+- [ ] **Branch/Worktree Check** - Verify on correct feature branch or ask user
+- [ ] **Dependency Check** - Parse "Blocked by: #X" and verify blocking issues are closed
+- [ ] **Already In-Progress Check** - Note if issue already has label, warn about context switch
+- [ ] **Milestone Status Check** - If `[READY]` and first issue, update to `[ACTIVE]`
+
+### Start Work
+- [ ] Mark issue as `in-progress` (add label)
+- [ ] Output issue details and acceptance criteria
+- [ ] Begin implementation (or hand off to agent)
+
 ## Output Format
 
 ```

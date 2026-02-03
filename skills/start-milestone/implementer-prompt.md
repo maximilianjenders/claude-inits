@@ -143,6 +143,39 @@ Task tool (general-purpose):
     ```
 ```
 
+## Checklist
+
+**Follow this checklist in order. DO NOT skip the constraints at the end.**
+
+### Before Starting
+- [ ] Read CLAUDE.md for project commands and conventions
+- [ ] Review issue description and acceptance criteria
+- [ ] **Ask questions NOW** if anything is unclear (don't guess)
+
+### Implementation
+- [ ] Mark issue `in-progress` (add label)
+- [ ] Write failing tests first (TDD)
+- [ ] Implement to make tests pass
+- [ ] Run full test suite (not just new tests)
+- [ ] Run linters/formatters
+
+### Self-Review
+- [ ] All acceptance criteria met?
+- [ ] Edge cases handled?
+- [ ] Code follows CLAUDE.md rules?
+- [ ] Names clear and accurate?
+
+### Completion
+- [ ] Mark `ready-for-review` (swap labels)
+- [ ] Report: what implemented, files changed, test results
+
+### ⚠️ CRITICAL CONSTRAINTS
+- [ ] **I have NOT run `git commit`**
+- [ ] **I have NOT closed the issue**
+- [ ] **I have NOT marked `code-complete`**
+
+The orchestrator commits after phase review. Committing would cause git conflicts with parallel agents.
+
 ## Key Points
 
 - **DO NOT COMMIT** - Orchestrator commits after phase review to avoid git conflicts

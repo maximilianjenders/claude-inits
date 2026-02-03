@@ -61,15 +61,29 @@ gh pr view $PR_NUMBER --json title,url,milestone,body
 
 **CRITICAL: Follow this checklist in order. Do not skip steps.**
 
-- [ ] Show summary and get user confirmation
-- [ ] **Run `/update-docs`** (invoke skill, commit if changes)
-- [ ] Merge PR to master
+### Pre-merge (requires user confirmation)
+- [ ] Show summary: PR title, URL, linked issues, milestone
+- [ ] **Get explicit user confirmation** before proceeding
+
+### Documentation (MANDATORY)
+- [ ] **Invoke `/update-docs` skill** - this is NOT optional
+- [ ] If docs updated: `git commit -m "(docs): Update documentation for PR #N"`
+
+### Merge
+- [ ] Merge PR to master (`gh pr merge --merge --delete-branch`)
+
+### Cleanup (execute all, report failures)
 - [ ] Remove `code-complete` labels from linked issues
 - [ ] Close the milestone
-- [ ] Stop staging/dev containers on Pi
-- [ ] Delete branches and worktree
+- [ ] Stop staging container: `pi_docker_stop("$PROJECT-staging")`
+- [ ] Stop dev container: `pi_docker_stop("$PROJECT-dev")`
 - [ ] Switch to master and pull
-- [ ] Deploy to production
+- [ ] Delete local feature branch
+- [ ] Delete worktree if exists
+
+### Deploy
+- [ ] Deploy to production: `pi_deploy("$PROJECT", "prod")`
+- [ ] **If prod deploy fails: report prominently** (this is critical)
 
 ## What This Does
 

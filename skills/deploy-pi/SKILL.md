@@ -52,6 +52,24 @@ pi_copy_prod_to_staging("food-butler")
 ssh max@pi.local "~/pi-setup/scripts/copy-prod-to-staging.sh food-butler"
 ```
 
+## Checklist
+
+**Verify environment before deploying.**
+
+### Pre-deploy Validation
+- [ ] Confirm project: `food-butler` or `spendee`
+- [ ] Confirm environment: `prod`, `staging`, or `dev`
+- [ ] **For prod:** Verify this is intentional (user explicitly requested)
+- [ ] **For staging/dev:** Verify branch argument is provided
+
+### Deploy
+- [ ] Use MCP (preferred): `pi_deploy("$PROJECT", "$ENV", "$BRANCH")`
+- [ ] Or SSH fallback: `ssh max@pi.local "cd ~/pi-setup && ./build.sh $ARGS"`
+
+### Post-deploy
+- [ ] Verify deployment success from output
+- [ ] For staging: offer to refresh data with `pi_copy_prod_to_staging`
+
 ## Environments
 
 | Environment | URL | Purpose |

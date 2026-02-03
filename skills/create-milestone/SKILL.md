@@ -237,19 +237,36 @@ gh issue edit NUMBER --body "$UPDATED_BODY"
 
 **Note:** The `#N` is the GitHub milestone number, added after creation for easy reference.
 
-## Checklist for Populating Issues
+## Checklist
+
+### Workflow Decision (do this first)
+- [ ] **Determine which workflow applies:**
+  - No design doc? → Workflow A, status `[SKETCH]`
+  - Design doc but no implementation plan? → Workflow A, status `[SCOPED]`
+  - Design doc AND implementation plan ready? → Workflow B, status `[READY]`
+
+### Workflow A: Create New Milestone
+- [ ] Get milestone title (ask if not provided)
+- [ ] Determine status prefix based on readiness
+- [ ] Gather details: overview, design doc link, branch name, dependencies
+- [ ] Create milestone via `gh api`
+- [ ] **Immediately update title to include `#N`** (milestone number)
+- [ ] If implementation plan exists, proceed to Workflow B
+
+### Workflow B: Populate with Issues
 
 When transitioning from `[SCOPED]` to `[READY]`:
 
 - [ ] Read the design doc's task breakdown
 - [ ] Identify the dependency graph (what blocks what)
 - [ ] Create issues in dependency order (root tasks first)
-- [ ] **Use `--milestone` flag** on every `gh issue create` to link issues to the milestone
+- [ ] **Use `--milestone` flag** on every `gh issue create` (REQUIRED - issues must be linked)
 - [ ] Add `## Milestone` section with clickable link `[Title](../../milestone/N)`
 - [ ] Add `## Dependencies` section to each issue body
 - [ ] **Add bidirectional links** - go back and update earlier issues with "Blocks: #X" once dependent issues are created
-- [ ] Update milestone description with issue list and graph
+- [ ] Update milestone description with issue list and dependency graph
 - [ ] Change milestone status prefix to `[READY]`
+- [ ] Verify all issues appear in milestone's issue list (not just referenced in text)
 
 ### Execution Order for Bidirectional Links
 
