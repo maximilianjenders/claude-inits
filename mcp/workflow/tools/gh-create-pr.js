@@ -122,12 +122,22 @@ async function handler(args) {
     "view",
     urlMatch[0],
     "--json",
-    "number,url,headRefName,baseRefName",
+    "number,url,headRefName,baseRefName,milestone",
   ], opts);
   const result = JSON.parse(viewOutput);
 
+  // Build output with links
+  const lines = [
+    `PR #${result.number}: ${result.url}`,
+    `Branch: ${result.headRefName} → ${result.baseRefName}`,
+  ];
+
+  if (result.milestone) {
+    lines.push(`Milestone: ${result.milestone.title} (${result.milestone.url})`);
+  }
+
   return {
-    content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+    content: [{ type: "text", text: lines.join("\n") }],
   };
 }
 
