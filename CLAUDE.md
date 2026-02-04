@@ -61,18 +61,17 @@ Projects should use these standard milestones:
 
 | Milestone | Purpose | Closes? |
 |-----------|---------|---------|
-| `Quick Fixes` | Small items (< 30 min): typos, lint fixes, dead code removal | Never |
-| `Backlog` | Future ideas not yet ready for implementation | Never |
+| `Backlog` | Future ideas and small items not yet ready for implementation | Never |
 | Feature milestones | Specific features or releases (e.g., "v1.2", "Auth System") | When complete |
 
-### Perpetual Milestones
+### Backlog Milestone
 
-`Quick Fixes` and `Backlog` are **issue buckets** - they collect work but don't map to PRs.
+`Backlog` is an **issue bucket** - it collects work but doesn't map to PRs.
 
 **Workflow:**
-1. Add issues to perpetual milestones as you notice them
-2. When ready to work, pick 2-4 related issues from the milestone
-3. Create a normal branch and PR (e.g., `fix/quick-fixes-batch`)
+1. Add issues to Backlog as you notice them (ideas, small fixes, future work)
+2. When ready to work, pick 2-4 related issues from Backlog
+3. Create a normal branch and PR
 4. Merge via normal workflow; issues close automatically
 5. Milestone stays open with remaining issues
 
