@@ -2,7 +2,7 @@ import { gh } from "../lib/exec.js";
 
 const definition = {
   name: "gh_milestone",
-  description: "Milestone operations: list, find, close, open, rename",
+  description: "Milestone operations: list, find, close, open, rename, edit",
   inputSchema: {
     type: "object",
     properties: {
@@ -12,12 +12,12 @@ const definition = {
       },
       action: {
         type: "string",
-        enum: ["list", "find", "close", "open", "rename"],
+        enum: ["list", "find", "close", "open", "rename", "edit"],
         description: "Action to perform",
       },
       identifier: {
         type: "string",
-        description: "Milestone number or title pattern (required for find/close/open/rename, ignored for list)",
+        description: "Milestone number or title pattern (required for find/close/open/rename/edit, ignored for list)",
       },
       state: {
         type: "string",
@@ -27,6 +27,10 @@ const definition = {
       new_title: {
         type: "string",
         description: "New title (required for rename action)",
+      },
+      description: {
+        type: "string",
+        description: "New description (for edit action)",
       },
     },
     required: ["action"],
@@ -80,7 +84,7 @@ async function listMilestones(state = "open", opts = {}) {
 }
 
 async function handler(args) {
-  const { cwd, action, identifier, new_title, state } = args;
+  const { cwd, action, identifier, new_title, description, state } = args;
   const opts = cwd ? { cwd } : {};
 
   // Handle list action separately (no identifier needed)
@@ -137,6 +141,31 @@ async function handler(args) {
         "-f", `title=${new_title}`
       ], opts);
       milestone.title = new_title;
+      return {
+        content: [{ type: "text", text: JSON.stringify(milestone, null, 2) }],
+      };
+
+    case "edit":
+      if (!description && !new_title) {
+        throw new Error("description or new_title is required for edit action");
+      }
+      const editArgs = [
+        "api", "-X", "PATCH",
+        `repos/{owner}/{repo}/milestones/${milestone.number}`,
+      ];
+      if (description !== undefined) {
+        editArgs.push("-f", `description=${description}`);
+      }
+      if (new_title) {
+        editArgs.push("-f", `title=${new_title}`);
+      }
+      await gh(editArgs, opts);
+      if (description !== undefined) {
+        milestone.description = description;
+      }
+      if (new_title) {
+        milestone.title = new_title;
+      }
       return {
         content: [{ type: "text", text: JSON.stringify(milestone, null, 2) }],
       };
