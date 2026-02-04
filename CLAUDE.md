@@ -55,6 +55,34 @@
 - Add usage examples
 ```
 
+## GitHub Milestones
+
+Projects should use these standard milestones:
+
+| Milestone | Purpose | Closes? |
+|-----------|---------|---------|
+| `Quick Fixes` | Small items (< 30 min): typos, lint fixes, dead code removal | Never |
+| `Backlog` | Future ideas not yet ready for implementation | Never |
+| Feature milestones | Specific features or releases (e.g., "v1.2", "Auth System") | When complete |
+
+### Perpetual Milestones
+
+`Quick Fixes` and `Backlog` are **issue buckets** - they collect work but don't map to PRs.
+
+**Workflow:**
+1. Add issues to perpetual milestones as you notice them
+2. When ready to work, pick 2-4 related issues from the milestone
+3. Create a normal branch and PR (e.g., `fix/quick-fixes-batch`)
+4. Merge via normal workflow; issues close automatically
+5. Milestone stays open with remaining issues
+
+### Promoting Backlog Items
+
+When a backlog item becomes concrete:
+1. Create a proper milestone for the work
+2. Move the issue to the new milestone (or close and create detailed issues)
+3. Plan and execute via normal workflow
+
 ## Terminology Preferences
 
 Use these terms consistently:
