@@ -62,6 +62,7 @@ async function loadTools() {
     "./tools/gh-milestone-issues.js",
     "./tools/gh-bulk-issues.js",
     "./tools/gh-update-issue.js",
+    "./tools/gh-update-pr.js",
     "./tools/gh-issue.js",
     "./tools/gh-pr-review-issue.js",
     "./tools/gh-create-pr.js",
