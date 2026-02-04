@@ -77,9 +77,9 @@ gh pr view $PR_NUMBER --json title,url,milestone,body
 - [ ] Close the milestone
 - [ ] Stop staging container: `pi_docker_stop("$PROJECT-staging")`
 - [ ] Stop dev container: `pi_docker_stop("$PROJECT-dev")`
+- [ ] Remove worktree if exists (must happen before branch delete)
 - [ ] Switch to master and pull
 - [ ] Delete local feature branch
-- [ ] Delete worktree if exists
 
 ### Deploy
 - [ ] Deploy to production: `pi_deploy("$PROJECT", "prod")`
@@ -108,9 +108,9 @@ gh pr view $PR_NUMBER --json title,url,milestone,body
    - Close the milestone
    - Stop staging/dev containers on Pi
    - Delete remote feature branch
+   - Remove worktree if exists (must happen before branch delete)
    - Switch local to master and pull
    - Delete local feature branch
-   - Delete worktree if exists
    - Deploy to production
 
 ## Execution
@@ -142,10 +142,11 @@ mcp__pi__pi_docker_stop(container="butler-staging")
 mcp__pi__pi_docker_stop(container="butler-dev")
 
 # 6-8. Git cleanup (use git commands)
+# IMPORTANT: Remove worktree BEFORE deleting branch (branch can't be deleted while checked out in worktree)
+git worktree remove ".worktrees/${BRANCH#feature/}"  # if exists, do this first
 git checkout master
 git pull
 git branch -d $BRANCH
-git worktree remove ".worktrees/${BRANCH#feature/}"  # if exists
 
 # 9. Deploy to production
 mcp__pi__pi_deploy(app="food-butler", env="prod")
@@ -178,18 +179,19 @@ fi
 # 5. Stop staging/dev containers (SSH fallback)
 ssh max@pi.local "cd ~/pi-setup && docker compose --profile staging --profile dev stop"
 
-# 6. Switch to master and pull
-git checkout master
-git pull
-
-# 7. Delete local branch (already deleted remote via --delete-branch)
-git branch -d $BRANCH
-
-# 8. Delete worktree if exists
+# 6. Remove worktree if exists (MUST happen before branch delete)
+# Branch can't be deleted while checked out in a worktree
 WORKTREE_PATH=".worktrees/${BRANCH#feature/}"
 if [ -d "$WORKTREE_PATH" ]; then
   git worktree remove "$WORKTREE_PATH"
 fi
+
+# 7. Switch to master and pull
+git checkout master
+git pull
+
+# 8. Delete local branch (already deleted remote via --delete-branch)
+git branch -d $BRANCH
 
 # 9. Deploy to production (SSH fallback)
 ssh max@pi.local "cd ~/pi-setup && ./build.sh food-butler prod"
@@ -237,9 +239,9 @@ Proceed? (This will run /update-docs, then merge and deploy to prod)
 - [x] Removed `code-complete` label from #12, #13, #14
 - [x] Closed milestone: Phase 5: Variety Tracking
 - [x] Stopped staging/dev containers
-- [x] Deleted branch: feature/phase5-variety-tracking
-- [x] Switched to master and pulled
 - [x] Removed worktree: .worktrees/phase5-variety-tracking
+- [x] Switched to master and pulled
+- [x] Deleted branch: feature/phase5-variety-tracking
 - [x] Deployed to production
 
 ### What's Next
