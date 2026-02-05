@@ -57,6 +57,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 // Load tools dynamically
 async function loadTools() {
   const toolModules = [
+    "./tools/project-files.js",
     "./tools/git-state.js",
     "./tools/gh-milestone.js",
     "./tools/gh-milestone-issues.js",
