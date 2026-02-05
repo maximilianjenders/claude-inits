@@ -240,8 +240,23 @@ fi
 
 ### Building the Graph
 
+**Preferred: MCP** (reuse data already fetched during startup)
+```
+# These calls are already made during startup - reuse the results:
+# mcp__workflow__gh_milestone(action="find", identifier="5")  → description has dependency tree
+# mcp__workflow__gh_milestone_issues(milestone="...", state="all")  → each issue body has "Blocked by: #X"
+
+# Parse dependencies from the data you already have:
+# 1. Milestone description → look for dependency tree / phase structure
+# 2. Each issue's body → scan for "Blocked by: #X" or "Blocked by #X" lines
+# 3. No additional API calls needed
+```
+
+**Do NOT use Bash `gh` commands for dependency checking** - the MCP calls from startup already return everything needed.
+
+**Steps:**
 1. Parse milestone description for dependency tree (structured format)
-2. Parse each issue body for `Blocked by: #X` lines
+2. Parse each issue body (from `gh_milestone_issues` result) for `Blocked by: #X` lines
 3. Validate both sources match, warn on mismatches
 4. Group issues into phases based on dependencies
 
