@@ -2,7 +2,7 @@ import { gh } from "../lib/exec.js";
 
 const definition = {
   name: "gh_milestone",
-  description: "Milestone operations: list, find, close, open, rename, edit",
+  description: "Milestone operations: create, list, find, close, open, rename, edit",
   inputSchema: {
     type: "object",
     properties: {
@@ -12,12 +12,16 @@ const definition = {
       },
       action: {
         type: "string",
-        enum: ["list", "find", "close", "open", "rename", "edit"],
+        enum: ["create", "list", "find", "close", "open", "rename", "edit"],
         description: "Action to perform",
       },
       identifier: {
         type: "string",
-        description: "Milestone number or title pattern (required for find/close/open/rename/edit, ignored for list)",
+        description: "Milestone number or title pattern (required for find/close/open/rename/edit, ignored for list/create)",
+      },
+      title: {
+        type: "string",
+        description: "Milestone title (required for create action)",
       },
       state: {
         type: "string",
@@ -84,7 +88,7 @@ async function listMilestones(state = "open", opts = {}) {
 }
 
 async function handler(args) {
-  const { cwd, action, identifier, new_title, description, state } = args;
+  const { cwd, action, identifier, title, new_title, description, state } = args;
   const opts = cwd ? { cwd } : {};
 
   // Handle list action separately (no identifier needed)
@@ -92,6 +96,28 @@ async function handler(args) {
     const milestones = await listMilestones(state, opts);
     return {
       content: [{ type: "text", text: JSON.stringify(milestones, null, 2) }],
+    };
+  }
+
+  // Handle create action
+  if (action === "create") {
+    if (!title) {
+      throw new Error("title is required for create action");
+    }
+    const createArgs = [
+      "api", "-X", "POST",
+      "repos/{owner}/{repo}/milestones",
+      "-f", `title=${title}`,
+    ];
+    if (description) {
+      createArgs.push("-f", `description=${description}`);
+    }
+    const { stdout } = await gh([
+      ...createArgs,
+      "--jq", "{ number, title, state, description }",
+    ], opts);
+    return {
+      content: [{ type: "text", text: stdout.trim() }],
     };
   }
 
