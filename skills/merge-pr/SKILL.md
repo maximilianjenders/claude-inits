@@ -77,9 +77,7 @@ gh pr view $PR_NUMBER --json title,url,milestone,body
 - [ ] Close the milestone
 - [ ] Stop staging container: `pi_docker_stop("$PROJECT-staging")`
 - [ ] Stop dev container: `pi_docker_stop("$PROJECT-dev")`
-- [ ] Remove worktree if exists (must happen before branch delete)
 - [ ] Switch to master and pull
-- [ ] Delete local feature branch
 
 ### Deploy
 - [ ] Deploy to production: `pi_deploy("$PROJECT", "prod")`
@@ -103,14 +101,11 @@ gh pr view $PR_NUMBER --json title,url,milestone,body
    - If docs are updated, commit them to the branch before merging
 
 4. **Execute merge and cleanup:**
-   - Merge PR to master
+   - Merge PR to master (auto-removes worktree and deletes branch)
    - Remove `code-complete` labels from linked issues
    - Close the milestone
    - Stop staging/dev containers on Pi
-   - Delete remote feature branch
-   - Remove worktree if exists (must happen before branch delete)
    - Switch local to master and pull
-   - Delete local feature branch
    - Deploy to production
 
 ## Execution
@@ -128,7 +123,7 @@ gh pr view $PR_NUMBER --json title,url,milestone,body
 # If update-docs made changes, commit them (use git)
 git diff --cached --quiet || git commit -m "(docs): Update documentation for PR #$PR_NUMBER"
 
-# 2. Merge PR
+# 2. Merge PR (auto-removes worktree + deletes branch)
 mcp__workflow__gh_merge_pr(pr=42, method="merge", delete_branch=true)
 
 # 3. Remove code-complete labels from linked issues (bulk operation)
@@ -141,14 +136,11 @@ mcp__workflow__gh_milestone(action="close", identifier="5")
 mcp__pi__pi_docker_stop(container="butler-staging")
 mcp__pi__pi_docker_stop(container="butler-dev")
 
-# 6-8. Git cleanup (use git commands)
-# IMPORTANT: Remove worktree BEFORE deleting branch (branch can't be deleted while checked out in worktree)
-git worktree remove ".worktrees/${BRANCH#feature/}"  # if exists, do this first
+# 6. Switch to master and pull
 git checkout master
 git pull
-git branch -d $BRANCH
 
-# 9. Deploy to production
+# 7. Deploy to production
 mcp__pi__pi_deploy(app="food-butler", env="prod")
 # or
 mcp__pi__pi_deploy(app="spendee", env="prod")
@@ -219,7 +211,6 @@ ssh max@pi.local "cd ~/pi-setup && ./build.sh food-butler prod"
 - Remove `code-complete` labels from issues
 - Close milestone
 - Stop staging/dev containers on Pi
-- Delete branch `feature/phase5-variety-tracking`
 - Switch local to master
 - Deploy to production
 
@@ -236,12 +227,11 @@ Proceed? (This will run /update-docs, then merge and deploy to prod)
 
 ### Cleanup Complete
 - [x] Updated documentation (CLAUDE.md, README.md)
+- [x] Merged PR (worktree auto-removed, branch auto-deleted)
 - [x] Removed `code-complete` label from #12, #13, #14
 - [x] Closed milestone: Phase 5: Variety Tracking
 - [x] Stopped staging/dev containers
-- [x] Removed worktree: .worktrees/phase5-variety-tracking
 - [x] Switched to master and pulled
-- [x] Deleted branch: feature/phase5-variety-tracking
 - [x] Deployed to production
 
 ### What's Next
