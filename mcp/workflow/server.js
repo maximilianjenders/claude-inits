@@ -69,6 +69,7 @@ async function loadTools() {
     "./tools/gh-create-pr.js",
     "./tools/gh-merge-pr.js",
     "./tools/gh-pr.js",
+    "./tools/git-worktree-cleanup.js",
   ];
 
   for (const modulePath of toolModules) {
