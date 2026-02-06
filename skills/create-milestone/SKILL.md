@@ -41,6 +41,7 @@ Use when starting fresh with an idea or design.
 3. **Get details:**
    - Overview (2-3 sentences)
    - Design doc link (if exists)
+   - Implementation plan link (if exists)
    - Branch name
    - Dependencies (requires/unlocks)
 4. **Create milestone** with placeholder for issues
@@ -58,6 +59,7 @@ Use when an implementation plan is ready and you need to create issues.
    - **Dependencies section** (see below)
    - **`--milestone` flag** to link the issue to the milestone (REQUIRED)
 4. **Update milestone description** with:
+   - Link to implementation plan
    - Full issue list with dependencies
    - Dependency graph (ASCII tree)
 5. **Change status** to `[READY]`
@@ -138,6 +140,9 @@ For this dependency chain: `#3 → #4 → #6`
 
 ## Design
 [Link to design doc]
+
+## Implementation Plan
+[Link to implementation plan]
 
 ## Branch
 `feature/branch-name`
@@ -248,7 +253,7 @@ gh issue edit NUMBER --body "$UPDATED_BODY"
 ### Workflow A: Create New Milestone
 - [ ] Get milestone title (ask if not provided)
 - [ ] Determine status prefix based on readiness
-- [ ] Gather details: overview, design doc link, branch name, dependencies
+- [ ] Gather details: overview, design doc link, implementation plan link, branch name, dependencies
 - [ ] Create milestone via `gh api`
 - [ ] **Immediately update title to include `#N`** (milestone number)
 - [ ] If implementation plan exists, proceed to Workflow B
@@ -264,7 +269,7 @@ When transitioning from `[SCOPED]` to `[READY]`:
 - [ ] Add `## Milestone` section with clickable link `[Title](../../milestone/N)`
 - [ ] Add `## Dependencies` section to each issue body
 - [ ] **Add bidirectional links** - go back and update earlier issues with "Blocks: #X" once dependent issues are created
-- [ ] Update milestone description with issue list and dependency graph
+- [ ] Update milestone description with implementation plan link, issue list, and dependency graph
 - [ ] Change milestone status prefix to `[READY]`
 - [ ] Verify all issues appear in milestone's issue list (not just referenced in text)
 
