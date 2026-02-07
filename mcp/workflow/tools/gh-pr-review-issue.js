@@ -43,19 +43,20 @@ async function handler(args) {
 Found during PR #${pr_number} code review.`;
 
   // Create the issue
+  // gh issue create outputs the URL like: https://github.com/owner/repo/issues/123
   const { stdout } = await gh([
     "issue", "create",
     "--title", `[PR Review] ${title}`,
     "--body", fullBody,
     "--label", "pr-review",
     "--milestone", milestone,
-    "--json", "number,url"
   ], opts);
 
-  const result = JSON.parse(stdout);
+  const url = stdout.trim();
+  const number = parseInt(url.split("/").pop(), 10);
 
   return {
-    content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+    content: [{ type: "text", text: JSON.stringify({ number, url }, null, 2) }],
   };
 }
 
