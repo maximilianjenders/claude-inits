@@ -21,6 +21,7 @@ Task tool (general-purpose):
     This issue is part of milestone "[Milestone Title]".
     Branch: `feature/branch-name`
     Working directory: [path]
+    Design doc: [design_doc_path or "None" — read this if you need architectural context]
 
     ### Prior Work Found
 
@@ -71,7 +72,7 @@ Task tool (general-purpose):
 
     ### Step 2: Verify
 
-    - Run all tests (full suite)
+    - Run tests relevant to your changes (scoped — pre-commit runs the full suite at commit time)
     - Check that all acceptance criteria are met
     - Verify no regressions
     - Run linters/formatters
@@ -159,7 +160,7 @@ Task tool (general-purpose):
 ### Continue Implementation (only after assessment)
 - [ ] Pick up where previous work left off
 - [ ] Follow TDD for remaining work
-- [ ] Run full test suite
+- [ ] Run scoped tests (pre-commit runs full suite at commit time)
 - [ ] Check all acceptance criteria met
 - [ ] Run linters/formatters
 

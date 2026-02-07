@@ -2,7 +2,7 @@
 name: create-pr
 description: Create a pull request with AI review loop
 user_invocable: true
-argument-hint: "(base-branch)"
+argument-hint: "(base-branch) (--retest)"
 ---
 
 # Create PR
@@ -14,7 +14,14 @@ Create a pull request and run AI review loop.
 ```
 /create-pr           # PR to master (default)
 /create-pr master    # Explicit base branch
+/create-pr --retest  # Skip PR creation/review, just deploy + E2E
 ```
+
+## Argument Parsing
+
+- First positional arg (optional): base branch (default: `master`)
+- `--retest` flag: Skip PR creation, code review, and unit tests. Only deploy to dev → E2E → deploy to staging.
+  - Use case: after fixing issues found during manual staging testing
 
 ## Pre-flight Checks
 
@@ -35,7 +42,7 @@ git status --porcelain
 git log origin/$BRANCH..HEAD
 ```
 
-## What This Does
+## Standard Mode (default)
 
 1. **Gather context:**
    - List commits since branch diverged from base
@@ -72,32 +79,42 @@ git log origin/$BRANCH..HEAD
    - Push fixes to the PR branch
    - Continue until ALL `pr-review` issues are `code-complete`
 
-6. **Run Tests (after all review issues resolved):**
-   - Run `/run-tests` to verify all tests pass
-   - If tests fail: create issue, fix, re-run
-
-7. **Deploy to Dev and Run E2E Tests:**
+6. **Deploy to Dev and Run E2E Tests:**
+   - Pre-commit hooks already verified unit tests pass — skip `/run-tests`
    - Detect project from current working directory
    - Deploy current branch to dev using MCP: `pi_deploy("[project]", "dev", "[branch]")`
    - Wait for container to be healthy
    - Run E2E tests: `npm --prefix frontend run test:e2e`
    - If E2E tests fail: report failures (do not auto-fix)
 
-8. **Deploy to Staging:**
+7. **Deploy to Staging:**
    - Deploy current branch to staging using MCP: `pi_deploy("[project]", "staging", "[branch]")`
    - Wait for container to be healthy
    - Report staging URL for manual testing
 
-9. **Stop with Summary:**
+8. **Stop with Summary:**
    - PR URL
    - Code review: passed/issues fixed
-   - Tests: passed/failed
-   - E2E tests: passed/failed
+   - Tests: pre-commit verified / E2E passed
    - Staging: deployed with URL
    - Cleanup actions reminder
    - "Ready for manual testing on staging. Run `/merge-pr` when ready to merge."
 
 **Note:** This skill does NOT merge. Use `/merge-pr` after manual testing.
+
+## Retest Mode (`--retest`)
+
+Use after fixing issues found during manual staging testing. Skips PR creation, code review, and unit tests.
+
+**Flow:**
+1. Pre-flight checks (same as standard)
+2. Push any new commits to remote
+3. Deploy to dev: `pi_deploy("[project]", "dev", "[branch]")`
+4. Health check dev
+5. Run E2E tests
+6. Deploy to staging: `pi_deploy("[project]", "staging", "[branch]")`
+7. Health check staging
+8. Report summary (E2E results + staging URL)
 
 ## Checklist
 
@@ -107,23 +124,23 @@ git log origin/$BRANCH..HEAD
 - [ ] Verify on feature branch (not master)
 - [ ] Check for uncommitted changes
 - [ ] Verify branch is pushed to remote
+- [ ] Parse `--retest` flag — if set, skip to Retest section
 
-### PR Creation
+### PR Creation (skip if `--retest`)
 - [ ] Gather commits since branch diverged
 - [ ] List all changed files
 - [ ] Get linked issues from commits/milestone
 - [ ] Get milestone and design doc link
 - [ ] Create PR with title, description, linked issues
 
-### Code Review Loop (repeat until approved)
+### Code Review Loop (skip if `--retest` — repeat until approved)
 - [ ] Invoke `superpowers:requesting-code-review` skill
 - [ ] If issues found: create GitHub issue for EACH finding with `pr-review` label
 - [ ] Fix ALL pr-review issues using `/start-issue` workflow
 - [ ] Re-run review after fixes
 - [ ] **Only exit loop when review passes with no new issues**
 
-### Testing
-- [ ] Run `/run-tests` - all tests must pass
+### Deploy & E2E (always runs)
 - [ ] Deploy to dev: `pi_deploy("[project]", "dev", "[branch]")`
 - [ ] Health check dev environment
 - [ ] Run E2E tests
@@ -166,14 +183,11 @@ git diff --name-only master...HEAD
 
 # Create PR
 gh pr create --title "Title" --body "Description" --base master
-
-# Run tests after review passes
-# Use /run-tests skill
 ```
 
 ### Deploy to Dev and Run E2E
 
-After PR is created and tests pass:
+After PR is created (or immediately in `--retest` mode):
 
 ```bash
 # 1. Detect project from current working directory
@@ -209,24 +223,20 @@ If E2E tests fail, report the failures but do not auto-fix. The user may need to
 **URL:** https://github.com/owner/repo/pull/42
 
 ### Code Review
-✅ Passed (2 rounds - fixed formatting issues)
+Passed (2 rounds - fixed formatting issues)
 
 ### Tests
-✅ All tests passing
-- Backend: 24 passed
-- Frontend: 18 passed
-
-### E2E Tests
-✅ All E2E tests passing
-- 12 passed
+Pre-commit hooks verified unit tests pass
+E2E: 12 passed
 
 ### Staging
-✅ Deployed to staging
+Deployed to staging
 - URL: http://[project]-staging.home
 
 ### Next Steps
 1. Manual testing on staging: http://[project]-staging.home
 2. When ready: `/merge-pr`
+3. If fixes needed after staging testing: fix, commit, then `/create-pr --retest`
 
 ### Cleanup Actions (after merge)
 - Merge PR to master
@@ -234,6 +244,23 @@ If E2E tests fail, report the failures but do not auto-fix. The user may need to
 - Close milestone
 - Stop dev container on Pi
 - Stop staging container on Pi
+```
+
+## Retest Output Format
+
+```
+## Retest Complete
+
+### E2E Tests
+12 passed
+
+### Staging
+Re-deployed to staging
+- URL: http://[project]-staging.home
+
+### Next Steps
+1. Manual testing on staging: http://[project]-staging.home
+2. When ready: `/merge-pr`
 ```
 
 ## PR Description Template
@@ -247,7 +274,7 @@ If E2E tests fail, report the failures but do not auto-fix. The user may need to
 Fixes #12, #13, #14
 
 ## Test Plan
-- [x] Unit tests pass (`/run-tests`)
+- [x] Unit tests pass (pre-commit hooks)
 - [x] E2E tests pass (dev environment)
 - [ ] Manual testing on staging
 

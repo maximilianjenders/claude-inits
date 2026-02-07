@@ -2,7 +2,7 @@
 
 Use this template when dispatching a review agent to review all changes from a phase before the orchestrator commits.
 
-**Key difference from PR review:** Phase review happens on UNCOMMITTED changes. The reviewer checks `git diff`, not commits.
+**Key difference from PR review:** Phase review happens on UNCOMMITTED changes. The orchestrator pre-computes diffs and agent summaries to avoid redundant work.
 
 ## Dispatch Pattern
 
@@ -21,17 +21,34 @@ Task tool (general-purpose):
 
     **Branch:** `feature/branch-name`
     **Working directory:** [path]
+    **Design doc:** [design_doc_path or "None"]
 
-    **Important:** These changes are UNCOMMITTED. Review using `git diff`, not commit history.
+    **Important:** These changes are UNCOMMITTED. The orchestrator has pre-computed the diffs below.
+
+    ## Changes to Review
+
+    ### Diff Summary (pre-computed)
+    [paste git diff --stat output here]
+
+    ### Full Diff (pre-computed)
+    [paste git diff output here]
+
+    ### Agent Reports
+    [For each issue: what was implemented, files changed, self-review findings]
+    - **#70:** [agent summary]
+    - **#71:** [agent summary]
+    - **#72:** [agent summary]
 
     ## Your Task
 
     Use the `superpowers:requesting-code-review` skill to review these changes.
 
+    **Use the pre-computed diff above.** Only read individual files if the diff is unclear or you need surrounding context for a specific concern.
+
     Provide this context to the review:
     1. **Scope:** The acceptance criteria for each issue listed above
     2. **Standards:** Read CLAUDE.md for project coding standards
-    3. **Design doc:** [path to design doc if exists, or "None"]
+    3. **Design doc:** Read the design doc at [design_doc_path] to verify design compliance (if provided)
 
     ## Phase-Specific Review Focus
 
@@ -47,24 +64,6 @@ Task tool (general-purpose):
     - Are there conflicts or overlaps between issues?
     - Does the combined result make sense as a whole?
 
-    ### Uncommitted State
-    - Run `git diff` to see all changes
-    - Run `git status` to see which files are modified
-    - Changes span multiple issues - attribute correctly
-
-    ## Verification Commands
-
-    ```bash
-    # View all uncommitted changes
-    git diff
-
-    # Run tests
-    [project test command]
-
-    # Run linters
-    [project lint command]
-    ```
-
     ## Output Format
 
     After running the code review skill, report:
@@ -76,12 +75,12 @@ Task tool (general-purpose):
     All issues pass review. Ready for orchestrator to commit.
 
     Summary:
-    - #70: ✓ [brief note]
-    - #71: ✓ [brief note]
-    - #72: ✓ [brief note]
+    - #70: [brief note]
+    - #71: [brief note]
+    - #72: [brief note]
 
-    Cross-issue consistency: ✓
-    Tests: ✓ All passing
+    Cross-issue consistency: OK
+    Tests: All passing
     ```
 
     **If CHANGES REQUESTED:**
@@ -94,7 +93,7 @@ Task tool (general-purpose):
     - [ ] [specific issue and fix needed]
 
     **#71: [title]**
-    - ✓ Approved
+    - Approved
 
     ### Cross-Issue Concerns
     - [any consistency or integration issues]
@@ -108,15 +107,15 @@ Task tool (general-purpose):
 **Follow this checklist for every phase review.**
 
 ### Setup
-- [ ] Understand which issues are in this phase
-- [ ] Read acceptance criteria for each issue
+- [ ] Review the pre-computed diff summary for scope
+- [ ] Read the pre-computed full diff
+- [ ] Read agent reports for context on each issue
 - [ ] Read CLAUDE.md for project standards
-- [ ] Read design doc (if exists)
+- [ ] Read design doc (if `design_doc_path` provided)
 
 ### Review Execution
-- [ ] Run `git diff` to see ALL uncommitted changes
-- [ ] Run `git status` to see modified files
 - [ ] Invoke `superpowers:requesting-code-review` skill
+- [ ] Only read individual files if diff is unclear or you need surrounding context
 - [ ] Run tests to verify they pass
 - [ ] Run linters
 
@@ -131,13 +130,15 @@ Task tool (general-purpose):
 - [ ] If ANY issues found → Report **CHANGES REQUESTED** with specific feedback per issue
 
 ### Output
-- [ ] List each issue with ✓ (approved) or specific fixes needed
+- [ ] List each issue with approval status or specific fixes needed
 - [ ] Note any cross-issue concerns
 - [ ] Include test results
 
 ## Key Points
 
 - **Uses `superpowers:requesting-code-review`** for consistent review standards
-- **Adds phase-specific context** (cross-issue consistency, uncommitted changes)
+- **Pre-computed diffs** — orchestrator provides `git diff --stat` and `git diff` to avoid redundant file reads
+- **Agent summaries** — orchestrator collects what each agent built, files changed, and self-review findings
+- **Design doc access** — reviewer receives `design_doc_path` to verify design compliance
 - **Fresh agent** - no implementation bias, dedicated context for review
 - **Quality gate** - must approve before orchestrator commits

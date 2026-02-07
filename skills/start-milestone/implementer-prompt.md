@@ -19,6 +19,7 @@ Task tool (general-purpose):
     This issue is part of milestone "[Milestone Title]".
     Branch: `feature/branch-name`
     Working directory: [path]
+    Design doc: [design_doc_path or "None" — read this if you need architectural context]
 
     ### Dependencies
     - Depends on: [list completed issues this builds on]
@@ -27,6 +28,8 @@ Task tool (general-purpose):
     ## Before You Begin
 
     **Read CLAUDE.md first** for project commands and conventions.
+
+    If you need architectural context (data models, API contracts, patterns), read the design doc at the path above.
 
     If you have questions about:
     - The requirements or acceptance criteria
@@ -40,14 +43,8 @@ Task tool (general-purpose):
 
     ### Step 1: Mark Issue In-Progress
 
-    First, mark the issue as in-progress using the MCP workflow tool:
     ```
     mcp__workflow__gh_update_issue(issue=N, add_labels=["in-progress"])
-    ```
-
-    Fallback (if MCP unavailable):
-    ```bash
-    gh issue edit N --add-label "in-progress"
     ```
 
     ### Step 2: Implement
@@ -61,9 +58,9 @@ Task tool (general-purpose):
 
     ### Step 3: Verify
 
-    - Run all tests (full suite, not just new tests)
+    - Run tests relevant to your changes (new + directly affected tests only)
+    - The pre-commit hook runs the full test suite at commit time, so you don't need to
     - Check that acceptance criteria are met
-    - Verify no regressions
     - Run linters/formatters
 
     ### Step 4: Self-Review
@@ -99,11 +96,6 @@ Task tool (general-purpose):
     mcp__workflow__gh_update_issue(issue=N, remove_labels=["in-progress"], add_labels=["ready-for-review"])
     ```
 
-    Fallback (if MCP unavailable):
-    ```bash
-    gh issue edit N --remove-label "in-progress" --add-label "ready-for-review"
-    ```
-
     **Important:** Only mark ready-for-review if:
     - All acceptance criteria are met
     - All tests pass
@@ -111,7 +103,7 @@ Task tool (general-purpose):
 
     If you cannot complete the issue, leave it with `in-progress` label and report what's blocking you.
 
-    ### ⚠️ DO NOT Commit or Close
+    ### DO NOT Commit or Close
 
     **You must NOT:**
     - Run `git commit`
@@ -129,18 +121,6 @@ Task tool (general-purpose):
     - Files changed (list them for orchestrator to commit)
     - Self-review findings (if any)
     - Any issues or concerns
-
-    ## Label Flow Reference
-
-    ```
-    Your responsibility:
-      (none) → in-progress → ready-for-review
-               [working]     [done, awaiting review & commit]
-
-    Orchestrator handles:
-      ready-for-review → code-complete (closed)
-      [after commit]
-    ```
 ```
 
 ## Checklist
@@ -149,6 +129,7 @@ Task tool (general-purpose):
 
 ### Before Starting
 - [ ] Read CLAUDE.md for project commands and conventions
+- [ ] Read design doc if architectural context is needed
 - [ ] Review issue description and acceptance criteria
 - [ ] **Ask questions NOW** if anything is unclear (don't guess)
 
@@ -156,7 +137,7 @@ Task tool (general-purpose):
 - [ ] Mark issue `in-progress` (add label)
 - [ ] Write failing tests first (TDD)
 - [ ] Implement to make tests pass
-- [ ] Run full test suite (not just new tests)
+- [ ] Run tests relevant to your changes (pre-commit runs full suite)
 - [ ] Run linters/formatters
 
 ### Self-Review
@@ -169,7 +150,7 @@ Task tool (general-purpose):
 - [ ] Mark `ready-for-review` (swap labels)
 - [ ] Report: what implemented, files changed, test results
 
-### ⚠️ CRITICAL CONSTRAINTS
+### CRITICAL CONSTRAINTS
 - [ ] **I have NOT run `git commit`**
 - [ ] **I have NOT closed the issue**
 - [ ] **I have NOT marked `code-complete`**
@@ -180,8 +161,10 @@ The orchestrator commits after phase review. Committing would cause git conflict
 
 - **DO NOT COMMIT** - Orchestrator commits after phase review to avoid git conflicts
 - **DO NOT CLOSE ISSUES** - Orchestrator closes after committing
+- **Design doc access** - Read the design doc at `design_doc_path` if you need architectural context
 - **Mark labels immediately** - Labels are the source of truth for progress tracking
 - **Follow TDD** - Write tests first, implement to pass
+- **Scoped tests only** - Run tests for your changes; pre-commit runs the full suite
 - **Reference CLAUDE.md** - Project-specific commands and conventions
 - **Self-review before marking ready** - Catch issues before handoff to review
 - **Ask questions early** - Don't guess on unclear requirements

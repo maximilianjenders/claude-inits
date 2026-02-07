@@ -173,6 +173,16 @@ All code must be working and covered by tests before moving to the next step:
 
 Do not accumulate untested code. Each logical unit of work should be tested before starting the next.
 
+### When to Run Tests
+
+| Context | Unit Tests | E2E Tests | Why |
+|---------|-----------|-----------|-----|
+| During implementation | Scoped (changed files only) | No | Fast feedback loop |
+| At commit time | Full suite (pre-commit hook) | No | Catch regressions |
+| At PR creation | Skip (pre-commit already ran) | Yes (deploy to dev first) | E2E needs running environment |
+| After PR review fixes | Skip (pre-commit runs on fix commit) | No | Avoid redundancy |
+| After staging feedback fixes | Skip | Yes (redeploy + retest) | Verify fixes via `/create-pr --retest` |
+
 ### Pre-commit Hooks
 
 Projects should use pre-commit hooks to enforce quality standards automatically:

@@ -7,7 +7,7 @@ argument-hint: "<issue-number-or-url>"
 
 # Start Issue
 
-Prepare to work on a GitHub issue by reading context and setting up the environment.
+Prepare to work on a GitHub issue by reading context, setting up the environment, and implementing the change.
 
 ## Usage
 
@@ -23,6 +23,16 @@ Extract issue number from argument:
 - `15` or `#15` → issue 15 in current repo
 - `https://github.com/owner/repo/issues/15` → parse number from URL (also works with repo context)
 
+## Modes
+
+### Standalone Mode (default — when user runs `/start-issue` manually)
+
+This is the normal interactive mode. You implement the issue, run scoped tests, but do NOT commit or run the full test suite. The user decides when to commit.
+
+### Batch Mode (when dispatched from `/start-milestone`)
+
+Batch mode is handled by `implementer-prompt.md` directly — `/start-issue` is NOT used in batch context.
+
 ## What This Does
 
 1. **Fetch issue details** - Read title, description, acceptance criteria
@@ -30,6 +40,9 @@ Extract issue number from argument:
 3. **Check dependencies** - Are there blocking issues?
 4. **Verify branch** - Are we on the right feature branch?
 5. **Mark as in-progress** - Add the `in-progress` label
+6. **Implement the issue** - Follow TDD, run scoped tests
+7. **Self-review** - Check completeness and quality
+8. **Report completion** - Summarize what was done, remind user to commit
 
 ## Execution
 
@@ -84,19 +97,12 @@ git worktree list
 
 | Current State | Milestone Has Branch | Action |
 |--------------|---------------------|--------|
-| In worktree for correct branch | - | ✓ Ready to work |
+| In worktree for correct branch | - | Ready to work |
 | In worktree for wrong branch | Yes | Warn: "You're in worktree for X, but issue is for Y" |
-| On correct feature branch | - | ✓ Ready to work |
+| On correct feature branch | - | Ready to work |
 | On master | Yes | Ask: "Switch to `feature/X` or create worktree?" |
 | On different feature branch | Yes | Ask: "Create worktree for parallel work, or switch branches?" |
 | Worktree exists for target branch | Yes | Suggest: "Worktree exists at `.worktrees/X/` - use that?" |
-
-**When to suggest worktree:**
-- User is mid-work on another branch and wants to do parallel work
-- Multiple issues from different milestones need simultaneous attention
-
-**Default (no parallel work needed):**
-- Just switch branches: `git checkout feature/branch-name`
 
 ### 2. Dependency Check
 - Parse issue body for "Blocked by: #X" references
@@ -112,7 +118,6 @@ If the issue has a milestone with `[READY]` prefix:
 - Check if any other issues in that milestone are `in-progress` or `code-complete`
 - If this is the **first issue being worked on**, update milestone from `[READY]` to `[ACTIVE]`
 
-**Preferred: MCP**
 ```
 # Get all issues in milestone (check for in-progress/code-complete labels)
 mcp__workflow__gh_milestone_issues(milestone="[READY] Milestone Title", state="all")
@@ -121,30 +126,19 @@ mcp__workflow__gh_milestone_issues(milestone="[READY] Milestone Title", state="a
 mcp__workflow__gh_milestone(action="rename", identifier="5", new_title="[ACTIVE] Milestone Title")
 ```
 
-**Fallback: Bash**
-```bash
-# Get milestone title and number
-MILESTONE_INFO=$(gh issue view $ISSUE_NUMBER --json milestone --jq '.milestone | "\(.number) \(.title)"')
-MILESTONE_NUM=$(echo "$MILESTONE_INFO" | cut -d' ' -f1)
-MILESTONE_TITLE=$(echo "$MILESTONE_INFO" | cut -d' ' -f2-)
+## Implementation
 
-# If milestone is [READY], check if we should activate it
-if [[ "$MILESTONE_TITLE" == "[READY]"* ]]; then
-  # Check for any in-progress or code-complete issues in this milestone
-  ACTIVE_ISSUES=$(gh issue list --milestone "$MILESTONE_TITLE" --label "in-progress,code-complete" --json number --jq 'length')
+After pre-flight checks pass:
 
-  if [ "$ACTIVE_ISSUES" -eq 0 ]; then
-    # This is the first issue - update milestone to [ACTIVE]
-    NEW_TITLE="${MILESTONE_TITLE/\[READY\]/[ACTIVE]}"
-    gh api "repos/:owner/:repo/milestones/$MILESTONE_NUM" --method PATCH -f title="$NEW_TITLE"
-    echo "✓ Updated milestone to $NEW_TITLE"
-  fi
-fi
-```
+1. **Read CLAUDE.md** for project commands and conventions
+2. **Follow TDD** — write failing tests first, implement to pass
+3. **Run scoped tests** — only tests relevant to your changes (pre-commit runs the full suite at commit time)
+4. **Run linters/formatters**
+5. **Self-review** — check completeness, quality, CLAUDE.md compliance
 
 ## Checklist
 
-**Follow this checklist in order before marking as in-progress.**
+**Follow this checklist in order.**
 
 ### Context Gathering
 - [ ] Parse issue number from argument (number, `#N`, or URL)
@@ -157,31 +151,46 @@ fi
 - [ ] **Already In-Progress Check** - Note if issue already has label, warn about context switch
 - [ ] **Milestone Status Check** - If `[READY]` and first issue, update to `[ACTIVE]`
 
-### Start Work
+### Implementation
 - [ ] Mark issue as `in-progress` (add label)
-- [ ] Output issue details and acceptance criteria
-- [ ] Begin implementation (or hand off to agent)
+- [ ] Read CLAUDE.md for project standards
+- [ ] Write failing tests first (TDD)
+- [ ] Implement to make tests pass
+- [ ] Run scoped tests (changed files only)
+- [ ] Run linters/formatters
+- [ ] Self-review for completeness and quality
+
+### Completion
+- [ ] Mark `ready-for-review` (swap labels)
+- [ ] Report: what implemented, files changed, test results
+- [ ] **Do NOT commit** — remind user: "Changes ready. Review and commit when done."
+- [ ] **Do NOT run full test suite** — pre-commit hook handles that at commit time
 
 ## Output Format
 
 ```
-## Starting Issue #15
+## Issue #15 Complete
 
 **Title:** Add retry suggestions endpoint
 **Milestone:** [ACTIVE] Phase 5: Variety Tracking
-**Branch:** feature/phase5-variety-tracking ✓
+**Branch:** feature/phase5-variety-tracking
 
-### Description
-[Issue description here]
+### What Was Implemented
+- [Summary of changes]
 
-### Acceptance Criteria
-- [ ] Endpoint returns ingredients due for retry
-- [ ] Respects configurable time windows
-- [ ] Includes last exposure date
+### Files Changed
+- src/api/routes.py
+- src/models/retry.py
+- tests/test_retry.py
 
-### Dependencies
-- #14 Settings schema extension ✓ (closed)
+### Tests
+- Scoped tests: All passing (3 new, 2 modified)
 
-### Status
-✓ Marked as in-progress
+### Self-Review
+- All acceptance criteria met
+- No issues found
+
+### Next Steps
+Changes are ready. Review and commit when done.
+The pre-commit hook will run the full test suite.
 ```

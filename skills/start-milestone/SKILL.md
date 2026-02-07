@@ -21,11 +21,11 @@ Execute all issues in a GitHub milestone using parallel subagents with crash rec
 ## High-Level Flow
 
 1. Parse milestone, fetch issues, build dependency graph
-2. Setup branch/worktree
+2. Setup branch/worktree (skip if already on correct branch for `[ACTIVE]` milestone)
 3. **Update milestone status to `[ACTIVE]`** (if currently `[READY]`)
 4. **Check for resume state** (verify commits match closed issues)
 5. **Create task list** for user visibility
-6. Execute in phases (parallel implementation → review → commit)
+6. Execute in phases (parallel implementation → review → batch commit)
 7. On completion: auto-create PR or prompt user if failures
 
 ## Continuous Execution
@@ -45,13 +45,21 @@ Once setup is complete and execution begins, proceed through ALL phases continuo
 
 The task list provides real-time visibility into progress - users can see what's happening without being interrupted.
 
+## Context Loading Rules
+
+**CRITICAL: The orchestrator coordinates — it does NOT need architectural context.**
+
+- **Do NOT read the design/implementation plan document.** Extract its path from the milestone description and pass it to subagents, but never read it yourself. This saves 5-20k tokens.
+- **From `gh_milestone_issues` response, extract ONLY:** issue numbers, titles, labels, and `Blocked by` lines from bodies. Do not analyze full issue bodies — pass them verbatim to subagents.
+- **Pass `design_doc_path` to subagents** who need it (implementation agents and reviewers).
+
 ## Task List for Progress Tracking
 
 **IMPORTANT:** Always use `TaskCreate`/`TaskUpdate` so the user can see what's happening.
 
 ### Milestone Header Task
 
-First, create a header task that shows which milestone is being executed:
+Create a header task that shows which milestone is being executed:
 
 ```
 TaskCreate:
@@ -83,7 +91,7 @@ Phase 1 starts:
 | Agent completes | `TaskUpdate` to `completed` |
 | Agent fails | `TaskUpdate` to `completed` with failure note |
 | Starting review | `TaskCreate`: "Review Phase N changes" |
-| Starting commits | `TaskCreate`: "Commit Phase N" |
+| Starting commit | `TaskCreate`: "Commit Phase N" |
 
 ### Task Format
 
@@ -98,47 +106,18 @@ TaskUpdate:
   status: "in_progress" | "completed"
 ```
 
-### Example Task List View
-
-User sees:
-```
-Tasks:
-⏳ Milestone #5: Dashboard & Navigation Redesign (in_progress)
-  ✓ Implement #70: Category breakdown
-  ✓ Implement #71: Collapsible section
-  ⏳ Implement #72: Remove month selector (in_progress)
-  ○ Review Phase 1 changes (pending)
-  ○ Commit Phase 1 (pending)
-```
-
-This gives the user:
-- **Which milestone** is being worked on (title + number)
-- **Real-time progress** on individual issues
-- **Current phase** visibility
-
 ## GitHub Labels
 
-| Label | Color | Meaning | Who Sets |
-|-------|-------|---------|----------|
-| `in-progress` | - | Agent is working on implementation | Agent (start) |
-| `ready-for-review` | `#F9D0C4` | Agent done, tests pass, awaiting review & commit | Agent (end) |
-| `code-complete` | - | Orchestrator committed, issue closed | Orchestrator |
-| `blocked-failed` | `#B60205` | Failed after retry, skipped | Agent/Orchestrator |
-| `pr-review` | `#FBCA04` | Issue created from PR code review findings | - |
+| Label | Meaning | Set By |
+|-------|---------|--------|
+| `in-progress` | Agent is working on implementation | Agent (start) |
+| `ready-for-review` | Agent done, tests pass, awaiting review & commit | Agent (end) |
+| `code-complete` | Orchestrator committed, issue closed | Orchestrator |
+| `blocked-failed` | Failed after retry, skipped | Agent/Orchestrator |
+| `pr-review` | Issue created from PR code review findings | create-pr |
 
-**Label flow per issue:**
-```
-Agent phase:
-  (none) → in-progress → ready-for-review
-           [working]     [done, not committed]
-
-Orchestrator phase:
-  ready-for-review → code-complete (closed)
-  [after commit]     [committed]
-
-Failure path:
-  in-progress → blocked-failed (on unrecoverable failure)
-```
+**Flow:** `(none) → in-progress → ready-for-review → code-complete (closed)`
+**Failure:** `in-progress → blocked-failed`
 
 ## Argument Parsing
 
@@ -150,31 +129,24 @@ Failure path:
 
 ## Branch & Worktree Setup
 
-**CRITICAL: You MUST use `AskUserQuestion` to ask about branching strategy before proceeding. Never skip this step.**
-
 ### Step 1: Detect Current State
 
-**Preferred: MCP**
 ```
 mcp__workflow__git_state()
 ```
 Returns: branch, is_worktree, worktree_path, pr, worktrees[], matching_branches[]
 
-**Fallback: Bash**
-```bash
-git branch --show-current
-git worktree list
-git rev-parse --is-inside-work-tree
-git branch -r --list "origin/*" | grep -E "feature/"
-```
-
 ### Step 2: Parse Branch Name
 
 Parse from milestone description (`## Branch` section) to determine the target branch.
 
-### Step 3: Ask User (MANDATORY)
+### Step 3: Fast-Path or Ask User
 
-**You MUST use `AskUserQuestion` to ask how to proceed.** Present options based on current state:
+**Fast-path (skip question):** If milestone is already `[ACTIVE]` AND we're on the correct branch (or in the correct worktree), skip the branching question and go straight to resume state check.
+
+**Otherwise, ask the user:**
+
+**CRITICAL: You MUST use `AskUserQuestion` when the fast-path doesn't apply.**
 
 | Current State | Options to Present |
 |---------------|-------------------|
@@ -185,19 +157,6 @@ Parse from milestone description (`## Branch` section) to determine the target b
 | In worktree for wrong branch | 1. Create new worktree for `feature/X` (Recommended) 2. Switch worktree |
 | Worktree exists for target | 1. Use existing worktree at `.worktrees/X/` (Recommended) 2. Create fresh worktree 3. Work in current location |
 
-**Example AskUserQuestion call:**
-```
-header: "Branch setup"
-question: "How would you like to work on this milestone?"
-options:
-  - label: "Create worktree (Recommended)"
-    description: "Isolated workspace at .worktrees/feature-x/"
-  - label: "Create branch"
-    description: "Switch current workspace to feature/x"
-  - label: "Continue on master"
-    description: "Work directly on master branch"
-```
-
 ### Step 4: Execute Choice
 
 - If worktree chosen: invoke `/worktree create feature/branch-name`
@@ -206,11 +165,8 @@ options:
 
 ## Milestone Status Update
 
-**CRITICAL: Update milestone to `[ACTIVE]` before dispatching any issues.**
+**Update milestone to `[ACTIVE]` before dispatching any issues.**
 
-After branch/worktree setup is complete, check if the milestone needs status update:
-
-**Preferred: MCP**
 ```
 # Check current milestone title
 mcp__workflow__gh_milestone(action="find", identifier="5")
@@ -219,28 +175,16 @@ mcp__workflow__gh_milestone(action="find", identifier="5")
 mcp__workflow__gh_milestone(action="rename", identifier="5", new_title="[ACTIVE] #5 Milestone Title")
 ```
 
-**Fallback: Bash**
-```bash
-# Get current milestone title
-MILESTONE_TITLE=$(gh api repos/:owner/:repo/milestones/5 --jq '.title')
-
-# If [READY], update to [ACTIVE]
-if [[ "$MILESTONE_TITLE" == "[READY]"* ]]; then
-  NEW_TITLE="${MILESTONE_TITLE/\[READY\]/[ACTIVE]}"
-  gh api repos/:owner/:repo/milestones/5 --method PATCH -f title="$NEW_TITLE"
-fi
-```
-
-**When to update:**
 - Update from `[READY]` → `[ACTIVE]` when starting fresh execution
-- Skip if already `[ACTIVE]` (crash recovery scenario)
+- **Skip if already `[ACTIVE]`** (crash recovery / fast-path scenario)
 - Skip if `[SKETCH]` or `[SCOPED]` (shouldn't be executing these)
 
 ## Dependency Graph & Phase Execution
 
 ### Building the Graph
 
-**Preferred: MCP** (reuse data already fetched during startup)
+Reuse data already fetched during startup — no additional API calls needed:
+
 ```
 # These calls are already made during startup - reuse the results:
 # mcp__workflow__gh_milestone(action="find", identifier="5")  → description has dependency tree
@@ -252,51 +196,14 @@ fi
 # 3. No additional API calls needed
 ```
 
-**Do NOT use Bash `gh` commands for dependency checking** - the MCP calls from startup already return everything needed.
+### Execution Model
 
-**Steps:**
-1. Parse milestone description for dependency tree (structured format)
-2. Parse each issue body (from `gh_milestone_issues` result) for `Blocked by: #X` lines
-3. Validate both sources match, warn on mismatches
-4. Group issues into phases based on dependencies
+Phases provide checkpoints for crash recovery. Agents work in parallel without committing; the orchestrator commits in a single batch after phase review.
 
-### Execution Model: Phase-Based with Checkpoints
-
-**Why phases?** Parallel agents can conflict on git operations. Phase-based execution:
-- Agents work in parallel without committing
-- Orchestrator commits sequentially after phase review
-- Each phase creates a checkpoint for crash recovery
-
-```
-Phase N:
-  ┌─────────────────────────────────────────────────────────┐
-  │ Step 1: Implementation (parallel agents, NO COMMITS)    │
-  │   - Up to 3 agents work concurrently                    │
-  │   - Each: implement → test → self-review                │
-  │   - Mark ready-for-review when done                     │
-  └─────────────────────────────────────────────────────────┘
-                           ↓
-  ┌─────────────────────────────────────────────────────────┐
-  │ Step 2: Code Review (single fresh agent)                │
-  │   - Fresh context, no implementation bias               │
-  │   - Reviews ALL phase changes together                  │
-  │   - Can catch cross-issue inconsistencies               │
-  │   - Approve or request fixes                            │
-  └─────────────────────────────────────────────────────────┘
-                           ↓
-  ┌─────────────────────────────────────────────────────────┐
-  │ Step 3: Commit & Close (orchestrator, sequential)       │
-  │   For each ready-for-review issue in phase:             │
-  │     - git add <issue-files>                             │
-  │     - git commit -m "(type): Summary\n\nRefs #N"        │
-  │     - Mark code-complete + close issue                  │
-  └─────────────────────────────────────────────────────────┘
-                           ↓
-                   ✓ CHECKPOINT - safe to resume from here
-
-Phase N+1: (issues that were blocked by Phase N)
-  ...
-```
+**Per phase:**
+1. **Implementation** — Dispatch parallel agents (max 3). Each: implement → test → self-review → mark `ready-for-review`. Agents do NOT commit.
+2. **Review** — Dispatch single review agent with pre-computed diffs. If changes requested → dispatch fix agents → re-review.
+3. **Batch Commit** — Stage all phase files, single commit referencing all issues. Close all issues. This is the checkpoint.
 
 ### Concurrency
 
@@ -304,21 +211,31 @@ Phase N+1: (issues that were blocked by Phase N)
 - Review is single agent (sees full phase context)
 - Commits are sequential (no git conflicts)
 
+### File Conflict Detection
+
+Before dispatching parallel agents within a phase, check for file overlap:
+1. Scan each issue's description and acceptance criteria for file/component references
+2. If two issues mention the same files, templates, or components → serialize them (dispatch sequentially, not in parallel)
+3. When in doubt, serialize — the cost of a wasted parallel slot is lower than the cost of file conflicts
+
+**DO NOT** parallelize conflicting issues with the plan to "clean up later." This wastes tokens and creates merge conflicts.
+
 ### Agent Responsibilities
 
 **Implementation Agent (per issue):**
 1. Mark issue `in-progress`
 2. Implement (following TDD)
-3. Run tests, verify passing
+3. Run scoped tests (changed files only — pre-commit runs full suite)
 4. Self-review for completeness
 5. Mark `ready-for-review`
 6. **DO NOT commit or close issue**
 
 **Review Agent (per phase):**
-1. Review all changes from phase together
-2. Check code quality, patterns, cross-issue consistency
-3. Approve or list specific issues needing fixes
-4. If fixes needed → orchestrator dispatches fix agents → re-review
+1. Receive pre-computed diffs and agent summaries from orchestrator
+2. Review all changes from phase together
+3. Check code quality, patterns, cross-issue consistency
+4. Only read individual files if diff is unclear or surrounding context needed
+5. Approve or list specific issues needing fixes
 
 **Fix Agent (dispatched when review requests changes):**
 1. Receive specific feedback from reviewer
@@ -329,9 +246,26 @@ Phase N+1: (issues that were blocked by Phase N)
 
 **Orchestrator (this skill):**
 1. Coordinate phases and agents
-2. After review passes, commit each issue sequentially
-3. Mark issues code-complete and close them
-4. Track checkpoints for resume
+2. Pre-compute review context (diffs, agent summaries) before dispatching reviewer
+3. After review passes, batch commit all phase changes in a single commit
+4. Mark all phase issues code-complete and close them
+5. Track checkpoints for resume
+
+## Pre-Computed Review Context
+
+**Before dispatching the review agent**, the orchestrator must prepare:
+
+```bash
+# 1. Capture diff summary
+git diff --stat
+
+# 2. Capture full diff
+git diff
+
+# 3. Collect agent summaries (what they built, files changed, self-review notes)
+```
+
+Pass ALL of this into the reviewer prompt. See `phase-reviewer-prompt.md` for the template.
 
 ## Resume & Crash Recovery
 
@@ -345,14 +279,8 @@ Phase N+1: (issues that were blocked by Phase N)
 
 **Step 1: Fetch all issue data**
 
-**Preferred: MCP**
 ```
 mcp__workflow__gh_milestone_issues(milestone="Milestone Name", state="all")
-```
-
-**Fallback: Bash**
-```bash
-gh issue list --milestone "Milestone Name" --state all --json number,title,labels,state
 ```
 
 **Step 2: Check commits for each issue**
@@ -362,45 +290,19 @@ gh issue list --milestone "Milestone Name" --state all --json number,title,label
 git log --oneline --grep="Refs #N" --grep="#N" | head -1
 ```
 
+Note: With batch commits, one commit may reference multiple issues (e.g., `Refs #70, #71, #72`). The grep still works — it finds the commit containing each issue number.
+
 **Step 3: Categorize each issue**
 
 | Label | Closed? | Has Commit? | State | Action |
 |-------|---------|-------------|-------|--------|
-| `code-complete` | Yes | Yes | ✓ Done | Skip |
-| `code-complete` | Yes | No | ⚠ Inconsistent | Warn user, verify manually |
+| `code-complete` | Yes | Yes | Done | Skip |
+| `code-complete` | Yes | No | Inconsistent | Warn user, verify manually |
 | `ready-for-review` | No | No | Review pending | Queue for review → commit |
-| `ready-for-review` | No | Yes | ⚠ Inconsistent | Should be closed, fix labels |
+| `ready-for-review` | No | Yes | Inconsistent | Should be closed, fix labels |
 | `in-progress` | No | - | Work incomplete | Dispatch recovery agent |
 | `blocked-failed` | No | - | Failed | Skip (or `--retry-failed`) |
 | *(none)* | No | - | Not started | Queue for implementation |
-
-### Resume Output
-
-Display clear status to user:
-
-```
-## Resume State for Milestone "Dashboard Redesign"
-
-### Completed (skip)
-✓ #65: Update dashboard route (committed: abc1234)
-✓ #66: Add ongoing month data (committed: def5678)
-
-### Ready for Review (need commit)
-⏳ #70: Category breakdown - ready, needs review & commit
-⏳ #71: Collapsible section - ready, needs review & commit
-
-### In Progress (need recovery)
-🔄 #72: Remove month selector - partial work found
-
-### Not Started
-○ #81: Dashboard integration tests
-○ #82: Trends page tests
-
-### Failed (skipped)
-✗ #77: Drill-down links - blocked-failed
-
-Resume from: Phase 2 (review pending issues, then continue)
-```
 
 ### Recovery Actions by State
 
@@ -423,33 +325,25 @@ Resume from: Phase 2 (review pending issues, then continue)
 
 ### Final State Query
 
-**Preferred: MCP**
 ```
 mcp__workflow__gh_milestone_issues(milestone="Milestone Name", state="all")
-```
-
-**Fallback: Bash**
-```bash
-gh issue list --milestone "Milestone Name" --state all --json number,title,labels,state
 ```
 
 ### Happy Path (All `code-complete`)
 
 ```
-✓ All 12 issues complete
-
-Invoking /create-pr...
+All 12 issues complete. Ready for PR. Run /create-pr when you're ready.
 ```
 
-Automatically run `/create-pr`.
+**Do NOT auto-invoke `/create-pr`.** Inform the user that all issues are complete and they can run `/create-pr` manually when ready.
 
 ### Partial Failure (Some `blocked-failed`)
 
 ```
 ## Milestone Summary
 
-✓ Complete: 10 issues
-✗ Failed: 2 issues
+Complete: 10 issues
+Failed: 2 issues
   - #15: Add retry endpoint (failed: tests not passing after retry)
   - #18: Widget component (failed: spec review rejected twice)
 
@@ -463,69 +357,46 @@ Automatically run `/create-pr`.
 
 ### Startup
 
-**Preferred: MCP**
 ```
 # Fetch milestone details (by number or title)
 mcp__workflow__gh_milestone(action="find", identifier="5")
-# or
-mcp__workflow__gh_milestone(action="find", identifier="Phase 5: Variety Tracking")
 
 # Fetch all issues with full metadata (single call)
 mcp__workflow__gh_milestone_issues(milestone="Milestone Name", state="all")
+
+# Extract design doc path from milestone description — DO NOT read it
+# Pass design_doc_path to implementation agents and reviewer
 ```
 
-**Fallback: Bash**
-```bash
-# Parse milestone (handle number, title, or URL)
-MILESTONE_NUMBER=...
+### Orchestrator Batch Commit
 
-# Fetch milestone details
-gh api repos/:owner/:repo/milestones/$MILESTONE_NUMBER
-
-# Fetch all issues
-gh issue list --milestone $MILESTONE_NUMBER --state all --json number,title,body,labels
-```
-
-### Orchestrator Commit Loop
-
-After review passes, the orchestrator commits each issue's changes sequentially.
-
-**For each ready-for-review issue in the phase:**
+After review passes, the orchestrator commits ALL phase changes in a single commit.
 
 ```bash
-# 1. Identify files for this issue (from agent's report or git diff analysis)
-# Agent should have reported: "Files changed: src/dashboard.py, src/templates/dashboard.html"
+# 1. Stage all files from all agents in the phase
+git add src/dashboard.py src/templates/dashboard.html src/api/routes.py ...
 
-# 2. Stage only this issue's files
-git add src/dashboard.py src/templates/dashboard.html
-
-# 3. Commit with reference to issue
+# 2. Single commit referencing all phase issues
 git commit -m "$(cat <<'EOF'
-(feat): Add ongoing month column to category breakdown
+(feat): Phase N - [summary of phase work]
 
-Refs #70
+Refs #70, #71, #72
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 EOF
 )"
 
-# 4. Mark code-complete and close
-mcp__workflow__gh_bulk_issues(action="close", issues=[70], label="code-complete")
-
-# Or fallback:
-gh issue edit 70 --remove-label "ready-for-review" --add-label "code-complete"
-gh issue close 70
+# 3. Close all issues and add code-complete label
+mcp__workflow__gh_bulk_issues(action="close", issues=[70, 71, 72], label="code-complete")
 ```
 
-**Important:**
-- Commit ONE issue at a time (not all changes in one commit)
-- Each commit references its issue with `Refs #N`
-- This allows resume to verify which issues are actually committed
-- If commit fails (pre-commit hook), fix and retry before moving to next issue
+**Why batch instead of per-issue commits:**
+- Pre-commit hooks run the full test suite — batching means 1 run per phase instead of N
+- Issues are still traceable via `Refs #N` in the commit message
+- Resume still works: `git log --grep="Refs #70"` finds the batch commit
 
 ### Label Updates (by agents)
 
-**Preferred: MCP**
 ```
 # Mark in-progress (agent starting work)
 mcp__workflow__gh_update_issue(issue=15, add_labels=["in-progress"])
@@ -534,35 +405,15 @@ mcp__workflow__gh_update_issue(issue=15, add_labels=["in-progress"])
 mcp__workflow__gh_update_issue(issue=15, remove_labels=["in-progress"], add_labels=["ready-for-review"])
 ```
 
-**Fallback: Bash**
-```bash
-# Mark in-progress
-gh issue edit $ISSUE --add-label "in-progress"
-
-# Mark ready-for-review
-gh issue edit $ISSUE --remove-label "in-progress" --add-label "ready-for-review"
-```
-
 ### Label Updates (by orchestrator)
 
-**Preferred: MCP**
 ```
-# Mark code-complete after committing (close issue)
-mcp__workflow__gh_bulk_issues(action="close", issues=[15], label="code-complete")
+# Mark code-complete after batch commit (close all phase issues)
+mcp__workflow__gh_bulk_issues(action="close", issues=[70, 71, 72], label="code-complete")
 
 # Mark blocked-failed (on unrecoverable failure)
 mcp__workflow__gh_bulk_issues(action="unlabel", issues=[15], label="in-progress")
 mcp__workflow__gh_bulk_issues(action="label", issues=[15], label="blocked-failed")
-```
-
-**Fallback: Bash**
-```bash
-# Mark code-complete after committing
-gh issue edit $ISSUE --remove-label "ready-for-review" --add-label "code-complete"
-gh issue close $ISSUE
-
-# Mark blocked-failed
-gh issue edit $ISSUE --remove-label "in-progress" --add-label "blocked-failed"
 ```
 
 ## Subagent Prompts
@@ -572,6 +423,11 @@ gh issue edit $ISSUE --remove-label "in-progress" --add-label "blocked-failed"
 - `./phase-reviewer-prompt.md` - For reviewing all changes in a phase (single agent)
 - `./fix-agent-prompt.md` - For addressing specific review feedback (no commits)
 
+**When dispatching subagents, include:**
+- `design_doc_path` — extracted from milestone description, so agents can read it if needed
+- Full issue body (verbatim from `gh_milestone_issues`)
+- Working directory path
+
 ## Checklist
 
 When starting/resuming a milestone:
@@ -579,10 +435,12 @@ When starting/resuming a milestone:
 ### Setup Phase
 - [ ] Parse milestone identifier (number, title, or URL)
 - [ ] Fetch milestone details and parse branch name from description
+- [ ] Extract `design_doc_path` from milestone description (do NOT read it)
 - [ ] Detect current git state (branch, worktree, existing worktrees)
-- [ ] **ASK USER about branching strategy using `AskUserQuestion`** (MANDATORY - never skip)
+- [ ] **Fast-path:** If milestone is `[ACTIVE]` AND on correct branch → skip to Resume Check
+- [ ] **Otherwise:** Ask user about branching strategy using `AskUserQuestion`
 - [ ] Execute user's branch/worktree choice
-- [ ] **Update milestone status from `[READY]` to `[ACTIVE]`** (if not already active)
+- [ ] **Update milestone status from `[READY]` to `[ACTIVE]`** (skip if already active)
 
 ### Resume Check
 - [ ] Query all issues and their labels
@@ -593,27 +451,24 @@ When starting/resuming a milestone:
 
 ### Phase Execution (repeat for each phase - NO STOPPING BETWEEN PHASES)
 - [ ] **Step 1: Implementation** - Dispatch parallel agents for unblocked issues
-  - [ ] Agents mark in-progress → ready-for-review
+  - [ ] Check for file conflicts between issues — serialize if overlap detected
+  - [ ] Pass `design_doc_path` and full issue body to each agent
+  - [ ] Agents mark in-progress → implement → scoped tests → self-review → ready-for-review
   - [ ] Agents DO NOT commit
   - [ ] Wait for all agents to complete or fail
 - [ ] **Step 2: Review** - Dispatch single review agent for phase
-  - [ ] Reviewer checks all changes together
+  - [ ] Pre-compute: run `git diff --stat` and `git diff`, collect agent summaries
+  - [ ] Pass pre-computed diffs, agent summaries, and `design_doc_path` to reviewer
   - [ ] If approved → proceed to Step 3
-  - [ ] If changes requested → Step 2a
-- [ ] **Step 2a: Fix Loop** (only if review requests changes)
-  - [ ] Dispatch fix agents for issues needing changes (parallel if independent)
-  - [ ] Fix agents address specific feedback, mark ready-for-review
-  - [ ] Re-run review (Step 2)
-  - [ ] Repeat until approved
-- [ ] **Step 3: Commit & Close** - Orchestrator commits sequentially
-  - [ ] For each ready-for-review issue:
-    - [ ] `git add <files>`
-    - [ ] `git commit -m "(type): Summary\n\nRefs #N"`
-    - [ ] Mark code-complete + close issue
-  - [ ] ✓ CHECKPOINT - safe to resume from here
+  - [ ] If changes requested → dispatch fix agents → re-review
+- [ ] **Step 3: Batch Commit** - Orchestrator commits all phase changes at once
+  - [ ] `git add` all files from all agents in the phase
+  - [ ] Single `git commit` with `Refs #N1, #N2, #N3`
+  - [ ] `gh_bulk_issues(action="close", issues=[...], label="code-complete")`
+  - [ ] CHECKPOINT - safe to resume from here
 - [ ] **Immediately proceed to next phase** (do NOT ask user to continue)
 
 ### Completion
 - [ ] Verify all issues are code-complete or blocked-failed
-- [ ] On success: run `/create-pr`
+- [ ] On success: inform user to run `/create-pr` when ready (do NOT auto-invoke)
 - [ ] On partial failure: show summary and options
