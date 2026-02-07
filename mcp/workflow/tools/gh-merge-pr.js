@@ -1,4 +1,4 @@
-import { gh, git } from "../lib/exec.js";
+import { gh, git, resolveRepoRoot } from "../lib/exec.js";
 
 const definition = {
   name: "gh_merge_pr",
@@ -43,7 +43,9 @@ const definition = {
 async function handler(args) {
   const { cwd, pr, method, delete_branch, admin, subject, body } = args;
 
-  const opts = cwd ? { cwd } : {};
+  // Resolve to main repo root so CWD remains valid after worktree removal
+  const repoRoot = await resolveRepoRoot(cwd);
+  const opts = { cwd: repoRoot };
   const ghArgs = ["pr", "merge", String(pr)];
 
   // Merge method

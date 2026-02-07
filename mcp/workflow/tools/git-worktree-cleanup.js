@@ -1,4 +1,4 @@
-import { git } from "../lib/exec.js";
+import { git, resolveRepoRoot } from "../lib/exec.js";
 import { resolve } from "path";
 
 const definition = {
@@ -30,25 +30,7 @@ const definition = {
 async function handler(args) {
   const { worktree, delete_branch = false } = args;
 
-  // Always resolve the main repo root from cwd or MCP server cwd.
-  // If the caller is inside a worktree, git-common-dir gives us the main .git.
-  const cwd = args.cwd || process.cwd();
-  let repoRoot;
-  try {
-    const { stdout: commonDir } = await git("rev-parse --git-common-dir", {
-      cwd,
-    });
-    // commonDir is either ".git" (already at root) or an absolute path like "/repo/.git"
-    if (commonDir === ".git") {
-      const { stdout } = await git("rev-parse --show-toplevel", { cwd });
-      repoRoot = stdout;
-    } else {
-      // commonDir is e.g. /Users/max/Gits/food-butler/.git — parent is repo root
-      repoRoot = resolve(commonDir, "..");
-    }
-  } catch (err) {
-    throw new Error(`Could not determine repo root from ${cwd}: ${err.message}`);
-  }
+  const repoRoot = await resolveRepoRoot(args.cwd);
 
   const opts = { cwd: repoRoot };
   const worktreePath = resolve(repoRoot, ".worktrees", worktree);
