@@ -85,7 +85,7 @@ git log origin/$BRANCH..HEAD
    - Deploy current branch to dev using MCP: `pi_deploy("[project]", "dev", "[branch]")`
    - Wait for container to be healthy
    - Run E2E tests: `npm --prefix frontend run test:e2e`
-   - If E2E tests fail: report failures (do not auto-fix)
+   - If E2E tests fail: **STOP and prominently report the failures.** Do NOT assume they were broken before this PR — treat them as regressions caused by this branch until proven otherwise. Do not proceed to staging deployment.
 
 7. **Deploy to Staging:**
    - Deploy current branch to staging using MCP: `pi_deploy("[project]", "staging", "[branch]")`
@@ -143,7 +143,7 @@ Use after fixing issues found during manual staging testing. Skips PR creation, 
 ### Deploy & E2E (always runs)
 - [ ] Deploy to dev: `pi_deploy("[project]", "dev", "[branch]")`
 - [ ] Health check dev environment
-- [ ] Run E2E tests
+- [ ] Run E2E tests — **if any fail, STOP. Report failures prominently. Do NOT deploy to staging.**
 - [ ] Deploy to staging: `pi_deploy("[project]", "staging", "[branch]")`
 - [ ] Health check staging environment
 
@@ -213,7 +213,7 @@ pi_deploy("[project]", "staging", "$BRANCH")
 curl --retry 10 --retry-delay 3 --retry-connrefused -s http://[project]-staging.home/api/health
 ```
 
-If E2E tests fail, report the failures but do not auto-fix. The user may need to investigate.
+**If E2E tests fail:** STOP immediately. Report the failures prominently. Do NOT assume they were broken before this PR — treat them as regressions caused by this branch. Do NOT deploy to staging.
 
 ## Output Format
 
@@ -221,6 +221,7 @@ If E2E tests fail, report the failures but do not auto-fix. The user may need to
 ## PR Created
 
 **URL:** https://github.com/owner/repo/pull/42
+**Milestone:** [Phase 5: Variety Tracking](https://github.com/owner/repo/milestone/3)
 
 ### Code Review
 Passed (2 rounds - fixed formatting issues)

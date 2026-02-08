@@ -431,7 +431,7 @@ const toolHandlers = {
     validateApp(args.app);
     const containerPrefix = getContainerPrefix(args.app);
     const result = await executeSSH(
-      `rm -rf /data/${args.app}/dev/* && docker restart ${containerPrefix}-dev`
+      `rm -rf /data/${containerPrefix}/dev/* && docker restart ${containerPrefix}-dev`
     );
     return { content: [{ type: "text", text: formatResult(result) }] };
   },

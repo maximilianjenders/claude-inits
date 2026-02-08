@@ -1,4 +1,4 @@
-import { gh } from "../lib/exec.js";
+import { gh, git } from "../lib/exec.js";
 
 const definition = {
   name: "gh_create_pr",
@@ -126,14 +126,24 @@ async function handler(args) {
   ], opts);
   const result = JSON.parse(viewOutput);
 
+  // Get merge-base and HEAD SHAs for diff computation
+  const [{ stdout: mergeBase }, { stdout: headSha }] = await Promise.all([
+    git(["merge-base", result.baseRefName, "HEAD"], opts),
+    git(["rev-parse", "HEAD"], opts),
+  ]);
+
   // Build output with links
   const lines = [
     `PR #${result.number}: ${result.url}`,
     `Branch: ${result.headRefName} → ${result.baseRefName}`,
+    `Base: ${mergeBase}`,
+    `Head: ${headSha}`,
   ];
 
   if (result.milestone) {
-    lines.push(`Milestone: ${result.milestone.title} (${result.milestone.url})`);
+    // Construct milestone URL from PR URL (gh pr view doesn't return milestone.url)
+    const repoUrl = result.url.replace(/\/pull\/\d+$/, "");
+    lines.push(`Milestone: ${result.milestone.title} (${repoUrl}/milestone/${result.milestone.number})`);
   }
 
   return {
