@@ -77,7 +77,7 @@ gh pr view $PR_NUMBER --json title,url,milestone,body
 - [ ] Close the milestone
 - [ ] Stop staging container: `pi_docker_stop("$PROJECT-staging")`
 - [ ] Stop dev container: `pi_docker_stop("$PROJECT-dev")`
-- [ ] Switch to master and pull
+- [ ] Switch to master and pull (**if in worktree, `cd` to project root first**)
 
 ### Deploy
 - [ ] Deploy to production: `pi_deploy("$PROJECT", "prod")`
@@ -124,6 +124,7 @@ gh pr view $PR_NUMBER --json title,url,milestone,body
 git diff --cached --quiet || git commit -m "(docs): Update documentation for PR #$PR_NUMBER"
 
 # 2. Merge PR (auto-removes worktree + deletes branch)
+#    Do NOT call git_worktree_cleanup separately — gh_merge_pr handles it
 mcp__workflow__gh_merge_pr(pr=42, method="merge", delete_branch=true)
 
 # 3. Remove code-complete labels from linked issues (bulk operation)
@@ -137,8 +138,10 @@ mcp__pi__pi_docker_stop(container="butler-staging")
 mcp__pi__pi_docker_stop(container="butler-dev")
 
 # 6. Switch to master and pull
-git checkout master
-git pull
+#    CRITICAL: If you were working from a worktree, it's now deleted.
+#    Your Bash CWD is invalid — cd to the project root FIRST.
+cd /path/to/project  # Use the actual project root path
+git checkout master && git pull
 
 # 7. Deploy to production
 mcp__pi__pi_deploy(app="food-butler", env="prod")
@@ -179,6 +182,8 @@ if [ -d "$WORKTREE_PATH" ]; then
 fi
 
 # 7. Switch to master and pull
+# CRITICAL: If you were in a worktree, cd to project root first (CWD is now invalid)
+cd /path/to/project  # Use the actual project root path
 git checkout master
 git pull
 

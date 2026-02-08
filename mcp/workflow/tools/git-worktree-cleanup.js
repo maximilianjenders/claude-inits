@@ -1,5 +1,6 @@
 import { git, resolveRepoRoot } from "../lib/exec.js";
 import { resolve } from "path";
+import { existsSync } from "fs";
 
 const definition = {
   name: "git_worktree_cleanup",
@@ -35,6 +36,33 @@ async function handler(args) {
   const opts = { cwd: repoRoot };
   const worktreePath = resolve(repoRoot, ".worktrees", worktree);
   const actions = [];
+
+  // Check if the worktree directory still exists
+  if (!existsSync(worktreePath)) {
+    // Already removed (e.g., by gh_merge_pr auto-cleanup)
+    actions.push(`Worktree .worktrees/${worktree} already removed`);
+
+    // Still try to prune stale worktree entries
+    try {
+      await git(["worktree", "prune"], opts);
+      actions.push("Pruned stale worktree entries");
+    } catch {
+      // Best-effort
+    }
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify(
+            { repo_root: repoRoot, worktree, worktreeBranch: null, actions },
+            null,
+            2
+          ),
+        },
+      ],
+    };
+  }
 
   // Get the branch checked out in the worktree before removing it
   let worktreeBranch = null;
