@@ -120,7 +120,7 @@ If the issue has a milestone with `[READY]` prefix:
 
 ```
 # Get all issues in milestone (check for in-progress/code-complete labels)
-mcp__workflow__gh_milestone_issues(milestone="[READY] Milestone Title", state="all")
+mcp__workflow__gh_milestone_issues(milestone=5, state="all")
 
 # If no active issues found, rename milestone to [ACTIVE]
 mcp__workflow__gh_milestone(action="rename", identifier="5", new_title="[ACTIVE] Milestone Title")

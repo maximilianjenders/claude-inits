@@ -104,7 +104,7 @@ After updating an issue, check if milestone status should change:
 **Preferred: MCP**
 ```
 # Get all issues in milestone to check status
-mcp__workflow__gh_milestone_issues(milestone="Milestone Title", state="all")
+mcp__workflow__gh_milestone_issues(milestone=5, state="all")
 
 # If first issue marked in-progress, rename milestone to [ACTIVE]
 mcp__workflow__gh_milestone(action="rename", identifier="5", new_title="[ACTIVE] Milestone Title")

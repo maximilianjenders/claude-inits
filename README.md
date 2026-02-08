@@ -38,7 +38,7 @@ claude mcp add workflow node /Users/max/Gits/claude-inits/mcp/workflow/server.js
 |------|-------------|
 | `git_state` | Detect branch, worktree status, existing worktrees |
 | `gh_milestone` | List, find, close, open, rename milestones |
-| `gh_milestone_issues` | List issues in a milestone with filters |
+| `gh_milestone_issues` | List issues in a milestone (by number or title) |
 | `gh_bulk_issues` | Create, label, unlabel, close, reopen issues (bulk) |
 | `gh_update_issue` | Update single issue (title, body, labels, assignees) |
 | `gh_issue` | View single issue or list issues with filters |

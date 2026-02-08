@@ -11,8 +11,8 @@ const definition = {
         description: "Working directory (defaults to MCP server cwd)",
       },
       milestone: {
-        type: "string",
-        description: "Milestone title",
+        type: ["string", "number"],
+        description: "Milestone title or number",
       },
       state: {
         type: "string",
@@ -35,7 +35,7 @@ async function handler(args) {
   // Build gh issue list command
   const ghArgs = [
     "issue", "list",
-    "--milestone", milestone,
+    "--milestone", String(milestone),
     "--state", state,
     "--json", "number,title,state,labels,body",
     "--jq", '[.[] | {number, title, state, labels: [.labels[].name], body}]'

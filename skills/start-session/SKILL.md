@@ -39,7 +39,7 @@ mcp__workflow__gh_issue(action="list", labels=["in-progress"], state="open")
 mcp__workflow__gh_issue(action="list", labels=["code-complete"], state="closed")
 
 # For detailed milestone breakdown, query each milestone's issues:
-mcp__workflow__gh_milestone_issues(milestone="Milestone Title", state="all")
+mcp__workflow__gh_milestone_issues(milestone=5, state="all")
 ```
 
 **Fallback: Bash**

@@ -187,8 +187,8 @@ Reuse data already fetched during startup — no additional API calls needed:
 
 ```
 # These calls are already made during startup - reuse the results:
-# mcp__workflow__gh_milestone(action="find", identifier="5")  → description has dependency tree
-# mcp__workflow__gh_milestone_issues(milestone="...", state="all")  → each issue body has "Blocked by: #X"
+# mcp__workflow__gh_milestone(action="find", identifier="5")  → description has dependency tree, returns milestone number
+# mcp__workflow__gh_milestone_issues(milestone=5, state="all")  → each issue body has "Blocked by: #X"
 
 # Parse dependencies from the data you already have:
 # 1. Milestone description → look for dependency tree / phase structure
@@ -280,7 +280,7 @@ Pass ALL of this into the reviewer prompt. See `phase-reviewer-prompt.md` for th
 **Step 1: Fetch all issue data**
 
 ```
-mcp__workflow__gh_milestone_issues(milestone="Milestone Name", state="all")
+mcp__workflow__gh_milestone_issues(milestone=5, state="all")
 ```
 
 **Step 2: Check commits for each issue**
@@ -326,7 +326,7 @@ Note: With batch commits, one commit may reference multiple issues (e.g., `Refs 
 ### Final State Query
 
 ```
-mcp__workflow__gh_milestone_issues(milestone="Milestone Name", state="all")
+mcp__workflow__gh_milestone_issues(milestone=5, state="all")
 ```
 
 ### Happy Path (All `code-complete`)
@@ -358,11 +358,11 @@ Failed: 2 issues
 ### Startup
 
 ```
-# Fetch milestone details (by number or title)
+# Fetch milestone details (by number or title) — returns milestone number
 mcp__workflow__gh_milestone(action="find", identifier="5")
 
-# Fetch all issues with full metadata (single call)
-mcp__workflow__gh_milestone_issues(milestone="Milestone Name", state="all")
+# Fetch all issues using milestone NUMBER from above (avoids title mismatch)
+mcp__workflow__gh_milestone_issues(milestone=5, state="all")
 
 # Extract design doc path from milestone description — DO NOT read it
 # Pass design_doc_path to implementation agents and reviewer

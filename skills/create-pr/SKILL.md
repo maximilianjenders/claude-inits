@@ -293,7 +293,7 @@ Parse milestone to find all `code-complete` issues (which are now closed):
 **Preferred: MCP**
 ```
 # Get all issues in milestone with labels (filter for code-complete in code)
-mcp__workflow__gh_milestone_issues(milestone="Phase 5: Variety Tracking", state="closed", label="code-complete")
+mcp__workflow__gh_milestone_issues(milestone=5, state="closed", label="code-complete")
 ```
 
 **Fallback: Bash**
