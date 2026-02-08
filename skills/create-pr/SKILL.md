@@ -56,11 +56,10 @@ git log origin/$BRANCH..HEAD
    - Use `Fixes #X` syntax (issues are already closed via `update-issue`)
 
 3. **AI Review:**
-   - Use `superpowers:requesting-code-review` skill
-   - Provide context:
-     - **Issue specs:** Acceptance criteria from linked issues
-     - **Design doc:** Architecture/patterns from milestone's design doc (if exists)
-     - **CLAUDE.md:** Project coding standards
+   - Pre-compute diffs pinned to merge base: `MERGE_BASE=$(git merge-base master HEAD)`
+   - Run `git diff --stat $MERGE_BASE..HEAD` and `git diff $MERGE_BASE..HEAD`
+   - Gather linked issue titles and acceptance criteria
+   - Dispatch reviewer agent using template in [`reviewer-prompt.md`](reviewer-prompt.md)
    - Review for: spec compliance, design doc adherence, code quality, CLAUDE.md violations
 
 4. **Create Issues for Review Findings:**
@@ -134,7 +133,9 @@ Use after fixing issues found during manual staging testing. Skips PR creation, 
 - [ ] Create PR with title, description, linked issues
 
 ### Code Review Loop (skip if `--retest` — repeat until approved)
-- [ ] Invoke `superpowers:requesting-code-review` skill
+- [ ] Pre-compute diffs: `MERGE_BASE=$(git merge-base master HEAD)`, then `git diff --stat` and `git diff` using `$MERGE_BASE..HEAD`
+- [ ] Gather linked issue titles and acceptance criteria
+- [ ] Dispatch reviewer agent using [`reviewer-prompt.md`](reviewer-prompt.md) template
 - [ ] If issues found: create GitHub issue for EACH finding with `pr-review` label
 - [ ] Fix ALL pr-review issues using `/start-issue` workflow
 - [ ] Re-run review after fixes
