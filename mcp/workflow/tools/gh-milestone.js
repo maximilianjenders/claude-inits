@@ -104,18 +104,16 @@ async function handler(args) {
     if (!title) {
       throw new Error("title is required for create action");
     }
-    const createArgs = [
-      "api", "-X", "POST",
-      "repos/{owner}/{repo}/milestones",
-      "-f", `title=${title}`,
-    ];
+    const body = { title };
     if (description) {
-      createArgs.push("-f", `description=${description}`);
+      body.description = description;
     }
     const { stdout } = await gh([
-      ...createArgs,
+      "api", "-X", "POST",
+      "repos/{owner}/{repo}/milestones",
+      "--input", "-",
       "--jq", "{ number, title, state, description }",
-    ], opts);
+    ], { ...opts, input: JSON.stringify(body) });
     return {
       content: [{ type: "text", text: stdout.trim() }],
     };
@@ -175,17 +173,18 @@ async function handler(args) {
       if (!description && !new_title) {
         throw new Error("description or new_title is required for edit action");
       }
-      const editArgs = [
-        "api", "-X", "PATCH",
-        `repos/{owner}/{repo}/milestones/${milestone.number}`,
-      ];
+      const editBody = {};
       if (description !== undefined) {
-        editArgs.push("-f", `description=${description}`);
+        editBody.description = description;
       }
       if (new_title) {
-        editArgs.push("-f", `title=${new_title}`);
+        editBody.title = new_title;
       }
-      await gh(editArgs, opts);
+      await gh([
+        "api", "-X", "PATCH",
+        `repos/{owner}/{repo}/milestones/${milestone.number}`,
+        "--input", "-",
+      ], { ...opts, input: JSON.stringify(editBody) });
       if (description !== undefined) {
         milestone.description = description;
       }

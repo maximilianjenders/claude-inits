@@ -4,7 +4,7 @@ import { spawn } from "child_process";
  * Execute a command and return stdout/stderr
  */
 function exec(command, args = [], options = {}) {
-  const { timeout = 30000, cwd } = options;
+  const { timeout = 30000, cwd, input } = options;
 
   return new Promise((resolve, reject) => {
     const proc = spawn(command, args, {
@@ -12,6 +12,11 @@ function exec(command, args = [], options = {}) {
       cwd,
       shell: false,
     });
+
+    if (input !== undefined) {
+      proc.stdin.write(input);
+      proc.stdin.end();
+    }
 
     let stdout = "";
     let stderr = "";
