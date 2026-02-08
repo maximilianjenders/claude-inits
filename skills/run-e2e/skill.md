@@ -19,10 +19,11 @@ Deploy the current branch to dev environment and run the Playwright E2E test sui
 ## What This Does
 
 1. Detect project from current working directory
-2. Deploy specified branch (default: current) to project's dev environment
-3. Wait for container to be healthy
-4. Run Playwright E2E tests against dev environment
-5. Report pass/fail results
+2. Reset dev data to ensure clean state: `pi_reset_dev("[project]")`
+3. Deploy specified branch (default: current) to project's dev environment
+4. Wait for container to be healthy
+5. Run Playwright E2E tests against dev environment
+6. Report pass/fail results
 
 ## Project Configuration
 
@@ -47,7 +48,21 @@ If branch argument provided, use it. Otherwise:
 git branch --show-current
 ```
 
-### 3. Deploy to Dev
+### 3. Reset Dev Data
+
+Wipe previous test data to ensure clean fixtures:
+
+**Preferred: MCP**
+```
+pi_reset_dev("$PROJECT")
+```
+
+**Fallback: SSH**
+```bash
+ssh max@pi.local "rm -rf /data/$PROJECT/dev/* && docker restart $PROJECT-dev"
+```
+
+### 4. Deploy to Dev
 
 **Preferred: MCP**
 ```
@@ -61,20 +76,20 @@ ssh max@pi.local "cd ~/pi-setup && ./build.sh $PROJECT dev $BRANCH"
 
 Wait for success message.
 
-### 4. Health Check
+### 5. Health Check
 
 Wait for dev environment to be ready:
 ```bash
 curl --retry 10 --retry-delay 3 --retry-connrefused -s http://$DEV_URL/api/health
 ```
 
-### 5. Run E2E Tests
+### 6. Run E2E Tests
 
 ```bash
 npm --prefix frontend run test:e2e
 ```
 
-### 6. Report Results
+### 7. Report Results
 
 - If all tests pass: "E2E tests passed. Ready to merge."
 - If any fail: Show Playwright output with failure details.
@@ -88,7 +103,7 @@ npm --prefix frontend run test:e2e
 
 ## Debugging Flaky Tests
 
-Dev data persists between test runs. If tests are failing due to stale data from previous runs, reset dev data to fixtures:
+Dev data is automatically reset before each deploy (step 3). If tests are still flaky, you can manually reset without redeploying:
 
 **Preferred: MCP**
 ```
@@ -102,12 +117,6 @@ ssh max@pi.local "rm -rf /data/butler/dev/* && docker restart butler-dev"
 
 This wipes the database and re-seeds from fixtures on container restart.
 
-**When to reset:**
-- Tests failing inconsistently (flaky)
-- Tests expecting specific fixture data but finding modified data
-- After debugging sessions that created test data
-- Starting a fresh E2E testing cycle
-
 ## Checklist
 
 **Follow these steps in order. Do not skip health check.**
@@ -117,6 +126,7 @@ This wipes the database and re-seeds from fixtures on container restart.
 - [ ] Get branch (argument or `git branch --show-current`)
 
 ### Deploy
+- [ ] Reset dev data: `pi_reset_dev("$PROJECT")`
 - [ ] Deploy to dev: `pi_deploy("$PROJECT", "dev", "$BRANCH")`
 - [ ] **Health check** (REQUIRED): `curl --retry 10 --retry-delay 3 http://$DEV_URL/api/health`
 - [ ] Verify health check passes before proceeding

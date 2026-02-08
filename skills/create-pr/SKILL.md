@@ -81,6 +81,7 @@ git log origin/$BRANCH..HEAD
 6. **Deploy to Dev and Run E2E Tests:**
    - Pre-commit hooks already verified unit tests pass — skip `/run-tests`
    - Detect project from current working directory
+   - Reset dev data to ensure clean state: `pi_reset_dev("[project]")`
    - Deploy current branch to dev using MCP: `pi_deploy("[project]", "dev", "[branch]")`
    - Wait for container to be healthy
    - Run E2E tests: `npm --prefix frontend run test:e2e`
@@ -108,12 +109,13 @@ Use after fixing issues found during manual staging testing. Skips PR creation, 
 **Flow:**
 1. Pre-flight checks (same as standard)
 2. Push any new commits to remote
-3. Deploy to dev: `pi_deploy("[project]", "dev", "[branch]")`
-4. Health check dev
-5. Run E2E tests
-6. Deploy to staging: `pi_deploy("[project]", "staging", "[branch]")`
-7. Health check staging
-8. Report summary (E2E results + staging URL)
+3. Reset dev data: `pi_reset_dev("[project]")`
+4. Deploy to dev: `pi_deploy("[project]", "dev", "[branch]")`
+5. Health check dev
+6. Run E2E tests
+7. Deploy to staging: `pi_deploy("[project]", "staging", "[branch]")`
+8. Health check staging
+9. Report summary (E2E results + staging URL)
 
 ## Checklist
 
@@ -142,6 +144,7 @@ Use after fixing issues found during manual staging testing. Skips PR creation, 
 - [ ] **Only exit loop when review passes with no new issues**
 
 ### Deploy & E2E (always runs)
+- [ ] Reset dev data: `pi_reset_dev("[project]")`
 - [ ] Deploy to dev: `pi_deploy("[project]", "dev", "[branch]")`
 - [ ] Health check dev environment
 - [ ] Run E2E tests — **if any fail, STOP. Report failures prominently. Do NOT deploy to staging.**
@@ -198,19 +201,22 @@ After PR is created (or immediately in `--retest` mode):
 # 2. Get current branch
 BRANCH=$(git branch --show-current)
 
-# 3. Deploy to dev using MCP (preferred)
+# 3. Reset dev data for clean E2E state
+pi_reset_dev("[project]")
+
+# 4. Deploy to dev using MCP (preferred)
 pi_deploy("[project]", "dev", "$BRANCH")
 
-# 4. Health check
+# 5. Health check
 curl --retry 10 --retry-delay 3 --retry-connrefused -s http://[project]-dev.home/api/health
 
-# 5. Run E2E tests
+# 6. Run E2E tests
 npm --prefix frontend run test:e2e
 
-# 6. Deploy to staging using MCP
+# 7. Deploy to staging using MCP
 pi_deploy("[project]", "staging", "$BRANCH")
 
-# 7. Health check
+# 8. Health check
 curl --retry 10 --retry-delay 3 --retry-connrefused -s http://[project]-staging.home/api/health
 ```
 
