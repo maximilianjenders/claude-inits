@@ -47,7 +47,7 @@ async function findMilestone(identifier, opts = {}) {
     const { stdout } = await gh([
       "api",
       `repos/{owner}/{repo}/milestones/${identifier}`,
-      "--jq", '{ number, title, state, open_issues, closed_issues }'
+      "--jq", '{ number, title, state, description, open_issues, closed_issues }'
     ], opts);
     return JSON.parse(stdout);
   }
@@ -55,7 +55,7 @@ async function findMilestone(identifier, opts = {}) {
   // Otherwise search by title
   const { stdout } = await gh([
     "api", "repos/{owner}/{repo}/milestones",
-    "--jq", `.[] | select(.title | contains("${identifier}")) | { number, title, state, open_issues, closed_issues }`
+    "--jq", `.[] | select(.title | contains("${identifier}")) | { number, title, state, description, open_issues, closed_issues }`
   ], opts);
 
   if (!stdout) {

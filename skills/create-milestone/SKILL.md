@@ -176,10 +176,22 @@ For this dependency chain: `#3 → #4 → #6`
 
 **IMPORTANT:** Always link issues to the milestone. Issues must be linked, not just reference the milestone in text.
 
-**Preferred: MCP**
+**Use MCP tools for all operations:**
 ```
+# Create new milestone
+mcp__workflow__gh_milestone(
+    action="create",
+    title="[STATUS] Milestone Title",
+    description="## Overview\n..."
+)
+
+# Update milestone title/status
+mcp__workflow__gh_milestone(action="rename", identifier="5", new_title="[READY] #5 Milestone Title")
+
+# Update milestone description (e.g., after issues are created)
+mcp__workflow__gh_milestone(action="edit", identifier="5", description="## Overview\n...")
+
 # Create issues in bulk with milestone and dependencies
-# Note: Milestone creation still requires gh CLI - no MCP equivalent yet
 mcp__workflow__gh_bulk_issues(
     action="create",
     milestone="[STATUS] #5 Milestone Title",
@@ -198,39 +210,11 @@ mcp__workflow__gh_bulk_issues(
     ]
 )
 
-# Update existing milestone title/status
-mcp__workflow__gh_milestone(action="rename", identifier="5", new_title="[READY] #5 Milestone Title")
-
 # Update issue body (e.g., to add bidirectional dependency links)
 mcp__workflow__gh_update_issue(issue=15, body="$UPDATED_BODY")
 ```
 
-**Fallback: Bash**
-```bash
-# Create new milestone (returns JSON with milestone number)
-RESPONSE=$(gh api repos/:owner/:repo/milestones -X POST \
-  -f title="[STATUS] Milestone Title" \
-  -f description="$DESCRIPTION")
-MILESTONE_NUMBER=$(echo "$RESPONSE" | jq -r '.number')
-
-# IMMEDIATELY update title to include the milestone number for easy reference
-gh api repos/:owner/:repo/milestones/$MILESTONE_NUMBER -X PATCH \
-  -f title="[STATUS] #$MILESTONE_NUMBER Milestone Title"
-
-# Update existing milestone (change status, add issues list)
-gh api repos/:owner/:repo/milestones/NUMBER -X PATCH \
-  -f title="[NEW_STATUS] #NUMBER Milestone Title" \
-  -f description="$UPDATED_DESCRIPTION"
-
-# Create issue linked to milestone (--milestone is REQUIRED)
-gh issue create \
-  --title "Task title" \
-  --body "$BODY_WITH_DEPENDENCIES" \
-  --milestone "[STATUS] #NUMBER Milestone Title"
-
-# Update issue to add dependencies after creation
-gh issue edit NUMBER --body "$UPDATED_BODY"
-```
+**IMPORTANT:** Do NOT use `gh api -f description=...` in Bash for milestone descriptions — it corrupts newlines into literal `\n`. Always use the MCP `gh_milestone` tool for create/edit operations.
 
 ## Naming Conventions
 
@@ -254,7 +238,7 @@ gh issue edit NUMBER --body "$UPDATED_BODY"
 - [ ] Get milestone title (ask if not provided)
 - [ ] Determine status prefix based on readiness
 - [ ] Gather details: overview, design doc link, implementation plan link, branch name, dependencies
-- [ ] Create milestone via `gh api`
+- [ ] Create milestone via `gh_milestone` MCP tool
 - [ ] **Immediately update title to include `#N`** (milestone number)
 - [ ] If implementation plan exists, proceed to Workflow B
 
@@ -265,7 +249,7 @@ When transitioning from `[SCOPED]` to `[READY]`:
 - [ ] Read the design doc's task breakdown
 - [ ] Identify the dependency graph (what blocks what)
 - [ ] Create issues in dependency order (root tasks first)
-- [ ] **Use `--milestone` flag** on every `gh issue create` (REQUIRED - issues must be linked)
+- [ ] **Use `gh_bulk_issues` MCP tool with `milestone` parameter** (REQUIRED - issues must be linked)
 - [ ] Add `## Milestone` section with clickable link `[Title](../../milestone/N)`
 - [ ] Add `## Dependencies` section to each issue body
 - [ ] **Add bidirectional links** - go back and update earlier issues with "Blocks: #X" once dependent issues are created
