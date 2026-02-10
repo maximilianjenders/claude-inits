@@ -80,6 +80,11 @@ async function loadTools() {
 
 // Start the server
 async function main() {
+  // Resolve and cache the main repo root while process.cwd() is still valid.
+  // This survives worktree deletion — gh/git calls fall back to repo root.
+  const { initSafeCwd } = await import("./lib/exec.js");
+  await initSafeCwd();
+
   await loadTools();
   const transport = new StdioServerTransport();
   await server.connect(transport);

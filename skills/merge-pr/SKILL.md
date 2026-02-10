@@ -70,14 +70,15 @@ gh pr view $PR_NUMBER --json title,url,milestone,body
 - [ ] If docs updated: `git commit -m "(docs): Update documentation for PR #N"`
 
 ### Merge
+- [ ] **If in worktree: `cd` to project root BEFORE merging** (merge deletes worktree, bricking Bash permanently)
 - [ ] Merge PR to master (`gh pr merge --merge --delete-branch`)
 
 ### Cleanup (execute all, report failures)
-- [ ] Remove `code-complete` labels from linked issues
-- [ ] Close the milestone
+- [ ] Remove `code-complete` labels from linked issues (**pass `cwd` to MCP tools**)
+- [ ] Close the milestone (**pass `cwd` to MCP tools**)
 - [ ] Stop staging container: `pi_docker_stop("$PROJECT-staging")`
 - [ ] Stop dev container: `pi_docker_stop("$PROJECT-dev")`
-- [ ] Switch to master and pull (**if in worktree, `cd` to project root first**)
+- [ ] Switch to master and pull
 
 ### Deploy
 - [ ] Deploy to production: `pi_deploy("$PROJECT", "prod")`
@@ -101,9 +102,10 @@ gh pr view $PR_NUMBER --json title,url,milestone,body
    - If docs are updated, commit them to the branch before merging
 
 4. **Execute merge and cleanup:**
+   - **If in worktree: `cd` to project root FIRST** (worktree deletion bricks Bash)
    - Merge PR to master (auto-removes worktree and deletes branch)
-   - Remove `code-complete` labels from linked issues
-   - Close the milestone
+   - Remove `code-complete` labels from linked issues (**pass `cwd` to MCP**)
+   - Close the milestone (**pass `cwd` to MCP**)
    - Stop staging/dev containers on Pi
    - Switch local to master and pull
    - Deploy to production
@@ -123,24 +125,30 @@ gh pr view $PR_NUMBER --json title,url,milestone,body
 # If update-docs made changes, commit them (use git)
 git diff --cached --quiet || git commit -m "(docs): Update documentation for PR #$PR_NUMBER"
 
+# 1. CRITICAL: If working from a worktree, cd to project root BEFORE merging.
+#    The merge deletes the worktree, which bricks Bash permanently (cd won't work
+#    from a deleted CWD). Do this BEFORE step 2, not after.
+cd /path/to/project  # e.g. /Users/max/Gits/food-butler
+
 # 2. Merge PR (auto-removes worktree + deletes branch)
 #    Do NOT call git_worktree_cleanup separately — gh_merge_pr handles it
 mcp__workflow__gh_merge_pr(pr=42, method="merge", delete_branch=true)
 
+# 3-5: CRITICAL: Always pass cwd to ALL post-merge MCP calls.
+#    After worktree deletion, MCP tools without explicit cwd will fail with
+#    "Unable to read current working directory".
+
 # 3. Remove code-complete labels from linked issues (bulk operation)
-mcp__workflow__gh_bulk_issues(action="unlabel", issues=[12, 13, 14], label="code-complete")
+mcp__workflow__gh_bulk_issues(action="unlabel", issues=[12, 13, 14], label="code-complete", cwd="/path/to/project")
 
 # 4. Close milestone
-mcp__workflow__gh_milestone(action="close", identifier="5")
+mcp__workflow__gh_milestone(action="close", identifier="5", cwd="/path/to/project")
 
 # 5. Stop staging/dev containers
 mcp__pi__pi_docker_stop(container="butler-staging")
 mcp__pi__pi_docker_stop(container="butler-dev")
 
-# 6. Switch to master and pull
-#    CRITICAL: If you were working from a worktree, it's now deleted.
-#    Your Bash CWD is invalid — cd to the project root FIRST.
-cd /path/to/project  # Use the actual project root path
+# 6. Switch to master and pull (Bash CWD is valid because of step 1)
 git checkout master && git pull
 
 # 7. Deploy to production
@@ -153,6 +161,9 @@ mcp__pi__pi_deploy(app="spendee", env="prod")
 ```bash
 # If update-docs made changes, commit them
 git diff --cached --quiet || git commit -m "(docs): Update documentation for PR #$PR_NUMBER"
+
+# 1. CRITICAL: cd to project root BEFORE merge (worktree deletion bricks Bash)
+cd /path/to/project  # e.g. /Users/max/Gits/food-butler
 
 # 2. Merge PR
 gh pr merge $PR_NUMBER --merge --delete-branch
@@ -174,23 +185,13 @@ fi
 # 5. Stop staging/dev containers (SSH fallback)
 ssh max@pi.local "cd ~/pi-setup && docker compose --profile staging --profile dev stop"
 
-# 6. Remove worktree if exists (MUST happen before branch delete)
-# Branch can't be deleted while checked out in a worktree
-WORKTREE_PATH=".worktrees/${BRANCH#feature/}"
-if [ -d "$WORKTREE_PATH" ]; then
-  git worktree remove "$WORKTREE_PATH"
-fi
+# 6. Switch to master and pull (Bash CWD is valid because of step 1)
+git checkout master && git pull
 
-# 7. Switch to master and pull
-# CRITICAL: If you were in a worktree, cd to project root first (CWD is now invalid)
-cd /path/to/project  # Use the actual project root path
-git checkout master
-git pull
-
-# 8. Delete local branch (already deleted remote via --delete-branch)
+# 7. Delete local branch (already deleted remote via --delete-branch)
 git branch -d $BRANCH
 
-# 9. Deploy to production (SSH fallback)
+# 8. Deploy to production (SSH fallback)
 ssh max@pi.local "cd ~/pi-setup && ./build.sh food-butler prod"
 ```
 

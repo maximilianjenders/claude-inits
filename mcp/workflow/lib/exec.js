@@ -1,4 +1,40 @@
 import { spawn } from "child_process";
+import { existsSync } from "fs";
+
+// Cached repo root resolved eagerly at startup via initSafeCwd().
+// Survives worktree deletion because it points to the main repo root.
+let _cachedRepoRoot = null;
+
+/**
+ * Eagerly resolve the main repo root while process.cwd() is still valid.
+ * Call this once at server startup, before any worktree might be deleted.
+ */
+async function initSafeCwd() {
+  try {
+    _cachedRepoRoot = await resolveRepoRoot();
+  } catch {
+    // Not in a git repo — fall back to process.cwd() at startup
+    _cachedRepoRoot = process.cwd();
+  }
+}
+
+/**
+ * Get a CWD that survives worktree deletion.
+ * Returns the cached repo root from initSafeCwd(), or falls back safely.
+ */
+async function getSafeCwd() {
+  if (_cachedRepoRoot && existsSync(_cachedRepoRoot)) {
+    return _cachedRepoRoot;
+  }
+  // Cache miss or directory deleted — try to resolve (may fail if CWD gone)
+  try {
+    _cachedRepoRoot = await resolveRepoRoot();
+    return _cachedRepoRoot;
+  } catch {
+    const { homedir } = await import("os");
+    return homedir();
+  }
+}
 
 /**
  * Execute a command and return stdout/stderr
@@ -48,18 +84,26 @@ function exec(command, args = [], options = {}) {
 }
 
 /**
- * Execute gh CLI command
+ * Execute gh CLI command.
+ * If no cwd is provided, uses a safe fallback that survives worktree deletion.
  */
 async function gh(args, options = {}) {
   const argArray = typeof args === "string" ? args.split(/\s+/) : args;
+  if (!options.cwd) {
+    options = { ...options, cwd: await getSafeCwd() };
+  }
   return exec("gh", argArray, options);
 }
 
 /**
- * Execute git command
+ * Execute git command.
+ * If no cwd is provided, uses a safe fallback that survives worktree deletion.
  */
 async function git(args, options = {}) {
   const argArray = typeof args === "string" ? args.split(/\s+/) : args;
+  if (!options.cwd) {
+    options = { ...options, cwd: await getSafeCwd() };
+  }
   return exec("git", argArray, options);
 }
 
@@ -71,11 +115,11 @@ async function git(args, options = {}) {
 async function resolveRepoRoot(cwd) {
   const { resolve } = await import("path");
   const effectiveCwd = cwd || process.cwd();
-  const { stdout: commonDir } = await git("rev-parse --git-common-dir", {
+  const { stdout: commonDir } = await exec("git", ["rev-parse", "--git-common-dir"], {
     cwd: effectiveCwd,
   });
   if (commonDir === ".git") {
-    const { stdout } = await git("rev-parse --show-toplevel", {
+    const { stdout } = await exec("git", ["rev-parse", "--show-toplevel"], {
       cwd: effectiveCwd,
     });
     return stdout;
@@ -84,4 +128,4 @@ async function resolveRepoRoot(cwd) {
   return resolve(commonDir, "..");
 }
 
-export { exec, gh, git, resolveRepoRoot };
+export { exec, gh, git, resolveRepoRoot, initSafeCwd };
