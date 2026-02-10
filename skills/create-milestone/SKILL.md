@@ -1,6 +1,6 @@
 ---
 name: create-milestone
-description: Create GitHub issues from implementation plans. Use automatically after writing-implementation-tasks completes, or when populating a milestone with issues
+description: Create GitHub issues from implementation plans. Use after writing-implementation-tasks completes, or when populating a milestone with issues
 user_invocable: true
 argument-hint: "[title]"
 ---
@@ -93,7 +93,7 @@ Both directions must be documented so you can navigate the graph from any issue.
 - [ ] Criterion 2
 
 ## Design Reference
-See `docs/plans/YYYY-MM-DD-design-doc.md`
+See `docs/plans/YYYY-MM-DD-<feature>/design.md`
 ```
 
 **Note:** The milestone link uses relative path `../../milestone/N` which works from any issue page.
