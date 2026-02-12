@@ -12,6 +12,7 @@ Custom skills for Claude Code that work across all my projects.
 | `start-issue` | Begin work on a GitHub issue |
 | `update-issue` | Update GitHub issue status |
 | `create-pr` | Create a pull request with AI review |
+| `fix-pr` | Handle post-PR staging feedback and fixes |
 | `merge-pr` | Merge PR and cleanup |
 | `deploy-pi` | Deploy to Raspberry Pi environments |
 | `run-e2e` | Deploy to dev and run E2E tests |
@@ -100,6 +101,7 @@ This project uses GitHub Issues/Milestones as the source of truth. Use these ski
 | Begin work on an issue | `/start-issue` |
 | Mark issue progress | `/update-issue` |
 | Open PR with review | `/create-pr` |
+| Fix staging feedback | `/fix-pr` |
 | Merge PR and cleanup | `/merge-pr` |
 | Deploy to Pi for testing | `/deploy-pi` |
 | Run tests | `/run-tests` |
@@ -148,7 +150,7 @@ Orchestrator phase (after review):
 - `in-progress` / `ready-for-review` - Set by agents during implementation
 - `code-complete` - Set by orchestrator after committing
 
-The `pr-review` label marks issues created during `/create-pr` code review. These follow the same flow but are distinguished from original milestone scope.
+The `pr-review` label marks issues created during `/create-pr` code review or `/fix-pr` staging feedback. These follow the same flow but are distinguished from original milestone scope.
 
 Issues are closed when marked `code-complete` so GitHub's milestone progress bar shows actual progress. The `code-complete` label distinguishes "committed on branch" from "merged to master" (no label).
 
