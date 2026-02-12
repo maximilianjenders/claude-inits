@@ -37,12 +37,20 @@ fi
 
 # Check for uncommitted changes
 git status --porcelain
+# If output is non-empty → STOP and ask the user:
+#   "There are uncommitted changes. Would you like to:
+#    1. Commit them first
+#    2. Stash them and proceed
+#    3. Abort"
+# Do NOT proceed until resolved.
 
 # Verify branch is pushed
 git log origin/$BRANCH..HEAD
 ```
 
 ## Standard Mode (default)
+
+> **DO NOT run unit tests or `/run-tests`.** Pre-commit hooks already ran the full test suite when code was committed. This skill only runs E2E tests (which require a deployed environment).
 
 1. **Gather context:**
    - List commits since branch diverged from base
@@ -77,8 +85,7 @@ git log origin/$BRANCH..HEAD
    - Push fixes to the PR branch
    - Continue until ALL `pr-review` issues are `code-complete`
 
-6. **Deploy to Dev and Run E2E Tests:**
-   - Pre-commit hooks already verified unit tests pass — skip `/run-tests`
+6. **Deploy to Dev and Run E2E Tests (E2E only — no unit tests):**
    - Detect project from current working directory
    - Reset dev data to ensure clean state: `pi_reset_dev("[project]")`
    - Deploy current branch to dev using MCP: `pi_deploy("[project]", "dev", "[branch]")`
@@ -118,11 +125,13 @@ Use after fixing issues found during manual staging testing. Skips PR creation, 
 
 ## Checklist
 
-**CRITICAL: Follow this checklist in order. Execute all steps automatically without asking for confirmation between steps.**
+**CRITICAL: Follow this checklist in order. Execute all steps automatically without asking for confirmation between steps — EXCEPT for uncommitted changes, which require user input.**
+
+**DO NOT run unit tests or `/run-tests` at any point. Only E2E tests are run in this skill.**
 
 ### Pre-flight
 - [ ] Verify on feature branch (not master)
-- [ ] Check for uncommitted changes
+- [ ] Check for uncommitted changes — **if any exist, STOP and ask the user** whether to commit, stash, or abort. Do not proceed until resolved.
 - [ ] Verify branch is pushed to remote
 - [ ] Parse `--retest` flag — if set, skip to Retest section
 

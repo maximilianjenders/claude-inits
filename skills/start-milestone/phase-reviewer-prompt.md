@@ -80,7 +80,6 @@ Task tool (general-purpose):
     - #72: [brief note]
 
     Cross-issue consistency: OK
-    Tests: All passing
     ```
 
     **If CHANGES REQUESTED:**
@@ -116,8 +115,7 @@ Task tool (general-purpose):
 ### Review Execution
 - [ ] Invoke `superpowers:requesting-code-review` skill
 - [ ] Only read individual files if diff is unclear or you need surrounding context
-- [ ] Run tests to verify they pass
-- [ ] Run linters
+- [ ] Do NOT run tests or linters — pre-commit hooks handle both at commit time
 
 ### Phase-Specific Checks
 - [ ] **Cross-issue consistency:** Same patterns used across all issues?
@@ -132,7 +130,6 @@ Task tool (general-purpose):
 ### Output
 - [ ] List each issue with approval status or specific fixes needed
 - [ ] Note any cross-issue concerns
-- [ ] Include test results
 
 ## Key Points
 
