@@ -81,25 +81,29 @@ Task tool (general-purpose):
 
 Before dispatching the reviewer, the orchestrator should:
 
-```bash
-# Pin the diff to exact commits (avoids drift if master moves)
-MERGE_BASE=$(git merge-base master HEAD)
+**Preferred: MCP**
+```
+# Pin the diff to merge-base and get diffs in one call each
+mcp__workflow__git_diff(base="master", mode="stat")   → { merge_base, merge_base_short, diff }
+mcp__workflow__git_diff(base="master", mode="full")    → { merge_base, merge_base_short, diff }
+```
 
-# Pre-compute diffs
+**Fallback: Bash**
+```bash
+MERGE_BASE=$(git merge-base master HEAD)
 git diff --stat $MERGE_BASE..HEAD
 git diff $MERGE_BASE..HEAD
 ```
 
-Use `MERGE_BASE` short hash (first 7 chars) in the prompt for traceability.
+Use `merge_base_short` (first 7 chars) in the prompt for traceability.
 
 ## Checklist
 
 **Follow this checklist for every PR review dispatch.**
 
 ### Preparation (orchestrator does this BEFORE dispatching reviewer)
-- [ ] Compute merge base: `git merge-base master HEAD`
-- [ ] Run `git diff --stat $MERGE_BASE..HEAD`
-- [ ] Run `git diff $MERGE_BASE..HEAD`
+- [ ] Get stat diff: `mcp__workflow__git_diff(mode="stat")` → captures merge_base_short
+- [ ] Get full diff: `mcp__workflow__git_diff(mode="full")`
 - [ ] Gather linked issue titles and acceptance criteria from milestone
 - [ ] Get design doc path from milestone description (if any)
 

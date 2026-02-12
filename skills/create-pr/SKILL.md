@@ -56,8 +56,7 @@ git log origin/$BRANCH..HEAD
    - Use `Fixes #X` syntax (issues are already closed via `update-issue`)
 
 3. **AI Review:**
-   - Pre-compute diffs pinned to merge base: `MERGE_BASE=$(git merge-base master HEAD)`
-   - Run `git diff --stat $MERGE_BASE..HEAD` and `git diff $MERGE_BASE..HEAD`
+   - Pre-compute diffs pinned to merge base via MCP: `mcp__workflow__git_diff(mode="stat")` and `mcp__workflow__git_diff(mode="full")`
    - Gather linked issue titles and acceptance criteria
    - Dispatch reviewer agent using template in [`reviewer-prompt.md`](reviewer-prompt.md)
    - Review for: spec compliance, design doc adherence, code quality, CLAUDE.md violations
@@ -135,7 +134,7 @@ Use after fixing issues found during manual staging testing. Skips PR creation, 
 - [ ] Create PR with title, description, linked issues
 
 ### Code Review Loop (skip if `--retest` — repeat until approved)
-- [ ] Pre-compute diffs: `MERGE_BASE=$(git merge-base master HEAD)`, then `git diff --stat` and `git diff` using `$MERGE_BASE..HEAD`
+- [ ] Pre-compute diffs: `mcp__workflow__git_diff(mode="stat")` and `mcp__workflow__git_diff(mode="full")`
 - [ ] Gather linked issue titles and acceptance criteria
 - [ ] Dispatch reviewer agent using [`reviewer-prompt.md`](reviewer-prompt.md) template
 - [ ] If issues found: create GitHub issue for EACH finding with `pr-review` label
@@ -159,6 +158,10 @@ Use after fixing issues found during manual staging testing. Skips PR creation, 
 
 **Preferred: MCP**
 ```
+# Pre-compute diffs for review (pinned to merge-base)
+mcp__workflow__git_diff(base="master", mode="stat")
+mcp__workflow__git_diff(base="master", mode="full")
+
 # Create PR with full metadata
 mcp__workflow__gh_create_pr(
     title="PR Title",
