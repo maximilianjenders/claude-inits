@@ -24,7 +24,7 @@ const APP_CONFIG = {
   },
   spendee: {
     containerPrefix: "spendee",
-    seedCommand: "python -m app.scripts.seed_e2e_fixtures",
+    seedCommand: "python -m spendee_visualiser.scripts.seed_e2e_fixtures",
   },
   // Example for future apps:
   // "new-app": {
