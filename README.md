@@ -7,6 +7,7 @@ Custom skills for Claude Code that work across all my projects.
 | Skill | Purpose |
 |-------|---------|
 | `start-session` | Query GitHub for current project state |
+| `create-issue` | Create issues — quick one-offs or full planned features |
 | `create-milestone` | Create GitHub milestone from plan |
 | `start-milestone` | Execute milestone with phase-based parallel agents |
 | `start-issue` | Begin work on a GitHub issue |
@@ -19,6 +20,7 @@ Custom skills for Claude Code that work across all my projects.
 | `run-tests` | Auto-detect and run test suites |
 | `update-docs` | Update project documentation |
 | `worktree` | Create git worktrees for parallel work |
+| `writing-implementation-tasks` | Create implementation plans with one-file-per-task structure |
 
 ## MCP Servers
 
@@ -37,11 +39,15 @@ claude mcp add workflow node /Users/max/Gits/claude-inits/mcp/workflow/server.js
 
 | Tool | Description |
 |------|-------------|
+| `project_files` | Check for project documentation files (CLAUDE.md, README.md) |
 | `git_state` | Detect branch, worktree status, existing worktrees |
+| `git_diff` | Get diff between HEAD and a base branch (pinned to merge-base) |
+| `git_worktree_cleanup` | Remove git worktree and optionally delete its branch |
 | `gh_milestone` | List, find, close, open, rename milestones |
 | `gh_milestone_issues` | List issues in a milestone (by number or title) |
 | `gh_bulk_issues` | Create, label, unlabel, close, reopen issues (bulk) |
 | `gh_update_issue` | Update single issue (title, body, labels, assignees) |
+| `gh_update_pr` | Update existing PR (title, body, labels, reviewers, base) |
 | `gh_issue` | View single issue or list issues with filters |
 | `gh_pr_review_issue` | Create issue from PR review findings |
 | `gh_create_pr` | Create pull request with full metadata |
@@ -96,6 +102,8 @@ This project uses GitHub Issues/Milestones as the source of truth. Use these ski
 | Task | Skill |
 |------|-------|
 | Start a session | `/start-session` |
+| Create a standalone issue | `/create-issue` |
+| Create implementation plan | `/writing-implementation-tasks` |
 | Create milestone from plan | `/create-milestone` |
 | Execute milestone issues | `/start-milestone` |
 | Begin work on an issue | `/start-issue` |
@@ -113,12 +121,16 @@ When MCP servers are configured, use these tools instead of `gh` CLI:
 
 | Tool | Purpose | Replaces |
 |------|---------|----------|
+| `mcp__workflow__project_files(...)` | Check for project docs | `cat CLAUDE.md` |
 | `mcp__workflow__git_state()` | Branch, worktree status | `git branch`, `git worktree list` |
+| `mcp__workflow__git_diff(base, mode)` | Diff against base branch | `git diff master...HEAD` |
+| `mcp__workflow__git_worktree_cleanup(worktree)` | Remove worktree + branch | `git worktree remove` |
 | `mcp__workflow__gh_milestone(action, ...)` | List/find/close/open/rename milestones | `gh api milestones` |
 | `mcp__workflow__gh_milestone_issues(milestone, state, label)` | List issues in milestone | `gh issue list --milestone` |
 | `mcp__workflow__gh_issue(action, ...)` | View/list issues with filters | `gh issue view`, `gh issue list` |
 | `mcp__workflow__gh_bulk_issues(action, issues, label)` | Bulk label/close/create | `gh issue edit`, `gh issue create` |
 | `mcp__workflow__gh_update_issue(issue, ...)` | Update single issue | `gh issue edit` |
+| `mcp__workflow__gh_update_pr(pr, ...)` | Update existing PR | `gh pr edit` |
 | `mcp__workflow__gh_create_pr(title, body, ...)` | Create PR | `gh pr create` |
 | `mcp__workflow__gh_merge_pr(pr, method, ...)` | Merge PR | `gh pr merge` |
 | `mcp__workflow__gh_pr(action, ...)` | View/list PRs with filters | `gh pr view`, `gh pr list` |
@@ -200,11 +212,12 @@ claude mcp add pi /Users/max/Gits/pi-setup/mcp/start.sh --scope user
 | `pi_docker_inspect` | Get container/image metadata (creation time, config, image) |
 | `pi_docker_exec` | Run read-only command in running container |
 | `pi_docker_run` | Run read-only command in temporary container from image |
-| `pi_deploy` | Run build.sh |
+| `pi_deploy` | Deploy app to Pi (prod, staging, dev) |
 | `pi_read_file` | Read file on Pi |
 | `pi_git_pull` | Pull ~/pi-setup |
 | `pi_reset_dev` | Wipe dev data and reseed |
 | `pi_copy_prod_to_staging` | Copy prod data to staging |
+| `pi_seed_dev` | Seed E2E fixtures in dev environment |
 
 **Debug Commands:** `pi_docker_exec` and `pi_docker_run` are restricted to read-only commands: `cat`, `ls`, `head`, `tail`, `find`, `grep`, `env`, `ps`, `stat`.
 
@@ -273,17 +286,13 @@ def main():
 
 To fully reset dev to fixtures:
 
-```bash
-# Via MCP (future)
-pi_reset_dev("food-butler")
-
-# Via SSH (current)
-ssh max@pi.local "rm -rf /data/butler/dev/* && docker restart butler-dev"
+```
+mcp__pi__pi_reset_dev(app="food-butler")
 ```
 
-The container restart triggers the entrypoint, which:
-1. Runs migrations (creates fresh tables)
-2. Runs seed script (populates fixtures)
+This wipes the dev data volume and restarts the container, which triggers the entrypoint to:
+1. Run migrations (creates fresh tables)
+2. Run seed script (populates fixtures)
 
 ### E2E Test Guidelines
 
