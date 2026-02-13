@@ -70,7 +70,7 @@ If similar titles found, warn the user and ask whether to proceed.
 ### Step 3: Create Issue
 
 **Preferred: MCP**
-Use the issue body template from `skills/shared/templates.md`. For quick issues, omit the `## Task Spec` section (no implementation plan exists).
+Use the issue body template from `skills/shared/issue-body-template.md`. For quick issues, omit the `## Task Spec` section (no implementation plan exists).
 
 ```
 mcp__workflow__gh_bulk_issues(
@@ -131,11 +131,11 @@ Invoke `superpowers:writing-plans` to create a detailed implementation plan from
 
 ### Step 4: Save Plan Files
 
-Write to `docs/plans/YYYY-MM-DD-<feature>/` following the plan folder structure from `skills/shared/templates.md`.
+Write to `docs/plans/YYYY-MM-DD-<feature>/` following the plan folder structure from `skills/shared/plan-folder-structure.md`.
 
 ### Step 5: Create Issues from Plan
 
-Create GitHub issues using the issue body template from `skills/shared/templates.md`. Include `## Task Spec` with a clickable link to each task file. Use `blocked_by_indices` for dependencies (do not add a `## Dependencies` section — the tool handles that).
+Create GitHub issues using the issue body template from `skills/shared/issue-body-template.md`. Include `## Task Spec` with a clickable link to each task file. Use `blocked_by_indices` for dependencies (do not add a `## Dependencies` section — the tool handles that).
 
 ```
 mcp__workflow__gh_bulk_issues(
@@ -190,7 +190,7 @@ Run `/create-milestone` to set up the milestone, or `/start-milestone` if milest
 
 ## Issue Body Template
 
-All issues use the canonical template from `skills/shared/templates.md`. See that file for the full template, variables, and rules.
+All issues use the canonical template from `skills/shared/issue-body-template.md`. See that file for the full template, variables, and rules.
 
 Key points:
 - No `## Dependencies` section (handled by `blocked_by_indices` / `blocked_by_issues` in `gh_bulk_issues`)

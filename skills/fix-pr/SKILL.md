@@ -111,7 +111,7 @@ mcp__workflow__gh_bulk_issues(
 
 1. Invoke `superpowers:brainstorming` to explore the problem space
 2. Invoke `superpowers:writing-plans` to create implementation plan
-3. Write plan to `docs/plans/YYYY-MM-DD-<fix-name>/` following the plan folder structure in `skills/shared/templates.md` (use `<fix-name>` as the kebab-case feature name)
+3. Write plan to `docs/plans/YYYY-MM-DD-<fix-name>/` following the plan folder structure in `skills/shared/plan-folder-structure.md` (use `<fix-name>` as the kebab-case feature name)
 4. Create issues from the plan with `pr-review` label, following `create-milestone` issue patterns (bidirectional dependencies, acceptance criteria)
 
 ### Step 4: Output Summary
