@@ -11,15 +11,15 @@ Create a detailed implementation plan using `superpowers:writing-plans` for gene
 
 ## Output Structure
 
-```
-docs/plans/YYYY-MM-DD-<feature>/
-├── design.md              # Design doc (from brainstorming, if it exists)
-├── summary.md             # Implementation tracking + dependency graph
-└── tasks/
-    ├── 01-short-name.md   # Detailed task (~250 lines, full code, TDD)
-    ├── 02-short-name.md
-    └── ...
-```
+See `skills/shared/plan-folder-structure.md` for the canonical folder layout and file naming conventions.
+
+**What each file contains in this skill's output:**
+
+| File | Contents |
+|------|----------|
+| `design.md` | Design doc copied from a prior brainstorming session (skip if none exists) |
+| `summary.md` | Implementation tracking: task table, dependency graph, architectural notes |
+| `tasks/NN-short-name.md` | Self-contained task (~250 lines) with full code examples and TDD steps |
 
 ## Phase 1: Generate Detailed Plan
 

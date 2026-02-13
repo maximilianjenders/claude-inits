@@ -70,13 +70,15 @@ If similar titles found, warn the user and ask whether to proceed.
 ### Step 3: Create Issue
 
 **Preferred: MCP**
+Use the issue body template from `skills/shared/issue-body-template.md`. For quick issues, omit the `## Task Spec` section (no implementation plan exists).
+
 ```
 mcp__workflow__gh_bulk_issues(
     action="create",
     milestone="Backlog",
     new_issues=[{
         "title": "Issue title",
-        "body": "## Summary\n[What this accomplishes]\n\n## Milestone\n[Milestone Name](../../milestone/N)\n\n## Dependencies\n- Blocked by: None\n- Blocks: None\n\n## Acceptance Criteria\n- [ ] Criterion 1\n- [ ] Criterion 2",
+        "body": "## Summary\n[What this accomplishes]\n\n## Milestone\n[Milestone Name](../../milestone/N)\n\n## Acceptance Criteria\n- [ ] Criterion 1\n- [ ] Criterion 2",
         "labels": []
     }]
 )
@@ -129,20 +131,11 @@ Invoke `superpowers:writing-plans` to create a detailed implementation plan from
 
 ### Step 4: Save Plan Files
 
-Write to `docs/plans/YYYY-MM-DD-<feature>/` following `writing-implementation-tasks` folder structure:
-
-```
-docs/plans/YYYY-MM-DD-<feature>/
-├── design.md       # From brainstorming
-├── summary.md      # Task overview + dependency graph
-└── tasks/
-    ├── 01-short-name.md
-    └── 02-short-name.md
-```
+Write to `docs/plans/YYYY-MM-DD-<feature>/` following the plan folder structure from `skills/shared/plan-folder-structure.md`.
 
 ### Step 5: Create Issues from Plan
 
-Create GitHub issues with proper templates, following `create-milestone` patterns:
+Create GitHub issues using the issue body template from `skills/shared/issue-body-template.md`. Include `## Task Spec` with a clickable link to each task file. Use `blocked_by_indices` for dependencies (do not add a `## Dependencies` section — the tool handles that).
 
 ```
 mcp__workflow__gh_bulk_issues(
@@ -151,13 +144,13 @@ mcp__workflow__gh_bulk_issues(
     new_issues=[
         {
             "title": "Task 1: Root task",
-            "body": "## Summary\n...\n\n## Milestone\n[Name](../../milestone/N)\n\n## Dependencies\n- Blocked by: None\n- Blocks: #Y\n\n## Acceptance Criteria\n- [ ] ...\n\n## Design Reference\nSee `docs/plans/YYYY-MM-DD-<feature>/design.md`",
+            "body": "## Summary\n...\n\n## Milestone\n[Name](../../milestone/N)\n\n## Acceptance Criteria\n- [ ] ...\n\n## Task Spec\n[`tasks/01-root-task.md`](https://github.com/{OWNER}/{REPO}/blob/{BRANCH}/docs/plans/{PLAN_FOLDER}/tasks/01-root-task.md)",
             "labels": ["feature"],
             "blocked_by_indices": []
         },
         {
             "title": "Task 2: Depends on Task 1",
-            "body": "## Summary\n...\n\n## Milestone\n[Name](../../milestone/N)\n\n## Dependencies\n- Blocked by: #X\n- Blocks: None\n\n## Acceptance Criteria\n- [ ] ...\n\n## Design Reference\nSee `docs/plans/YYYY-MM-DD-<feature>/design.md`",
+            "body": "## Summary\n...\n\n## Milestone\n[Name](../../milestone/N)\n\n## Acceptance Criteria\n- [ ] ...\n\n## Task Spec\n[`tasks/02-depends-on-task-1.md`](https://github.com/{OWNER}/{REPO}/blob/{BRANCH}/docs/plans/{PLAN_FOLDER}/tasks/02-depends-on-task-1.md)",
             "labels": ["feature"],
             "blocked_by_indices": [0]
         }
@@ -197,26 +190,12 @@ Run `/create-milestone` to set up the milestone, or `/start-milestone` if milest
 
 ## Issue Body Template
 
-All issues use this canon template (consistent with `create-milestone`):
+All issues use the canonical template from `skills/shared/issue-body-template.md`. See that file for the full template, variables, and rules.
 
-```markdown
-## Summary
-[What this task accomplishes]
-
-## Milestone
-[Milestone Name](../../milestone/N)
-
-## Dependencies
-- Blocked by: #X (Brief description) | None
-- Blocks: #Y, #Z (Brief descriptions) | None
-
-## Acceptance Criteria
-- [ ] Criterion 1
-- [ ] Criterion 2
-
-## Design Reference
-See `docs/plans/YYYY-MM-DD-<feature>/design.md` (if applicable)
-```
+Key points:
+- No `## Dependencies` section (handled by `blocked_by_indices` / `blocked_by_issues` in `gh_bulk_issues`)
+- `## Task Spec` (not "Design Reference") — only include when an implementation plan exists
+- For quick issues, omit `## Task Spec` entirely
 
 ## Execution
 

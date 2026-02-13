@@ -84,14 +84,23 @@ async function handleCreate(args, opts = {}) {
 
     if (blocked_by_issues && blocked_by_issues.length > 0) {
       for (const num of blocked_by_issues) {
-        blockers.push(`#${num}`);
+        try {
+          const { stdout } = await gh(
+            ["issue", "view", String(num), "--json", "title", "--jq", ".title"],
+            opts,
+          );
+          blockers.push(`#${num} (${stdout.trim()})`);
+        } catch {
+          // Lookup failed — fall back to bare issue number
+          blockers.push(`#${num}`);
+        }
       }
     }
 
     if (blocked_by_indices && blocked_by_indices.length > 0) {
       for (const idx of blocked_by_indices) {
         if (idx >= 0 && idx < createdIssues.length) {
-          blockers.push(`#${createdIssues[idx].number}`);
+          blockers.push(`#${createdIssues[idx].number} (${createdIssues[idx].title})`);
         }
       }
     }
