@@ -56,80 +56,60 @@ Use when an implementation plan is ready and you need to create issues.
 3. **Create issues** with:
    - Clear title
    - Acceptance criteria
-   - **Dependencies section** (see below)
+   - Task spec link (if implementation plan exists)
+   - **`blocked_by_indices`** to declare dependencies (tool adds blocker lines automatically)
    - **`--milestone` flag** to link the issue to the milestone (REQUIRED)
-4. **Update milestone description** with:
+4. **Post-process bidirectional links** — add "Blocks" references to parent issues (see below)
+5. **Update milestone description** with:
    - Link to implementation plan
    - Full issue list with dependencies
    - Dependency graph (ASCII tree)
-5. **Change status** to `[READY]`
+6. **Change status** to `[READY]`
 
 ## Issue Dependencies
 
-**Critical:** Every issue must document its dependencies with bidirectional links.
+**Critical:** Every issue must have bidirectional dependency links so you can navigate the graph from any issue.
 
-### Dependency Rules
+### How Dependencies Work
 
-1. **Blocked by:** Issues that must complete before this one can start
-2. **Blocks:** Issues that are waiting on this one to complete
-
-Both directions must be documented so you can navigate the graph from any issue.
+1. **"Blocked by" lines** are added automatically by `gh_bulk_issues` when you use `blocked_by_indices` or `blocked_by_issues`. The tool creates a `## Dependencies` section with blocker lines.
+2. **"Blocks" lines** must be added as a post-processing step. After all issues are created, go back and edit parent issues to add "Blocks: #X" references.
 
 ### Issue Body Template
 
-```markdown
-## Summary
-[What this task accomplishes]
+See `skills/shared/templates.md` for the canonical issue body template with all variables documented.
 
-## Milestone
-[Phase X: Title](../../milestone/N)
-
-## Dependencies
-- Blocked by: #X (Brief description)
-- Blocks: #Y, #Z (Brief descriptions)
-
-## Acceptance Criteria
-- [ ] Criterion 1
-- [ ] Criterion 2
-
-## Design Reference
-See `docs/plans/YYYY-MM-DD-<feature>/design.md`
-```
-
-**Note:** The milestone link uses relative path `../../milestone/N` which works from any issue page.
+**Key rules:**
+- **No `## Dependencies` section in the body.** Dependencies are handled by `blocked_by_indices` / `blocked_by_issues` in `gh_bulk_issues`. The tool adds blocker lines automatically.
+- **`## Task Spec`** (not "Design Reference") links to the specific task file with a clickable GitHub URL. Optional — omit when no implementation plan exists.
+- **`## Milestone`** uses relative path `../../milestone/N` which works from any issue page.
 
 ### Example: Bidirectional Links
 
 For this dependency chain: `#3 → #4 → #6`
 
-**Issue #3 (root):**
+After `gh_bulk_issues` creates all issues, the tool automatically adds "Blocked by" lines. You then post-process to add "Blocks" lines:
+
+**Issue #3 (root) — after post-processing, add Dependencies section:**
 ```markdown
-## Milestone
-[Phase 5: Variety Tracking](../../milestone/5)
+## Acceptance Criteria
+- [ ] ...
 
 ## Dependencies
-- Blocked by: None (root task)
 - Blocks: #4 (Retry endpoint), #5 (Stats endpoint)
 ```
 
-**Issue #4:**
+**Issue #4 — tool already added "Blocked by", append "Blocks" line:**
 ```markdown
-## Milestone
-[Phase 5: Variety Tracking](../../milestone/5)
-
 ## Dependencies
-- Blocked by: #3 (Settings schema)
+- Blocked by: #3 Settings schema
 - Blocks: #6 (Widget component)
 ```
 
-**Issue #6 (leaf):**
+**Issue #6 (leaf) — tool already added "Blocked by", no changes needed:**
 ```markdown
-## Milestone
-[Phase 5: Variety Tracking](../../milestone/5)
-
 ## Dependencies
-- Blocked by: #4 (Retry endpoint)
-- Blocks: None (leaf task)
+- Blocked by: #4 Retry endpoint
 ```
 
 ### Milestone Description Template (with issues)
@@ -192,18 +172,19 @@ mcp__workflow__gh_milestone(action="rename", identifier="5", new_title="[READY] 
 mcp__workflow__gh_milestone(action="edit", identifier="5", description="## Overview\n...")
 
 # Create issues in bulk with milestone and dependencies
+# NOTE: Do NOT include ## Dependencies in body — the tool adds blocker lines automatically
 mcp__workflow__gh_bulk_issues(
     action="create",
     milestone="[STATUS] #5 Milestone Title",
     new_issues=[
         {
             "title": "Task 1: Root task",
-            "body": "## Summary\n...\n## Dependencies\n- Blocked by: None",
+            "body": "## Summary\n...\n\n## Acceptance Criteria\n- [ ] ...",
             "labels": ["feature"]
         },
         {
             "title": "Task 2: Depends on Task 1",
-            "body": "## Summary\n...\n## Dependencies\n- Blocked by: #X",
+            "body": "## Summary\n...\n\n## Acceptance Criteria\n- [ ] ...",
             "labels": ["feature"],
             "blocked_by_indices": [0]  # References first issue in this batch
         }
@@ -250,17 +231,20 @@ When transitioning from `[SCOPED]` to `[READY]`:
 - [ ] Identify the dependency graph (what blocks what)
 - [ ] Create issues in dependency order (root tasks first)
 - [ ] **Use `gh_bulk_issues` MCP tool with `milestone` parameter** (REQUIRED - issues must be linked)
+- [ ] Use `blocked_by_indices` to declare dependencies (tool adds `## Dependencies` with blocker lines automatically)
 - [ ] Add `## Milestone` section with clickable link `[Title](../../milestone/N)`
-- [ ] Add `## Dependencies` section to each issue body
-- [ ] **Add bidirectional links** - go back and update earlier issues with "Blocks: #X" once dependent issues are created
+- [ ] Add `## Task Spec` section with clickable GitHub link (if implementation plan exists)
+- [ ] **Post-process bidirectional links** — edit parent issues to add "Blocks: #X" (create `## Dependencies` section for root tasks that don't have one yet)
 - [ ] Update milestone description with implementation plan link, issue list, and dependency graph
 - [ ] Change milestone status prefix to `[READY]`
 - [ ] Verify all issues appear in milestone's issue list (not just referenced in text)
 
 ### Execution Order for Bidirectional Links
 
-Since you can't link to issues that don't exist yet:
+Since you can't know issue numbers until they're created:
 
-1. Create all issues first (with "Blocked by" filled in)
-2. Go back and edit root/parent issues to add "Blocks" references
-3. Update milestone description with complete dependency graph
+1. **Create all issues** via `gh_bulk_issues` with `blocked_by_indices` — tool auto-adds "Blocked by" lines in a `## Dependencies` section
+2. **Post-process parent issues** to add "Blocks" references:
+   - **If `## Dependencies` exists** (issue has blockers): append `- Blocks: #X (Title)` line to the existing section
+   - **If `## Dependencies` doesn't exist** (root tasks with no blockers): create a new `## Dependencies` section with the `- Blocks: #X (Title)` line, placed after `## Acceptance Criteria`
+3. **Update milestone description** with complete dependency graph
