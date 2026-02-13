@@ -89,6 +89,11 @@ Task tool (general-purpose):
     - Clean, maintainable code?
     - Clear naming?
 
+    **Discipline:**
+    - Did I avoid overbuilding (YAGNI)?
+    - Did I only build what was requested?
+    - Did I follow existing patterns in the codebase?
+
     **Code Standards (from CLAUDE.md):**
     - Re-read the "MUST ALWAYS", "SHOULD", and "MUST NOT" sections
     - Verify compliance with each applicable rule

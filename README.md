@@ -168,10 +168,22 @@ Issues are closed when marked `code-complete` so GitHub's milestone progress bar
 
 ### Planning Workflow
 
-When creating implementation plans:
+Plans use a folder structure under `docs/plans/`:
 
-1. `brainstorming` → Design doc (`docs/plans/YYYY-MM-DD-<name>-design.md`) → **Update milestone to `[SCOPED]`**
-2. `writing-implementation-tasks` or `writing-plans` → Implementation plan (`docs/plans/YYYY-MM-DD-<name>-impl.md`)
+```
+docs/plans/YYYY-MM-DD-<feature>/
+├── design.md       # Design doc (brainstorming output)
+├── summary.md      # Implementation summary
+└── tasks/
+    ├── 01-<task>.md
+    ├── 02-<task>.md
+    └── ...
+```
+
+**Workflow:**
+
+1. `brainstorming` → Design doc (`docs/plans/YYYY-MM-DD-<feature>/design.md`) → **Update milestone to `[SCOPED]`**
+2. `writing-implementation-tasks` → Implementation plan (`docs/plans/YYYY-MM-DD-<feature>/summary.md` + `tasks/*.md`)
 3. `/create-milestone` → Create GitHub issues from plan tasks and update milestone description with plan link → **Update milestone to `[READY]`**
 
 Run `/create-milestone` immediately after writing the plan — don't defer issue creation.
