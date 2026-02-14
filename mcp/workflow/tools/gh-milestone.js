@@ -1,5 +1,30 @@
 import { gh } from "../lib/exec.js";
 
+/**
+ * Fix double-JSON-encoded markdown strings.
+ * LLMs sometimes write \\n instead of \n in JSON tool call parameters,
+ * resulting in literal \n text and \" reaching the API instead of actual
+ * newlines and quotes.
+ *
+ * Heuristic: if the text has no actual newlines but contains literal \n
+ * sequences, it's double-encoded. Try JSON.parse to un-escape, with
+ * manual replacement as fallback.
+ */
+function unescapeMarkdown(text) {
+  if (!text) return text;
+  if (!text.includes("\n") && text.includes("\\n")) {
+    try {
+      return JSON.parse(`"${text}"`);
+    } catch {
+      return text
+        .replace(/\\n/g, "\n")
+        .replace(/\\"/g, '"')
+        .replace(/\\t/g, "\t");
+    }
+  }
+  return text;
+}
+
 const definition = {
   name: "gh_milestone",
   description: "Milestone operations: create, list, find, close, open, rename, edit",
@@ -106,7 +131,7 @@ async function handler(args) {
     }
     const body = { title };
     if (description) {
-      body.description = description;
+      body.description = unescapeMarkdown(description);
     }
     const { stdout } = await gh([
       "api", "-X", "POST",
@@ -175,7 +200,7 @@ async function handler(args) {
       }
       const editBody = {};
       if (description !== undefined) {
-        editBody.description = description;
+        editBody.description = unescapeMarkdown(description);
       }
       if (new_title) {
         editBody.title = new_title;
