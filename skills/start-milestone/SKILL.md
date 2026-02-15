@@ -204,6 +204,7 @@ Phases provide checkpoints for crash recovery. Agents work in parallel without c
 1. **Implementation** — Dispatch parallel agents (max 3). Each: implement → test → self-review → mark `ready-for-review`. Agents do NOT commit.
 2. **Review** — Dispatch single review agent with pre-computed diffs. If changes requested → dispatch fix agents → re-review.
 3. **Batch Commit** — Stage all phase files, single commit referencing all issues. Close all issues. This is the checkpoint.
+4. **Context Summary** — Output a concise phase summary so auto-compaction knows what to keep. All implementation details, diffs, and review feedback from the phase can be discarded.
 
 ### Concurrency
 
@@ -466,6 +467,9 @@ When starting/resuming a milestone:
   - [ ] Single `git commit` with `Refs #N1, #N2, #N3`
   - [ ] `gh_bulk_issues(action="close", issues=[...], label="code-complete")`
   - [ ] CHECKPOINT - safe to resume from here
+- [ ] **Step 4: Context Summary** - Output concise carry-forward state for auto-compaction
+  - [ ] Output: phase number, issues closed, commit hash, remaining phases, next phase issues
+  - [ ] All implementation details, diffs, review feedback, and agent outputs from this phase can be discarded
 - [ ] **Immediately proceed to next phase** (do NOT ask user to continue)
 
 ### Completion
