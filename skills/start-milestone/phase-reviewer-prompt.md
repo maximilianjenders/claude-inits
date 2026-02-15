@@ -134,7 +134,7 @@ Task tool (general-purpose):
 ## Key Points
 
 - **Uses `superpowers:requesting-code-review`** for consistent review standards
-- **Pre-computed diffs** — orchestrator provides `git diff --stat` and `git diff` to avoid redundant file reads
+- **Pre-computed diffs** — orchestrator stages all changes (`git add -A`), then captures `git diff --cached --stat` and `git diff --cached`. Changes stay staged for the batch commit step.
 - **Agent summaries** — orchestrator collects what each agent built, files changed, and self-review findings
 - **Design doc access** — reviewer receives `design_doc_path` to verify design compliance
 - **Fresh agent** - no implementation bias, dedicated context for review

@@ -257,14 +257,21 @@ Before dispatching parallel agents within a phase, check for file overlap:
 **Before dispatching the review agent**, the orchestrator must prepare:
 
 ```bash
-# 1. Capture diff summary
-git diff --stat
+# 1. Stage all changes (including new files) so diff captures everything
+git add -A
 
-# 2. Capture full diff
-git diff
+# 2. Capture diff summary (staged changes)
+git diff --cached --stat
 
-# 3. Collect agent summaries (what they built, files changed, self-review notes)
+# 3. Capture full diff (staged changes)
+git diff --cached
+
+# 4. Collect agent summaries (what they built, files changed, self-review notes)
 ```
+
+Leave changes staged — the batch commit step uses them directly.
+
+> **Why stage first?** Bare `git diff` misses new/untracked files. Staging then using `--cached` ensures the reviewer sees ALL changes including new files created by implementation agents.
 
 Pass ALL of this into the reviewer prompt. See `phase-reviewer-prompt.md` for the template.
 
@@ -374,8 +381,8 @@ mcp__workflow__gh_milestone_issues(milestone=5, state="all")
 After review passes, the orchestrator commits ALL phase changes in a single commit.
 
 ```bash
-# 1. Stage all files from all agents in the phase
-git add src/dashboard.py src/templates/dashboard.html src/api/routes.py ...
+# 1. Changes are already staged from the pre-review diff step (git add -A)
+#    Verify with: git diff --cached --stat
 
 # 2. Single commit referencing all phase issues
 git commit -m "$(cat <<'EOF'
@@ -458,12 +465,13 @@ When starting/resuming a milestone:
   - [ ] Agents DO NOT commit
   - [ ] Wait for all agents to complete or fail
 - [ ] **Step 2: Review** - Dispatch single review agent for phase
-  - [ ] Pre-compute: run `git diff --stat` and `git diff`, collect agent summaries
+  - [ ] Stage all changes: `git add -A`
+  - [ ] Pre-compute: run `git diff --cached --stat` and `git diff --cached`, collect agent summaries
   - [ ] Pass pre-computed diffs, agent summaries, and `design_doc_path` to reviewer
   - [ ] If approved → proceed to Step 3
-  - [ ] If changes requested → dispatch fix agents → re-review
+  - [ ] If changes requested → dispatch fix agents → re-review (re-stage + re-diff before re-review)
 - [ ] **Step 3: Batch Commit** - Orchestrator commits all phase changes at once
-  - [ ] `git add` all files from all agents in the phase
+  - [ ] Changes already staged from Step 2
   - [ ] Single `git commit` with `Refs #N1, #N2, #N3`
   - [ ] `gh_bulk_issues(action="close", issues=[...], label="code-complete")`
   - [ ] CHECKPOINT - safe to resume from here
