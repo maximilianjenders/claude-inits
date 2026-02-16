@@ -39,22 +39,42 @@ User wants to fix existing `pr-review` issues. This mode implements them using `
 
 Before doing anything, recover full PR context:
 
+### 1. Resolve Working Directory (Worktree Awareness)
+
+Get the PR branch first, then find the matching worktree.
+
 **Preferred: MCP**
 ```
-# Get PR details (branch, milestone, state, body)
+# Get PR details — headRefName gives the branch
 mcp__workflow__gh_pr(action="view", pr=42)
 
 # Get current git state
 mcp__workflow__git_state()
+```
 
-# Get all pr-review issues in the milestone
-mcp__workflow__gh_milestone_issues(milestone="Milestone Title", label="pr-review")
+**Resolve PROJECT_DIR from PR branch:**
+
+The PR's `headRefName` (e.g., `feature/phase5-variety-tracking`) maps to a worktree at `.worktrees/<name-without-feature-prefix>/` (e.g., `.worktrees/phase5-variety-tracking/`).
+
+| Current State | Action |
+|--------------|--------|
+| Worktree exists for PR branch | Use it as `PROJECT_DIR` |
+| Already on PR branch (no worktree) | Use current repo root as `PROJECT_DIR` |
+| On master, no matching worktree | Check out PR branch or create worktree, then set `PROJECT_DIR` |
+
+**CRITICAL:** Pass `cwd=PROJECT_DIR` to ALL `mcp__workflow__*` tool calls throughout this skill. Run all `git` and `gh` commands with `-C "$PROJECT_DIR"` if Claude's cwd differs from `PROJECT_DIR`.
+
+### 2. Gather PR Context
+
+```
+# Get all pr-review issues in the milestone (pass cwd!)
+mcp__workflow__gh_milestone_issues(milestone="Milestone Title", label="pr-review", cwd=PROJECT_DIR)
 ```
 
 **Fallback: Bash**
 ```bash
-gh pr view 42 --json title,body,milestone,headRefName,state
-git branch --show-current
+gh -C "$PROJECT_DIR" pr view 42 --json title,body,milestone,headRefName,state
+git -C "$PROJECT_DIR" branch --show-current
 gh issue list --milestone "Milestone Title" --label "pr-review" --state all --json number,title,state,labels
 ```
 
@@ -159,13 +179,7 @@ If plan files exist, read the relevant task files for implementation context.
 
 ### Step 3: Verify Branch
 
-Ensure we're on the correct PR branch. Use the branch from context recovery.
-
-| Current State | Action |
-|--------------|--------|
-| On correct PR branch | Ready to work |
-| On master | Switch to PR branch |
-| On different branch | Warn and ask user |
+Already resolved during Context Recovery. `PROJECT_DIR` points to the correct worktree or repo root on the PR branch. All git/MCP operations use this directory.
 
 ### Step 4: Implement Each Issue
 
@@ -223,9 +237,10 @@ Run `/create-pr --retest` to deploy and verify.
 
 ### Context Recovery (both modes)
 - [ ] Parse PR number from argument
-- [ ] Fetch PR details via `mcp__workflow__gh_pr(action="view")`
-- [ ] Get current git state via `mcp__workflow__git_state()`
-- [ ] Get existing `pr-review` issues via `mcp__workflow__gh_milestone_issues()`
+- [ ] Fetch PR details via `mcp__workflow__gh_pr(action="view")` — extract `headRefName`
+- [ ] Resolve working directory — map PR branch to worktree (`.worktrees/<branch-without-feature-prefix>/`). Set `PROJECT_DIR` and pass `cwd=PROJECT_DIR` to ALL MCP calls.
+- [ ] Get current git state via `mcp__workflow__git_state(cwd=PROJECT_DIR)`
+- [ ] Get existing `pr-review` issues via `mcp__workflow__gh_milestone_issues(cwd=PROJECT_DIR)`
 - [ ] Display PR context summary to user
 - [ ] Parse `--implement` flag — if set, skip to Implement section
 
@@ -242,7 +257,6 @@ Run `/create-pr --retest` to deploy and verify.
 ### Implement Mode
 - [ ] Fetch open `pr-review` issues (or filter to specified numbers)
 - [ ] Check for implementation plans in `docs/plans/` — read relevant task files
-- [ ] Verify on correct PR branch
 - [ ] For each issue: follow `/start-issue` pattern inline (in-progress → TDD → scoped tests → ready-for-review)
 - [ ] Batch commit referencing all issues
 - [ ] Push to PR branch
@@ -254,10 +268,11 @@ Run `/create-pr --retest` to deploy and verify.
 
 **Preferred: MCP**
 ```
-# Context recovery
+# Context recovery — get PR branch first, then resolve worktree
 mcp__workflow__gh_pr(action="view", pr=42)
-mcp__workflow__git_state()
-mcp__workflow__gh_milestone_issues(milestone="Milestone Title", label="pr-review")
+# Map headRefName → .worktrees/<name>/ → set PROJECT_DIR
+mcp__workflow__git_state(cwd=PROJECT_DIR)
+mcp__workflow__gh_milestone_issues(milestone="Milestone Title", label="pr-review", cwd=PROJECT_DIR)
 
 # Create pr-review issues (feedback mode)
 mcp__workflow__gh_bulk_issues(

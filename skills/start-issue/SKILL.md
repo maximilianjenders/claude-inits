@@ -104,6 +104,16 @@ git worktree list
 | On different feature branch | Yes | Ask: "Create worktree for parallel work, or switch branches?" |
 | Worktree exists for target branch | Yes | Suggest: "Worktree exists at `.worktrees/X/` - use that?" |
 
+### 1b. Store Branch in Issue (Backlog items)
+
+If the issue has no milestone or is in the `Backlog` milestone (i.e., no milestone with a `## Branch` field), append a `## Branch` section to the issue body so `/create-pr` can resolve the worktree later:
+
+```
+mcp__workflow__gh_update_issue(issue=15, body="<existing body>\n\n## Branch\n`feature/branch-name`")
+```
+
+Skip this if the issue already has a `## Branch` section or belongs to a milestone that has one.
+
 ### 2. Dependency Check
 - Parse issue body for "Blocked by: #X" references
 - Check if blocking issues are closed
@@ -147,6 +157,7 @@ After pre-flight checks pass:
 
 ### Pre-flight Checks
 - [ ] **Branch/Worktree Check** - Verify on correct feature branch or ask user
+- [ ] **Store Branch in Issue** - If backlog item (no milestone or Backlog milestone), append `## Branch` to issue body so `/create-pr` can resolve worktree later
 - [ ] **Dependency Check** - Parse "Blocked by: #X" and verify blocking issues are closed
 - [ ] **Already In-Progress Check** - Note if issue already has label, warn about context switch
 - [ ] **Milestone Status Check** - If `[READY]` and first issue, update to `[ACTIVE]`

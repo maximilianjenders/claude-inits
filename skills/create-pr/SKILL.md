@@ -27,16 +27,42 @@ Create a pull request and run AI review loop.
 
 Before creating PR:
 
-```bash
-# Verify we're on a feature branch, not master
-BRANCH=$(git branch --show-current)
-if [ "$BRANCH" = "master" ]; then
-  echo "Error: Cannot create PR from master"
-  exit 1
-fi
+### 1. Resolve Working Directory (Worktree Awareness)
 
-# Check for uncommitted changes
-git status --porcelain
+Claude Code's cwd may be the main repo (on master) while actual work lives in a worktree on a feature branch. Always resolve this first.
+
+```bash
+BRANCH=$(git branch --show-current)
+
+if [ "$BRANCH" = "master" ]; then
+  # List worktrees to find feature branches
+  git worktree list
+fi
+```
+
+**Resolution logic when on master:**
+
+| Worktrees Found | Action |
+|----------------|--------|
+| None | Error: "Cannot create PR from master" |
+| One feature worktree | Use it automatically |
+| Multiple | Match against open milestone `## Branch` fields (see below) |
+
+**Disambiguating multiple worktrees:** Check open milestones (not Backlog) via `mcp__workflow__gh_milestone(action="list")`. Parse each milestone's description for the `## Branch` field. Match against worktree branches. For backlog issues without a milestone, check issue bodies for `## Branch` metadata.
+
+After resolving, set `PROJECT_DIR` to the worktree root (or main repo root if already on a feature branch):
+
+```bash
+PROJECT_DIR=$(git -C "<resolved-path>" rev-parse --show-toplevel)
+```
+
+**CRITICAL:** Pass `cwd=PROJECT_DIR` to ALL `mcp__workflow__*` tool calls throughout this skill. Run all `git` and `gh` commands with `-C "$PROJECT_DIR"` if Claude's cwd differs from `PROJECT_DIR`.
+
+### 2. Verify Branch and Working State
+
+```bash
+# Check for uncommitted changes (in resolved directory)
+git -C "$PROJECT_DIR" status --porcelain
 # If output is non-empty → STOP and ask the user:
 #   "There are uncommitted changes. Would you like to:
 #    1. Commit them first
@@ -45,7 +71,7 @@ git status --porcelain
 # Do NOT proceed until resolved.
 
 # Verify branch is pushed
-git log origin/$BRANCH..HEAD
+git -C "$PROJECT_DIR" log origin/$BRANCH..HEAD
 ```
 
 ## Standard Mode (default)
@@ -130,6 +156,7 @@ Use after fixing issues found during manual staging testing. Skips PR creation, 
 **DO NOT run unit tests or `/run-tests` at any point. Only E2E tests are run in this skill.**
 
 ### Pre-flight
+- [ ] Resolve working directory — if on master, check `git worktree list` for feature branch worktrees. Auto-select if one, match against milestone `## Branch` if multiple, error if none. Set `PROJECT_DIR` and pass `cwd=PROJECT_DIR` to ALL MCP calls.
 - [ ] Verify on feature branch (not master)
 - [ ] Check for uncommitted changes — **if any exist, STOP and ask the user** whether to commit, stash, or abort. Do not proceed until resolved.
 - [ ] Verify branch is pushed to remote
@@ -168,8 +195,9 @@ Use after fixing issues found during manual staging testing. Skips PR creation, 
 **Preferred: MCP**
 ```
 # Pre-compute diffs for review (pinned to merge-base)
-mcp__workflow__git_diff(base="master", mode="stat")
-mcp__workflow__git_diff(base="master", mode="full")
+# IMPORTANT: Always pass cwd=PROJECT_DIR (resolved in pre-flight)
+mcp__workflow__git_diff(base="master", mode="stat", cwd=PROJECT_DIR)
+mcp__workflow__git_diff(base="master", mode="full", cwd=PROJECT_DIR)
 
 # Create PR with full metadata
 mcp__workflow__gh_create_pr(
@@ -177,7 +205,8 @@ mcp__workflow__gh_create_pr(
     body="Description with ## Summary and ## Issues sections",
     base="master",
     milestone="Milestone Title",
-    labels=["feature"]
+    labels=["feature"],
+    cwd=PROJECT_DIR
 )
 
 # Create issues for review findings
