@@ -2,7 +2,7 @@
 name: create-pr
 description: Create a pull request with AI review loop
 user_invocable: true
-argument-hint: "(base-branch) (--retest)"
+argument-hint: "(base-branch) (--retest) (--wipe)"
 ---
 
 # Create PR
@@ -12,9 +12,11 @@ Create a pull request and run AI review loop.
 ## Usage
 
 ```
-/create-pr           # PR to master (default)
-/create-pr master    # Explicit base branch
-/create-pr --retest  # Skip PR creation/review, just deploy + E2E
+/create-pr                    # PR to master, staging data preserved
+/create-pr --wipe             # PR to master, wipe staging with prod data
+/create-pr master             # Explicit base branch
+/create-pr --retest           # Redeploy + E2E only, staging data preserved
+/create-pr --retest --wipe    # Redeploy + E2E only, wipe staging with prod data
 ```
 
 ## Argument Parsing
@@ -22,6 +24,7 @@ Create a pull request and run AI review loop.
 - First positional arg (optional): base branch (default: `master`)
 - `--retest` flag: Skip PR creation, code review, and unit tests. Only deploy to dev → E2E → deploy to staging.
   - Use case: after fixing issues found during manual staging testing
+- `--wipe` flag: After deploying to staging, sync prod data to staging via `pi_copy_prod_to_staging`. Default: no wipe (staging data preserved).
 
 ## Pre-flight Checks
 
@@ -122,6 +125,7 @@ git -C "$PROJECT_DIR" log origin/$BRANCH..HEAD
 7. **Deploy to Staging:**
    - Deploy current branch to staging using MCP: `pi_deploy("[project]", "staging", "[branch]")`
    - Wait for container to be healthy
+   - If `--wipe`: sync prod data to staging: `pi_copy_prod_to_staging("[project]")`
    - Report staging URL for manual testing
 
 8. **Stop with Summary:**
@@ -146,6 +150,7 @@ Use after fixing issues found during manual staging testing. Skips PR creation, 
 5. Health check dev
 6. Run E2E tests
 7. Deploy to staging: `pi_deploy("[project]", "staging", "[branch]")`
+7a. If `--wipe`: `pi_copy_prod_to_staging("[project]")`
 8. Health check staging
 9. Report summary (E2E results + staging URL)
 
@@ -161,6 +166,7 @@ Use after fixing issues found during manual staging testing. Skips PR creation, 
 - [ ] Check for uncommitted changes — **if any exist, STOP and ask the user** whether to commit, stash, or abort. Do not proceed until resolved.
 - [ ] Verify branch is pushed to remote
 - [ ] Parse `--retest` flag — if set, skip to Retest section
+- [ ] Parse `--wipe` flag
 
 ### PR Creation (skip if `--retest`)
 - [ ] Gather commits since branch diverged
@@ -184,6 +190,7 @@ Use after fixing issues found during manual staging testing. Skips PR creation, 
 - [ ] Health check dev environment
 - [ ] Run E2E tests — **if any fail, STOP. Report failures prominently. Do NOT deploy to staging.**
 - [ ] Deploy to staging: `pi_deploy("[project]", "staging", "[branch]")`
+- [ ] If `--wipe`: sync prod data: `pi_copy_prod_to_staging("[project]")`
 - [ ] Health check staging environment
 
 ### Completion
@@ -256,6 +263,9 @@ npm --prefix frontend run test:e2e
 
 # 7. Deploy to staging using MCP
 pi_deploy("[project]", "staging", "$BRANCH")
+
+# 7a. If --wipe: sync prod data to staging
+pi_copy_prod_to_staging("[project]")
 
 # 8. Health check
 curl --retry 10 --retry-delay 3 --retry-connrefused -s http://[project]-staging.home/api/health

@@ -38,9 +38,14 @@ pi_deploy("food-butler", "dev", "feature/phase5")
 ssh max@pi.local "cd ~/pi-setup && ./build.sh $ARGS"
 ```
 
-## Refreshing Staging Data
+## Staging Data
 
-After deploying to staging, you may want fresh prod data:
+For staging deployments, you'll be asked whether to wipe data before deploying:
+
+- **Yes**: Runs `pi_copy_prod_to_staging` first, then deploys (fresh prod data + new code)
+- **No**: Deploys only (preserves existing staging data)
+
+To manually refresh staging data at any time:
 
 **Preferred: MCP**
 ```
@@ -62,13 +67,16 @@ ssh max@pi.local "~/pi-setup/scripts/copy-prod-to-staging.sh food-butler"
 - [ ] **For prod:** Verify this is intentional (user explicitly requested)
 - [ ] **For staging/dev:** Verify branch argument is provided
 
+### Pre-deploy (staging only)
+- [ ] Ask user: "Wipe staging data with fresh prod copy before deploying?"
+- [ ] If yes: run `pi_copy_prod_to_staging("$PROJECT")` first
+
 ### Deploy
 - [ ] Use MCP (preferred): `pi_deploy("$PROJECT", "$ENV", "$BRANCH")`
 - [ ] Or SSH fallback: `ssh max@pi.local "cd ~/pi-setup && ./build.sh $ARGS"`
 
 ### Post-deploy
 - [ ] Verify deployment success from output
-- [ ] For staging: offer to refresh data with `pi_copy_prod_to_staging`
 
 ## Environments
 
