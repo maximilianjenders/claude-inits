@@ -136,13 +136,17 @@ mcp__workflow__git_state()
 ```
 Returns: branch, is_worktree, worktree_path, pr, worktrees[], matching_branches[]
 
-### Step 2: Parse Branch Name
+### Step 2: Determine Branch Name
 
-Parse from milestone description (`## Branch` section) to determine the target branch.
+**If milestone is `[ACTIVE]`:** Parse the `## Branch` section from the milestone description (written by a previous run).
+
+**If milestone is `[READY]` (fresh start):** Derive branch name from milestone title:
+- Strip status prefix (`[READY] #23 `) and convert to kebab-case
+- Example: `[READY] #23 In-App Feedback Button` → `feature/in-app-feedback-button`
 
 ### Step 3: Fast-Path or Ask User
 
-**Fast-path (skip question):** If milestone is already `[ACTIVE]` AND we're on the correct branch (or in the correct worktree), skip the branching question and go straight to resume state check.
+**Fast-path (skip question):** If milestone is already `[ACTIVE]` AND we're on the correct branch (or in the correct worktree per `## Branch` section), skip the branching question and go straight to resume state check.
 
 **Otherwise, ask the user:**
 
@@ -165,12 +169,11 @@ Parse from milestone description (`## Branch` section) to determine the target b
 
 ## Milestone Status Update
 
-**Update milestone to `[ACTIVE]` before dispatching any issues.**
+**Update milestone to `[ACTIVE]` and write branch info before dispatching any issues.**
+
+### Title Update
 
 ```
-# Check current milestone title
-mcp__workflow__gh_milestone(action="find", identifier="5")
-
 # If title starts with [READY], rename to [ACTIVE]
 mcp__workflow__gh_milestone(action="rename", identifier="5", new_title="[ACTIVE] #5 Milestone Title")
 ```
@@ -178,6 +181,19 @@ mcp__workflow__gh_milestone(action="rename", identifier="5", new_title="[ACTIVE]
 - Update from `[READY]` → `[ACTIVE]` when starting fresh execution
 - **Skip if already `[ACTIVE]`** (crash recovery / fast-path scenario)
 - Skip if `[SKETCH]` or `[SCOPED]` (shouldn't be executing these)
+
+### Write Branch Info to Description
+
+**On fresh start (not already `[ACTIVE]`)**, append a `## Branch` section to the milestone description so resume and other skills can find the worktree:
+
+```
+# Append to existing description
+mcp__workflow__gh_milestone(action="edit", identifier="5", description="<existing description>\n\n## Branch\n- **Branch:** `feature/in-app-feedback-button`\n- **Worktree:** `.worktrees/in-app-feedback-button/`")
+```
+
+- Include worktree path only if a worktree was created
+- If working directly on a branch (no worktree), omit the worktree line
+- **Skip if already `[ACTIVE]`** — the `## Branch` section already exists from the previous run
 
 ## Dependency Graph & Phase Execution
 
@@ -449,6 +465,7 @@ When starting/resuming a milestone:
 - [ ] **Otherwise:** Ask user about branching strategy using `AskUserQuestion`
 - [ ] Execute user's branch/worktree choice
 - [ ] **Update milestone status from `[READY]` to `[ACTIVE]`** (skip if already active)
+- [ ] **Write `## Branch` section to milestone description** with branch name and worktree path (skip if already active)
 
 ### Resume Check
 - [ ] Query all issues and their labels
