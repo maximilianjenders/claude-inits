@@ -44,8 +44,9 @@ Use when starting fresh with an idea or design.
    - Implementation plan link (if exists)
    - Branch name
    - Dependencies (requires/unlocks)
-4. **Create milestone** with placeholder for issues
-5. **Add milestone number to title** - immediately update the title to include `#N` for easy reference
+4. **Get current commit hash** via `git rev-parse --short HEAD` — include as `## Base Commit` in description
+5. **Create milestone** with placeholder for issues
+6. **Add milestone number to title** - immediately update the title to include `#N` for easy reference
 
 ### Workflow B: Populate Milestone with Issues
 
@@ -64,6 +65,7 @@ Use when an implementation plan is ready and you need to create issues.
    - Link to implementation plan
    - Full issue list with dependencies
    - Dependency graph (ASCII tree)
+   - Base commit hash (via `git rev-parse --short HEAD`)
 6. **Change status** to `[READY]`
 
 ## Issue Dependencies
@@ -126,6 +128,9 @@ After `gh_bulk_issues` creates all issues, the tool automatically adds "Blocked 
 
 ## Branch
 `feature/branch-name`
+
+## Base Commit
+`abc1234`
 
 ## Dependencies
 - Requires: [Previous milestone or "None"]
@@ -219,6 +224,7 @@ mcp__workflow__gh_update_issue(issue=15, body="$UPDATED_BODY")
 - [ ] Get milestone title (ask if not provided)
 - [ ] Determine status prefix based on readiness
 - [ ] Gather details: overview, design doc link, implementation plan link, branch name, dependencies
+- [ ] **Get current commit hash** via `git rev-parse --short HEAD` — include as `## Base Commit` in description
 - [ ] Create milestone via `gh_milestone` MCP tool
 - [ ] **Immediately update title to include `#N`** (milestone number)
 - [ ] If implementation plan exists, proceed to Workflow B
@@ -235,7 +241,7 @@ When transitioning from `[SCOPED]` to `[READY]`:
 - [ ] Add `## Milestone` section with clickable link `[Title](../../milestone/N)`
 - [ ] Add `## Task Spec` section with clickable GitHub link (if implementation plan exists)
 - [ ] **Post-process bidirectional links** — edit parent issues to add "Blocks: #X" (create `## Dependencies` section for root tasks that don't have one yet)
-- [ ] Update milestone description with implementation plan link, issue list, and dependency graph
+- [ ] Update milestone description with implementation plan link, issue list, dependency graph, and **base commit hash** (`git rev-parse --short HEAD`)
 - [ ] Change milestone status prefix to `[READY]`
 - [ ] Verify all issues appear in milestone's issue list (not just referenced in text)
 

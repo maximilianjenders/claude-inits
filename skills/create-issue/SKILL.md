@@ -67,10 +67,17 @@ mcp__workflow__gh_issue(action="list", labels=[], state="open")
 
 If similar titles found, warn the user and ask whether to proceed.
 
-### Step 3: Create Issue
+### Step 3: Get Base Commit
+
+Get the current commit hash to stamp on the issue:
+```bash
+git rev-parse --short HEAD
+```
+
+### Step 4: Create Issue
 
 **Preferred: MCP**
-Use the issue body template from `skills/shared/issue-body-template.md`. For quick issues, omit the `## Task Spec` section (no implementation plan exists).
+Use the issue body template from `skills/shared/issue-body-template.md`. Include `## Base Commit` with the hash from Step 3. For quick issues, omit the `## Task Spec` section (no implementation plan exists).
 
 ```
 mcp__workflow__gh_bulk_issues(
@@ -89,7 +96,7 @@ mcp__workflow__gh_bulk_issues(
 gh issue create --title "Issue title" --body "..." --milestone "Backlog"
 ```
 
-### Step 4: Update Bidirectional Dependencies
+### Step 5: Update Bidirectional Dependencies
 
 If the issue has dependencies on existing issues, update those issues to add "Blocks: #N" references:
 
@@ -135,7 +142,7 @@ Write to `docs/plans/YYYY-MM-DD-<feature>/` following the plan folder structure 
 
 ### Step 5: Create Issues from Plan
 
-Create GitHub issues using the issue body template from `skills/shared/issue-body-template.md`. Include `## Task Spec` with a clickable link to each task file. Use `blocked_by_indices` for dependencies (do not add a `## Dependencies` section — the tool handles that).
+Create GitHub issues using the issue body template from `skills/shared/issue-body-template.md`. Include `## Base Commit` (from `git rev-parse --short HEAD`) and `## Task Spec` with a clickable link to each task file. Use `blocked_by_indices` for dependencies (do not add a `## Dependencies` section — the tool handles that).
 
 ```
 mcp__workflow__gh_bulk_issues(
@@ -247,7 +254,8 @@ gh issue edit 42 --body "..."
 - [ ] Get title (from arg or ask user)
 - [ ] Get summary, acceptance criteria, dependencies
 - [ ] Check for duplicate titles — warn if found
-- [ ] Create issue via `gh_bulk_issues(action="create")` with milestone
+- [ ] **Get base commit hash** via `git rev-parse --short HEAD`
+- [ ] Create issue via `gh_bulk_issues(action="create")` with milestone — include `## Base Commit` in body
 - [ ] Update bidirectional dependencies on linked issues
 - [ ] Output issue number, title, milestone, URL
 
@@ -256,6 +264,7 @@ gh issue edit 42 --body "..."
 - [ ] Invoke `superpowers:brainstorming`
 - [ ] Invoke `superpowers:writing-plans`
 - [ ] Save plan to `docs/plans/YYYY-MM-DD-<feature>/` (design.md, summary.md, tasks/*.md)
-- [ ] Create issues from plan via `gh_bulk_issues(action="create")` with milestone
+- [ ] **Get base commit hash** via `git rev-parse --short HEAD`
+- [ ] Create issues from plan via `gh_bulk_issues(action="create")` with milestone — include `## Base Commit` in body
 - [ ] Add bidirectional dependency links (update parent issues with "Blocks" refs)
 - [ ] Output issue table + dependency graph + next steps

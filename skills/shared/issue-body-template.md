@@ -13,6 +13,9 @@ Canonical format for all GitHub issue bodies created by skills (`create-mileston
 - [ ] {CRITERION_1}
 - [ ] {CRITERION_2}
 
+## Base Commit
+`{COMMIT_HASH}`
+
 ## Task Spec
 [`tasks/{TASK_FILENAME}`](https://github.com/{OWNER}/{REPO}/blob/{BRANCH}/docs/plans/{PLAN_FOLDER}/tasks/{TASK_FILENAME})
 ```
@@ -30,6 +33,7 @@ Canonical format for all GitHub issue bodies created by skills (`create-mileston
 | `{BRANCH}` | Working branch for the milestone | "feature/phase5-variety-tracking" |
 | `{PLAN_FOLDER}` | Date-prefixed plan folder name | "2025-06-15-variety-tracking" |
 | `{TASK_FILENAME}` | Task file name (zero-padded number + kebab-case) | "01-ingredient-model.md" |
+| `{COMMIT_HASH}` | Short commit hash at issue creation time (`git rev-parse --short HEAD`) | "abc1234" |
 
 ## Rules
 
@@ -40,6 +44,8 @@ Canonical format for all GitHub issue bodies created by skills (`create-mileston
 3. **`## Task Spec` is optional.** Only include it when an implementation plan with task files exists. For quick issues (e.g., backlog items, simple bug fixes), omit the section entirely.
 
 4. **Milestone link uses relative path.** The `../../milestone/N` format works from any issue page on GitHub.
+
+5. **`## Base Commit` is always included.** Records the commit hash at issue creation time so you can diff against it later to see what changed before implementation starts. Get via `git rev-parse --short HEAD`.
 
 ## Example: Full Issue Body
 
@@ -55,6 +61,9 @@ Add exponential backoff retry logic to the payment processing endpoint to handle
 - [ ] Log each retry attempt with context
 - [ ] Return 503 after all retries exhausted
 - [ ] Add tests for retry behavior
+
+## Base Commit
+`a1b2c3d`
 
 ## Task Spec
 [`tasks/03-retry-logic.md`](https://github.com/maximilianjenders/food-butler/blob/feature/phase5-variety-tracking/docs/plans/2025-06-15-variety-tracking/tasks/03-retry-logic.md)
@@ -72,4 +81,7 @@ The stats endpoint returns 500 when called with an empty date range.
 ## Acceptance Criteria
 - [ ] Return 400 with descriptive error for empty date range
 - [ ] Add test for empty date range case
+
+## Base Commit
+`a1b2c3d`
 ```
