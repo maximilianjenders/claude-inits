@@ -13,7 +13,16 @@ const VALID_APPS = ["food-butler", "spendee"];
 const VALID_ENVS = ["prod", "staging", "dev"];
 
 // Allowed commands for docker exec/run (read-only operations)
-const ALLOWED_COMMANDS = ["cat", "ls", "head", "tail", "find", "grep", "env", "ps", "stat"];
+// NOTE: "env" intentionally excluded — it dumps all container env vars including secrets
+const ALLOWED_COMMANDS = ["cat", "ls", "head", "tail", "find", "grep", "ps", "stat"];
+
+// Blocked path patterns for pi_read_file (sensitive files)
+const BLOCKED_PATH_PATTERNS = [
+  /\.env($|\.)/,   // .env, .env.local, .env.production, etc.
+  /\/\.ssh\//,     // SSH keys and config
+  /\/etc\/shadow$/, // Password hashes
+  /\/etc\/passwd$/, // User accounts
+];
 
 // App-specific configurations
 // To add a new app: add entry here with containerPrefix and seedCommand
@@ -68,6 +77,11 @@ function validatePath(path) {
   sanitizeInput(path);
   if (!path.startsWith("/")) {
     throw new Error(`Path must be absolute: ${path}`);
+  }
+  for (const pattern of BLOCKED_PATH_PATTERNS) {
+    if (pattern.test(path)) {
+      throw new Error(`Blocked: path matches sensitive pattern: ${path}`);
+    }
   }
   return path;
 }
@@ -283,7 +297,7 @@ const TOOLS = [
   },
   {
     name: "pi_docker_inspect",
-    description: "Get metadata about a container or image (creation time, config, etc.)",
+    description: "Get metadata about a container or image (creation time, config, etc.). Format parameter is required; Env-accessing formats are blocked.",
     inputSchema: {
       type: "object",
       properties: {
@@ -293,10 +307,10 @@ const TOOLS = [
         },
         format: {
           type: "string",
-          description: "Go template format string (e.g., '{{.Config.Image}}', '{{.Created}}')",
+          description: "Go template format string (e.g., '{{.Config.Image}}', '{{.Created}}'). Env access is blocked.",
         },
       },
-      required: ["target"],
+      required: ["target", "format"],
     },
   },
   {
@@ -470,7 +484,21 @@ const toolHandlers = {
     let command = `docker inspect ${args.target}`;
     if (args.format) {
       sanitizeInput(args.format);
+      // Block format strings that access environment variables (contains secrets)
+      if (/Env/i.test(args.format)) {
+        return {
+          content: [{ type: "text", text: "Error: format accessing Env is blocked (contains secrets)" }],
+          isError: true,
+        };
+      }
       command += ` --format "${args.format}"`;
+    } else {
+      // Without --format, full JSON output includes .Config.Env with secrets.
+      // Require a format parameter to force callers to request specific fields.
+      return {
+        content: [{ type: "text", text: "Error: --format parameter is required (unformatted output contains secrets)" }],
+        isError: true,
+      };
     }
     const result = await executeSSH(command);
     return { content: [{ type: "text", text: formatResult(result) }] };
@@ -573,4 +601,5 @@ export {
   formatResult,
   server,
   ALLOWED_COMMANDS,
+  BLOCKED_PATH_PATTERNS,
 };
