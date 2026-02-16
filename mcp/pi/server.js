@@ -412,21 +412,6 @@ const toolHandlers = {
 
     const result = await executeSSH(command);
 
-    // Auto-sync prod data to staging after deploy
-    if (args.env === "staging") {
-      const syncResult = await executeSSH(
-        `~/pi-setup/scripts/copy-prod-to-staging.sh ${args.app}`
-      );
-      return {
-        content: [
-          {
-            type: "text",
-            text: formatResult(result) + "\n\n=== Auto-sync prod → staging ===\n" + formatResult(syncResult),
-          },
-        ],
-      };
-    }
-
     return { content: [{ type: "text", text: formatResult(result) }] };
   },
 
