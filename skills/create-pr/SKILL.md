@@ -120,6 +120,7 @@ git -C "$PROJECT_DIR" log origin/$BRANCH..HEAD
    - Deploy current branch to dev using MCP: `pi_deploy("[project]", "dev", "[branch]")`
    - Wait for container to be healthy
    - Run E2E tests: `npm --prefix frontend run test:e2e`
+   - Stop dev container: `pi_docker_stop("$PROJECT-dev")` — no longer needed after E2E
    - If E2E tests fail: **STOP and prominently report the failures.** Do NOT assume they were broken before this PR — treat them as regressions caused by this branch until proven otherwise. Do not proceed to staging deployment.
 
 7. **Deploy to Staging:**
@@ -149,10 +150,11 @@ Use after fixing issues found during manual staging testing. Skips PR creation, 
 4. Deploy to dev: `pi_deploy("[project]", "dev", "[branch]")`
 5. Health check dev
 6. Run E2E tests
-7. Deploy to staging: `pi_deploy("[project]", "staging", "[branch]")`
-7a. If `--wipe`: `pi_copy_prod_to_staging("[project]")`
-8. Health check staging
-9. Report summary (E2E results + staging URL)
+7. Stop dev container: `pi_docker_stop("$PROJECT-dev")`
+8. Deploy to staging: `pi_deploy("[project]", "staging", "[branch]")`
+8a. If `--wipe`: `pi_copy_prod_to_staging("[project]")`
+9. Health check staging
+10. Report summary (E2E results + staging URL)
 
 ## Checklist
 
@@ -188,7 +190,9 @@ Use after fixing issues found during manual staging testing. Skips PR creation, 
 - [ ] Reset dev data: `pi_reset_dev("[project]")`
 - [ ] Deploy to dev: `pi_deploy("[project]", "dev", "[branch]")`
 - [ ] Health check dev environment
-- [ ] Run E2E tests — **if any fail, STOP. Report failures prominently. Do NOT deploy to staging.**
+- [ ] Run E2E tests
+- [ ] Stop dev container: `pi_docker_stop("$PROJECT-dev")` — no longer needed after E2E
+- [ ] **If E2E tests failed, STOP. Report failures prominently. Do NOT deploy to staging.**
 - [ ] Deploy to staging: `pi_deploy("[project]", "staging", "[branch]")`
 - [ ] If `--wipe`: sync prod data: `pi_copy_prod_to_staging("[project]")`
 - [ ] Health check staging environment
@@ -261,6 +265,9 @@ curl --retry 10 --retry-delay 3 --retry-connrefused -s http://[project]-dev.home
 # 6. Run E2E tests
 npm --prefix frontend run test:e2e
 
+# 6a. Stop dev container (no longer needed after E2E)
+pi_docker_stop("$PROJECT-dev")
+
 # 7. Deploy to staging using MCP
 pi_deploy("[project]", "staging", "$BRANCH")
 
@@ -301,7 +308,6 @@ Deployed to staging
 - Merge PR to master
 - Remove ready-for-review labels from issues
 - Close milestone
-- Stop dev container on Pi
 - Stop staging container on Pi
 ```
 
