@@ -77,7 +77,7 @@ gh pr view $PR_NUMBER --json title,url,milestone,body
 - [ ] Remove `code-complete` labels from linked issues (**pass `cwd` to MCP tools**)
 - [ ] Close the milestone (**pass `cwd` to MCP tools**)
 - [ ] Stop staging container: `pi_docker_stop("$PROJECT-staging")`
-- [ ] Stop dev container: `pi_docker_stop("$PROJECT-dev")`
+- [ ] Stop dev container (safety net): `pi_docker_stop("$PROJECT-dev")` — should already be stopped by `/create-pr`
 - [ ] Switch to master and pull
 
 ### Deploy
@@ -106,7 +106,8 @@ gh pr view $PR_NUMBER --json title,url,milestone,body
    - Merge PR to master (auto-removes worktree and deletes branch)
    - Remove `code-complete` labels from linked issues (**pass `cwd` to MCP**)
    - Close the milestone (**pass `cwd` to MCP**)
-   - Stop staging/dev containers on Pi
+   - Stop staging container on Pi
+   - Stop dev container if still running (safety net)
    - Switch local to master and pull
    - Deploy to production
 
