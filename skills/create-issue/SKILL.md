@@ -132,6 +132,12 @@ Get feature name from argument or ask. Gather brief context about what the user 
 
 Invoke `superpowers:brainstorming` to explore the problem space and create a design doc.
 
+### Step 2.5: Review Design Doc
+
+Invoke `plannotator:plannotator-annotate` with the path to the design doc produced by brainstorming. This opens an interactive annotation UI where the user can review, mark up, and refine the design before proceeding to implementation planning.
+
+Address any annotation feedback before continuing.
+
 ### Step 3: Create Implementation Plan
 
 Invoke `superpowers:writing-plans` to create a detailed implementation plan from the design.
@@ -262,6 +268,7 @@ gh issue edit 42 --body "..."
 ### Full Mode
 - [ ] Get feature name and context
 - [ ] Invoke `superpowers:brainstorming`
+- [ ] Invoke `plannotator:plannotator-annotate` on the design doc — address feedback before continuing
 - [ ] Invoke `superpowers:writing-plans`
 - [ ] Save plan to `docs/plans/YYYY-MM-DD-<feature>/` (design.md, summary.md, tasks/*.md)
 - [ ] **Get base commit hash** via `git rev-parse --short HEAD`

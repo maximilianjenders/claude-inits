@@ -303,3 +303,11 @@ If pre-commit hooks pass, the code meets quality standards.
 ```
 
 Rules in MUST/SHOULD/MUST NOT should focus on things tooling **can't** catch.
+
+## Plugin Maintenance
+
+### Plannotator
+
+The `plannotator` plugin's default `ExitPlanMode` hook is **disabled** so it doesn't fire on implementation plans. Instead, design doc review uses explicit `plannotator:plannotator-annotate` invocations in skills (see `create-issue` Full Mode Step 2.5).
+
+After plugin updates, re-disable the hook — see `GOTCHAS.md` for details.
