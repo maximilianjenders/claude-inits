@@ -79,7 +79,7 @@ Use when an implementation plan is ready and you need to create issues.
 
 ### Issue Body Template
 
-See `skills/shared/issue-body-template.md` for the canonical issue body template with all variables documented.
+**Read `./skills/shared/issue-body-template.md`** (relative to project root) for the canonical template with all variables and rules.
 
 **Key rules:**
 - **No `## Dependencies` section in the body.** Dependencies are handled by `blocked_by_indices` / `blocked_by_issues` in `gh_bulk_issues`. The tool adds blocker lines automatically.
