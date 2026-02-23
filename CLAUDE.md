@@ -173,6 +173,16 @@ All code must be working and covered by tests before moving to the next step:
 
 Do not accumulate untested code. Each logical unit of work should be tested before starting the next.
 
+### Quality Bias — Fix Now, Don't Auto-Defer
+
+Strive for high quality in all output. When you discover an issue during implementation that affects the quality of the feature being worked on — fix it in the current PR.
+
+**The rule:** Never automatically defer a quality-impacting issue. Either:
+1. **Fix it now** as part of the current work, or
+2. **Ask the user** whether to fix now or defer
+
+Issues that are clearly out of scope (unrelated features, pre-existing tech debt in untouched code) can be noted for later. But if an issue affects the quality, correctness, or completeness of what you're currently building, the default is to address it immediately. "Not fully in scope" is not a valid reason to silently skip something that degrades the current feature.
+
 ### When to Run Tests
 
 | Context | Unit Tests | E2E Tests | Why |
