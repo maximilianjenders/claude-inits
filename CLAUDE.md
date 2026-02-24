@@ -183,6 +183,18 @@ Strive for high quality in all output. When you discover an issue during impleme
 
 Issues that are clearly out of scope (unrelated features, pre-existing tech debt in untouched code) can be noted for later. But if an issue affects the quality, correctness, or completeness of what you're currently building, the default is to address it immediately. "Not fully in scope" is not a valid reason to silently skip something that degrades the current feature.
 
+### Ask, Don't Work Around
+
+When something is missing, unavailable, or unclear — **stop and ask the user**. Do not silently find a workaround or alternative approach.
+
+Examples of when to ask:
+- An API key, secret, or credential is missing or not accessible
+- A required service, tool, or dependency is unavailable
+- Requirements are ambiguous and multiple interpretations are possible
+- The intended approach hits an unexpected blocker
+
+The cost of asking is a few seconds of the user's time. The cost of a silent workaround is wasted effort, a sub-par solution, and lost trust. When in doubt, ask.
+
 ### When to Run Tests
 
 | Context | Unit Tests | E2E Tests | Why |
