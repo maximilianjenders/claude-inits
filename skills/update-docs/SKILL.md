@@ -11,16 +11,16 @@ Update CLAUDE.md (AI-facing) and README.md (human-facing) after significant work
 ## When to Use
 
 Call `/update-docs` after completing features that change:
-- Project structure (new directories, renamed paths)
-- Commands or scripts
-- Conventions or rules
+- Conventions or rules that would surprise an agent reading only the code
+- Non-obvious hazards, gotchas, or constraints
 - User-facing functionality
 
 ## Target Files
 
 | File | Audience | Content |
 |------|----------|---------|
-| CLAUDE.md | AI agents | Directory structure, commands, conventions, rules |
+| CLAUDE.md | AI agents | Non-obvious conventions, rules, hazards — things an agent would get wrong from code alone |
+| GOTCHAS.md | AI agents | Reusable fixes for non-obvious pitfalls (copy-pasteable, grouped by category) |
 | README.md | Humans | Features, usage, architecture overview |
 
 ## Execution Flow
@@ -44,15 +44,16 @@ Also analyze the current conversation for:
 
 ### 2. Classify Changes
 
+**Landmine test:** Before adding anything to CLAUDE.md, ask: "Would an agent get this wrong if it just read the code?" If no, don't add it. Directory structures, commands, and file patterns are discoverable from code — only document them if there's a non-obvious gotcha.
+
 Determine what needs updating:
 
 | Change Type | Update Target |
 |-------------|---------------|
-| New directories/file patterns | CLAUDE.md -> Directory Structure |
-| New commands/scripts | CLAUDE.md -> Development Commands |
-| New conventions/rules | CLAUDE.md -> Project-Specific Rules |
+| Non-obvious conventions/rules | CLAUDE.md |
+| Reusable gotchas/pitfalls | GOTCHAS.md |
 | New user-facing features | README.md |
-| Architecture changes | Both files |
+| Architecture changes that create hazards | CLAUDE.md + README.md |
 
 ### 3. Read Current Docs
 
@@ -64,14 +65,32 @@ Determine what needs updating:
 
 Read both files to understand their current structure.
 
-### 4. Make Targeted Edits
+### 4. Suggest Pruning
+
+Review CLAUDE.md for content that has become redundant or stale:
+- **Discoverable info:** Directory structures, command lists, file patterns that an agent can find by reading the code
+- **Stale entries:** Rules or conventions that no longer match the codebase
+- **Duplicated info:** Content already expressed in code comments or config files
+
+If you find candidates, present them to the user as a numbered list and ask for approval before removing. Example:
+
+> **Prune suggestions for CLAUDE.md:**
+> 1. "Directory Structure" section — discoverable from file tree
+> 2. "Build command: `npm run build`" — discoverable from package.json
+> 3. "Use camelCase for variables" — matches language defaults, not a landmine
+>
+> Which should I remove? (all / numbers / none)
+
+Do not remove anything without explicit approval. If nothing to prune, skip this step silently.
+
+### 5. Make Targeted Edits
 
 - Edit only the relevant sections
 - Preserve existing formatting and structure
 - Add new content in the appropriate location
 - Don't rewrite entire files
 
-### 5. Stage and Summarize
+### 6. Stage and Summarize
 
 ```bash
 # Stage only if changed
@@ -89,10 +108,12 @@ Report what was updated and why.
 
 **Large diffs:** For diffs over 500 lines, focus on `--stat` summary + conversation context.
 
-**What NOT to update:**
+**What NOT to add to CLAUDE.md:**
+- Discoverable information (directory structure, commands, file patterns)
 - Normal feature work (button added, bug fixed)
 - Self-explanatory code changes
-- Information already in code comments
+- Information already in code comments or config files
+- Conventions that match language/framework defaults
 
 ## Checklist
 
@@ -107,12 +128,16 @@ Report what was updated and why.
 - [ ] Run `git diff master...HEAD --stat` to see changed files
 - [ ] Review conversation for architectural decisions, new features, conventions
 
-### Classify Changes
-- [ ] New directories/file patterns → CLAUDE.md
-- [ ] New commands/scripts → CLAUDE.md
-- [ ] New conventions/rules → CLAUDE.md
+### Classify Changes (apply landmine test)
+- [ ] Non-obvious conventions/rules → CLAUDE.md
+- [ ] Reusable gotchas/pitfalls → GOTCHAS.md
 - [ ] New user-facing features → README.md
-- [ ] Architecture changes → Both files
+- [ ] Architecture changes that create hazards → CLAUDE.md + README.md
+
+### Prune
+- [ ] Review CLAUDE.md for discoverable, stale, or duplicated content
+- [ ] If candidates found: present numbered list and ask user for approval
+- [ ] Remove only approved items
 
 ### Make Updates
 - [ ] Read current docs to understand structure
