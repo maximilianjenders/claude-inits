@@ -77,7 +77,7 @@ git rev-parse --short HEAD
 ### Step 4: Create Issue
 
 **Preferred: MCP**
-**Read `./skills/shared/issue-body-template.md`** (relative to project root) for the issue body template. Include `## Base Commit` with the hash from Step 3. For quick issues, omit the `## Task Spec` section (no implementation plan exists).
+**Read `../shared/issue-body-template.md`** (relative to this skill's base directory) for the issue body template. Include `## Base Commit` with the hash from Step 3. For quick issues, omit the `## Task Spec` section (no implementation plan exists).
 
 ```
 mcp__workflow__gh_bulk_issues(
@@ -144,11 +144,11 @@ Invoke `superpowers:writing-plans` to create a detailed implementation plan from
 
 ### Step 4: Save Plan Files
 
-Write to `docs/plans/YYYY-MM-DD-<feature>/` following the plan folder structure in `./skills/shared/plan-folder-structure.md` (relative to project root).
+Write to `docs/plans/YYYY-MM-DD-<feature>/` following the plan folder structure in `../shared/plan-folder-structure.md` (relative to this skill's base directory).
 
 ### Step 5: Create Issues from Plan
 
-Create GitHub issues using the issue body template from `./skills/shared/issue-body-template.md` (relative to project root). Include `## Base Commit` (from `git rev-parse --short HEAD`) and `## Task Spec` with a clickable link to each task file. Use `blocked_by_indices` for dependencies (do not add a `## Dependencies` section — the tool handles that).
+Create GitHub issues using the issue body template from `../shared/issue-body-template.md` (relative to this skill's base directory). Include `## Base Commit` (from `git rev-parse --short HEAD`) and `## Task Spec` with a clickable link to each task file. Use `blocked_by_indices` for dependencies (do not add a `## Dependencies` section — the tool handles that).
 
 ```
 mcp__workflow__gh_bulk_issues(
@@ -203,7 +203,7 @@ Run `/create-milestone` to set up the milestone, or `/start-milestone` if milest
 
 ## Issue Body Template
 
-**Read `./skills/shared/issue-body-template.md`** (relative to project root) for the canonical template with all variables and rules.
+**Read `../shared/issue-body-template.md`** (relative to this skill's base directory) for the canonical template with all variables and rules.
 
 Key points:
 - No `## Dependencies` section (handled by `blocked_by_indices` / `blocked_by_issues` in `gh_bulk_issues`)
