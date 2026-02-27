@@ -32,7 +32,6 @@ Example:
 
 | File | Rules |
 |------|-------|
-| STATUS.md | Max ~50 lines, delete completed TODOs, move resolved Qs to DECISIONS.md |
 | DECISIONS.md | Append-only, never delete, number for cross-ref (D1, D2), include WHY |
 | GOTCHAS.md | Reusable fixes only, copy-pasteable, group by Codebase/Environment/Debugging |
 

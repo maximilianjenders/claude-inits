@@ -92,6 +92,5 @@ gh issue list --state closed --limit 5 --json number,title,closedAt --jq '.[] | 
 ## Fallback
 
 If GitHub queries fail (no repo, no access), fall back to:
-1. Read `STATUS.md` if it exists
-2. Read `BACKLOG.md` if it exists
+1. Read `BACKLOG.md` if it exists
 3. Show git status and recent commits
