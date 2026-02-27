@@ -210,7 +210,7 @@ The Pi MCP server provides direct tool access without SSH permission prompts. Sk
 
 **Setup:** Add to global Claude config (one-time):
 ```bash
-claude mcp add pi /Users/max/Gits/pi-setup/mcp/start.sh --scope user
+claude mcp add pi /Users/max/Gits/claude-inits/mcp/pi/start.sh --scope user
 ```
 
 **Available Tools:**
@@ -231,9 +231,9 @@ claude mcp add pi /Users/max/Gits/pi-setup/mcp/start.sh --scope user
 | `pi_copy_prod_to_staging` | Copy prod data to staging |
 | `pi_seed_dev` | Seed E2E fixtures in dev environment |
 
-**Debug Commands:** `pi_docker_exec` and `pi_docker_run` are restricted to read-only commands: `cat`, `ls`, `head`, `tail`, `find`, `grep`, `env`, `ps`, `stat`.
+**Debug Commands:** `pi_docker_exec` and `pi_docker_run` are restricted to read-only commands: `cat`, `ls`, `head`, `tail`, `find`, `grep`, `ps`, `stat`.
 
-**Hostname:** Uses `pi.local` (mDNS) - works with or without Tailscale.
+**Hostname:** Uses `max@pi` (Tailscale MagicDNS).
 
 See `pi-setup/docs/plans/2026-01-30-pi-mcp-server-design.md` for implementation details.
 
@@ -318,7 +318,7 @@ When tests create/modify data:
 | Project | Entrypoint | Dev Seeding | E2E Ready |
 |---------|------------|-------------|-----------|
 | food-butler | Yes | Yes | Yes |
-| spendee-visualiser | Yes | No | No |
+| spendee-visualiser | Yes | Yes | Yes |
 
 To add E2E support to a project:
 1. Create `seed_fixtures.py` with test data
