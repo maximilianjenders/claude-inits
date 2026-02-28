@@ -42,28 +42,30 @@ Also analyze the current conversation for:
 - New features implemented
 - Conventions established
 
-### 2. Classify Changes
+### 2. Read ALL Target Docs
 
-**Landmine test:** Before adding anything to CLAUDE.md, ask: "Would an agent get this wrong if it just read the code?" If no, don't add it. Directory structures, commands, and file patterns are discoverable from code — only document them if there's a non-obvious gotcha.
+**MANDATORY: Read every doc file BEFORE deciding what needs updating.** Do not reason about whether updates are needed until you've read the current content. You cannot judge staleness or completeness without seeing the file.
 
-Determine what needs updating:
+Read each file individually:
+- [ ] Read `CLAUDE.md` (root and any sub-project CLAUDE.md files)
+- [ ] Read `README.md`
+- [ ] Read `GOTCHAS.md` (if exists)
+
+### 3. Classify Changes
+
+After reading all docs, determine what needs updating. Apply different tests per file:
+
+**CLAUDE.md — Landmine test:** "Would an agent get this wrong if it just read the code?" If no, don't add it. Directory structures, commands, and file patterns are discoverable from code — only document them if there's a non-obvious gotcha.
+
+**README.md — Staleness test:** "Does the README have sections (feature lists, test lists, architecture diagrams, tables) with entries that are now stale or incomplete given these changes?" The README is a living document for humans — any enumerated list that's missing new items is stale.
 
 | Change Type | Update Target |
 |-------------|---------------|
 | Non-obvious conventions/rules | CLAUDE.md |
 | Reusable gotchas/pitfalls | GOTCHAS.md |
 | New user-facing features | README.md |
+| Stale/incomplete enumerated lists | README.md |
 | Architecture changes that create hazards | CLAUDE.md + README.md |
-
-### 3. Read Current Docs
-
-```bash
-# Check if files exist
-[ -f CLAUDE.md ] && echo "CLAUDE.md exists" || echo "No CLAUDE.md"
-[ -f README.md ] && echo "README.md exists" || echo "No README.md"
-```
-
-Read both files to understand their current structure.
 
 ### 4. Suggest Pruning
 
@@ -128,10 +130,15 @@ Report what was updated and why.
 - [ ] Run `git diff master...HEAD --stat` to see changed files
 - [ ] Review conversation for architectural decisions, new features, conventions
 
-### Classify Changes (apply landmine test)
-- [ ] Non-obvious conventions/rules → CLAUDE.md
-- [ ] Reusable gotchas/pitfalls → GOTCHAS.md
-- [ ] New user-facing features → README.md
+### Read ALL Docs (mandatory before any decisions)
+- [ ] Read `CLAUDE.md` (root + sub-project files)
+- [ ] Read `README.md`
+- [ ] Read `GOTCHAS.md` (if exists)
+
+### Classify Changes
+- [ ] CLAUDE.md: Apply landmine test — non-obvious conventions/rules only
+- [ ] README.md: Apply staleness test — check all enumerated lists for missing/outdated entries
+- [ ] GOTCHAS.md: Reusable gotchas/pitfalls
 - [ ] Architecture changes that create hazards → CLAUDE.md + README.md
 
 ### Prune
@@ -140,7 +147,6 @@ Report what was updated and why.
 - [ ] Remove only approved items
 
 ### Make Updates
-- [ ] Read current docs to understand structure
 - [ ] Edit only relevant sections (don't rewrite entire files)
 - [ ] Preserve existing formatting
 
