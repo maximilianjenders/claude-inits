@@ -14,6 +14,8 @@ Example:
 - Add login and logout endpoints
 ```
 
+For multi-line commit messages, use `$'...\n...'` ANSI-C quoting — never `$(cat <<'EOF'...)` heredocs. The `$()` command substitution triggers permission prompts even with `git*` whitelisted.
+
 ## Terminology
 
 | Preferred | Avoid |
