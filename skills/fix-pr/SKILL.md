@@ -12,16 +12,46 @@ Re-establish context and workflow discipline after clearing a context window mid
 ## Usage
 
 ```
-/fix-pr 42                         # Feedback mode: triage and create issues
-/fix-pr 42 --implement             # Implement all open pr-review issues
-/fix-pr 42 --implement #101 #102   # Implement specific issues only
+/fix-pr                            # Feedback mode: auto-detect PR from branch
+/fix-pr 42                         # Feedback mode: explicit PR number
+/fix-pr --implement                # Implement all open pr-review issues
+/fix-pr --implement #101 #102      # Implement specific issues only
 ```
 
 ## Argument Parsing
 
-- First positional arg (required): PR number (`42`) or URL (`https://github.com/owner/repo/pull/42`)
+- First positional arg (optional): PR number (`42`) or URL (`https://github.com/owner/repo/pull/42`). If omitted, auto-detect from current branch (see below).
 - `--implement` flag: Switch to implement mode (default is feedback mode)
 - `#N` args after `--implement`: Specific issue numbers to implement (optional, defaults to all open `pr-review` issues)
+
+### Auto-detecting PR Number
+
+When no PR number is provided, detect from context:
+
+| Current State | Action |
+|--------------|--------|
+| On feature branch | `gh pr view --json number` from current branch |
+| On master, one worktree | Use that worktree's branch to find PR |
+| On master, multiple worktrees | List worktrees with their PRs, **ask user to pick** |
+| No PR found | Error: "No open PR found. Specify PR number: `/fix-pr 42`" |
+
+**Preferred: MCP**
+```
+mcp__workflow__gh_pr(action="view")  # omit pr= to use current branch
+```
+
+**Fallback: Bash**
+```bash
+gh pr view --json number --jq '.number'
+```
+
+When on master with multiple worktrees, list them with associated PRs:
+```
+Multiple worktrees found — which PR?
+1. `.worktrees/phase5-variety-tracking/` → PR #42 (Add variety tracking)
+2. `.worktrees/fix-import-flow/` → PR #51 (Fix import flow)
+```
+Use `AskUserQuestion` to let the user pick.
 
 ## Two Modes
 
@@ -148,8 +178,10 @@ mcp__workflow__gh_bulk_issues(
 - `docs/plans/2026-02-12-stats-redesign/` (for #102)
 
 ### Next Steps
-Clear context and run `/fix-pr 42 --implement` to begin fixes.
+Run `/fix-pr <pr> --implement` to begin fixes.
 ```
+
+Include the actual PR number in the suggestion (e.g., `/fix-pr 42 --implement`).
 
 **STOP here.** Do NOT implement. The whole point is to create issues in a small context, then implement in a fresh one.
 
@@ -236,7 +268,7 @@ Run `/create-pr --retest` to deploy and verify.
 **CRITICAL: Follow this checklist in order. Execute all steps automatically without asking for confirmation between steps.**
 
 ### Context Recovery (both modes)
-- [ ] Parse PR number from argument
+- [ ] Parse PR number from argument — if not provided, auto-detect from current branch or worktree. If on master with multiple worktrees, ask user to pick.
 - [ ] Fetch PR details via `mcp__workflow__gh_pr(action="view")` — extract `headRefName`
 - [ ] Resolve working directory — map PR branch to worktree (`.worktrees/<branch-without-feature-prefix>/`). Set `PROJECT_DIR` and pass `cwd=PROJECT_DIR` to ALL MCP calls.
 - [ ] Get current git state via `mcp__workflow__git_state(cwd=PROJECT_DIR)`
@@ -252,7 +284,7 @@ Run `/create-pr --retest` to deploy and verify.
 - [ ] **Complex items:** `superpowers:brainstorming` → `superpowers:writing-plans` → write to `docs/plans/YYYY-MM-DD-<name>/` → create issues from plan
 - [ ] All issues get `pr-review` label and are added to PR's milestone
 - [ ] Output summary table (issue numbers, titles, simple vs planned)
-- [ ] **STOP** — remind user to clear context and run `/fix-pr <pr> --implement`
+- [ ] **STOP** — suggest `/fix-pr <pr> --implement` with the actual PR number
 
 ### Implement Mode
 - [ ] Fetch open `pr-review` issues (or filter to specified numbers)
@@ -324,8 +356,10 @@ gh issue edit 101 --remove-label "ready-for-review" --add-label "code-complete"
 - `docs/plans/2026-02-12-stats-redesign/` (for #102)
 
 ### Next Steps
-Clear context and run `/fix-pr 42 --implement` to begin fixes.
+Run `/fix-pr <pr> --implement` to begin fixes.
 ```
+
+Include the actual PR number in the suggestion.
 
 ### Implement Mode
 ```

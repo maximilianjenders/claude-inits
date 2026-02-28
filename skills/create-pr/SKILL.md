@@ -24,6 +24,7 @@ Create a pull request and run AI review loop.
 - First positional arg (optional): base branch (default: `master`)
 - `--retest` flag: Skip PR creation, code review, and unit tests. Only deploy to dev → E2E → deploy to staging.
   - Use case: after fixing issues found during manual staging testing
+  - PR is auto-detected from current branch (or resolved worktree). If on master with multiple worktrees, ask user to pick.
 - `--wipe` flag: After deploying to staging, sync prod data to staging via `pi_copy_prod_to_staging`. Default: no wipe (staging data preserved).
 
 ## Pre-flight Checks
