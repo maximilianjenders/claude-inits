@@ -219,10 +219,13 @@ For each issue, follow the `/start-issue` implementation pattern (do NOT literal
 
 1. Mark `in-progress` (add label)
 2. Read issue details and any linked plan files
-3. Follow TDD — write failing tests, implement to pass
-4. Run scoped tests (changed files only)
-5. Self-review
-6. Mark `ready-for-review` (swap labels)
+3. **Write a regression test first** — reproduce the reported bug in a test. The test MUST fail demonstrating the exact problem before any fix is attempted. This proves the bug is real and the test catches it.
+4. Implement the fix — minimal code to make the regression test pass
+5. Run scoped tests (changed files only)
+6. Self-review
+7. Mark `ready-for-review` (swap labels)
+
+> **Why regression-test-first?** Staging feedback means someone found a real bug. The test reproduces it, the fix resolves it, and the test prevents it from recurring. A fix without a regression test is an unproven fix.
 
 ### Step 5: Commit
 
@@ -289,7 +292,7 @@ Run `/create-pr --retest` to deploy and verify.
 ### Implement Mode
 - [ ] Fetch open `pr-review` issues (or filter to specified numbers)
 - [ ] Check for implementation plans in `docs/plans/` — read relevant task files
-- [ ] For each issue: follow `/start-issue` pattern inline (in-progress → TDD → scoped tests → ready-for-review)
+- [ ] For each issue: write regression test reproducing the bug FIRST → verify it fails → implement fix → verify it passes → scoped tests → ready-for-review
 - [ ] Batch commit referencing all issues
 - [ ] Push to PR branch
 - [ ] Mark all issues `code-complete` (close + label)
