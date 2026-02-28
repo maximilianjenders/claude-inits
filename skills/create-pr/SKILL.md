@@ -134,6 +134,7 @@ git -C "$PROJECT_DIR" log origin/$BRANCH..HEAD
    - Code review: passed/issues fixed
    - Tests: pre-commit verified / E2E passed
    - Staging: deployed with URL
+   - **What to Test:** top-level functional changes to verify on staging — derived from linked issue titles and commit messages. Focus on user-facing behavior, not implementation details.
    - Cleanup actions reminder
    - "Ready for manual testing on staging. Run `/merge-pr` when ready to merge."
 
@@ -199,6 +200,7 @@ Use after fixing issues found during manual staging testing. Skips PR creation, 
 
 ### Completion
 - [ ] Output summary with PR URL, review status, test results, staging URL
+- [ ] Include "What to Test" section — key functional changes derived from linked issues and commits, focused on user-facing behavior
 - [ ] Remind user to run `/merge-pr` after manual testing
 
 ## Execution
@@ -299,6 +301,14 @@ E2E: 12 passed
 Deployed to staging
 - URL: http://[project]-staging.home
 
+### What to Test
+Summarize the key functional changes from linked issues and commits. Focus on
+user-facing behavior — what the user should poke at on staging. Example:
+
+- **Meal variety tracking** — meals now show a "last cooked" badge; verify it appears and updates
+- **New filter bar** — recipe list has category filters; try each filter and check counts
+- **Deleted items** — soft-delete replaces hard-delete; delete something and confirm it's recoverable
+
 ### Next Steps
 1. Manual testing on staging: http://[project]-staging.home
 2. When ready: `/merge-pr`
@@ -322,6 +332,10 @@ Deployed to staging
 ### Staging
 Re-deployed to staging
 - URL: http://[project]-staging.home
+
+### What to Test
+Same format as standard mode — summarize key functional changes from the
+original PR plus any new fixes applied since last staging deploy.
 
 ### Next Steps
 1. Manual testing on staging: http://[project]-staging.home
