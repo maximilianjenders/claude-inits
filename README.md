@@ -2,6 +2,29 @@
 
 Custom skills for Claude Code that work across all my projects.
 
+## Installation
+
+Skills and shared resources are symlinked into `~/.claude/` so they're accessible from any project:
+
+```bash
+# Skills — each skill directory gets its own symlink
+ln -s /Users/max/Gits/claude-inits/skills/create-issue ~/.claude/skills/create-issue
+ln -s /Users/max/Gits/claude-inits/skills/create-milestone ~/.claude/skills/create-milestone
+# ... repeat for each skill
+
+# Shared resources — templates referenced by multiple skills
+ln -s /Users/max/Gits/claude-inits/skills/shared ~/.claude/shared
+```
+
+**Why symlinks?** Claude Code loads skills via the Skill tool, injecting content into the conversation. The agent doesn't know the skill's filesystem path, so relative paths like `../shared/template.md` fail when invoked from downstream projects. Symlinks to `~/.claude/shared/` provide a stable, absolute path that works regardless of which project invokes the skill.
+
+**Adding a new skill:** Create the directory under `skills/`, then symlink it:
+```bash
+ln -s /Users/max/Gits/claude-inits/skills/<name> ~/.claude/skills/<name>
+```
+
+**Adding a shared resource:** Place the file in `skills/shared/`. It's already accessible at `~/.claude/shared/` via the directory symlink. Reference it in skills as `~/.claude/shared/<filename>`.
+
 ## Skills Overview
 
 | Skill | Purpose |

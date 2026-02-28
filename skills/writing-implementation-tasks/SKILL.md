@@ -11,7 +11,7 @@ Create a detailed implementation plan using `superpowers:writing-plans` for gene
 
 ## Output Structure
 
-**Read `../shared/plan-folder-structure.md`** (relative to this skill's base directory) for the canonical folder layout and file naming conventions.
+**Read `~/.claude/shared/plan-folder-structure.md`** for the canonical folder layout and file naming conventions.
 
 **What each file contains in this skill's output:**
 

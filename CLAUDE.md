@@ -39,6 +39,13 @@ For multi-line commit messages, use multiple `-m` flags: first `-m` for title, s
 
 Use `/update-docs` at session end.
 
+## Skills & Shared Resources
+
+Skills reference shared templates (issue body template, plan folder structure) via `~/.claude/shared/`. **Never use relative paths like `../shared/`** in skill files — Claude doesn't know the skill's filesystem path when loaded via the Skill tool, so relative paths fail when invoked from downstream projects.
+
+- Shared templates live in `skills/shared/`, symlinked to `~/.claude/shared/`
+- Reference as `~/.claude/shared/<filename>` in skill SKILL.md files
+
 ## Workflow Rules
 
 - **Test-first:** Write tests before code. Don't accumulate untested code.
