@@ -43,6 +43,8 @@ Task tool (general-purpose):
 
     Use the `superpowers:requesting-code-review` skill to review these changes.
 
+    Also invoke the `/simplify` skill for additional code reuse, quality, and efficiency checks. Run only its review phases (Phases 1-2) — do NOT auto-fix. Include any findings in your review report alongside the code review findings.
+
     **Use the pre-computed diff above.** Only read individual files if the diff is unclear or you need surrounding context for a specific concern.
 
     Provide this context to the review:
@@ -114,6 +116,7 @@ Task tool (general-purpose):
 
 ### Review Execution
 - [ ] Invoke `superpowers:requesting-code-review` skill
+- [ ] Invoke `/simplify` skill (Phases 1-2 only, report findings, do NOT auto-fix)
 - [ ] Only read individual files if diff is unclear or you need surrounding context
 - [ ] Do NOT run tests or linters — pre-commit hooks handle both at commit time
 
