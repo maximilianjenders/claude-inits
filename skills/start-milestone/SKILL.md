@@ -356,10 +356,22 @@ Note: With batch commits, one commit may reference multiple issues (e.g., `Refs 
 mcp__workflow__gh_milestone_issues(milestone=5, state="all")
 ```
 
-### Happy Path (All `code-complete`)
+### Happy Path (All non-manual issues `code-complete`)
 
+If no `manual` issues remain open:
 ```
 All 12 issues complete. Ready for PR. Run /create-pr when you're ready.
+```
+
+If `manual` issues are still open:
+```
+All automated issues are complete (10/12). Run /create-pr when ready.
+
+Note: The following manual issues are still open:
+- #46: Run migration and validate data
+- #48: Review enriched dataset
+
+Handle these before or after PR creation — /merge-pr will block until all are closed.
 ```
 
 **Do NOT auto-invoke `/create-pr`.** Inform the user that all issues are complete and they can run `/create-pr` manually when ready.
@@ -379,6 +391,49 @@ Failed: 2 issues
 2. Skip failures and create PR anyway: `/create-pr`
 3. Fix manually, then resume: `/start-milestone 5`
 ```
+
+## Manual Task Loop
+
+After all automated phases complete, check for open `manual` issues:
+
+```
+mcp__workflow__gh_milestone_issues(milestone=5, state="open")
+# Filter for issues with "manual" label
+```
+
+**If no manual issues remain:** proceed to standard completion (suggest `/create-pr`).
+
+**If manual issues exist:** enter interactive loop in the main session (NOT a subagent).
+
+### Per Manual Issue
+
+1. Present the issue title and `## Manual Task Prompt` section from the issue body
+2. Ask the user via `AskUserQuestion`:
+   - **"Work on this now"** — Stay in terminal, read full issue, assist interactively. When done, ask if issue should be closed with `code-complete` label.
+   - **"Skip for later"** — Move to next manual issue
+   - **"Already done"** — Close issue with `code-complete` label via `gh_bulk_issues(action="close", issues=[N], label="code-complete")`
+
+### After Loop
+
+Print summary and suggest `/create-pr`. Always include a reminder about remaining manual issues:
+
+```
+All automated issues are complete. Run /create-pr when ready.
+
+Note: The following manual issues are still open:
+- #46: Run migration and validate data
+- #48: Review enriched dataset
+
+Handle these before or after PR creation — /merge-pr will block until all are closed.
+```
+
+If all manual issues were handled, omit the note.
+
+### Multi-Session Resume
+
+When `/start-milestone` is re-run and all automated issues are `code-complete`:
+- Skip straight to the manual task loop
+- Issue bodies (Manual Task Prompt) are the source of truth — no session state needed
 
 ## Execution
 
@@ -501,6 +556,9 @@ When starting/resuming a milestone:
 - [ ] **Immediately proceed to next phase** (do NOT ask user to continue)
 
 ### Completion
-- [ ] Verify all issues are code-complete or blocked-failed
+- [ ] Verify all non-manual issues are code-complete or blocked-failed
+- [ ] Check for open `manual` issues in milestone
+- [ ] If manual issues exist: enter interactive manual task loop (see Manual Task Loop section)
 - [ ] On success: inform user to run `/create-pr` when ready (do NOT auto-invoke)
+- [ ] **Include reminder about open manual issues** in the `/create-pr` suggestion
 - [ ] On partial failure: show summary and options
