@@ -101,7 +101,18 @@ Task tool (general-purpose):
     - All tests pass
     - Self-review found no issues (or you fixed them)
 
-    If you cannot complete the issue, leave it with `in-progress` label and report what's blocking you.
+    If you cannot complete the issue:
+
+    **If the task inherently requires human interaction** (running commands on external systems, iterative data validation, manual testing that can't be scripted):
+    - Label the issue `manual` instead of leaving `in-progress`:
+      ```
+      mcp__workflow__gh_update_issue(issue=N, remove_labels=["in-progress"], add_labels=["manual"])
+      ```
+    - Report: "Issue #N requires manual intervention: [specific reason]"
+    - Do NOT label `blocked-failed` — that's for unexpected blockers (infra issues, missing deps)
+
+    **If it's an unexpected blocker** (missing dependency, infra issue, failing external service):
+    - Leave with `in-progress` label and report what's blocking you
 
     ### DO NOT Commit or Close
 
