@@ -82,6 +82,45 @@ Extract from the writing-plans output:
 [Any cross-cutting concerns, open questions, or architectural notes from the plan]
 ```
 
+### Manual Task Decomposition
+
+When splitting tasks, apply this rule:
+
+> **If a task requires human interaction** (running migrations on real data, interactive terminal validation, manual testing on external systems), label it `manual` and extract any automatable prep work into a separate preceding task.
+
+**Example decomposition:**
+- Original task: "Migrate production data and validate results"
+- Split into:
+  - Task 03: "Write data migration script" (automatable, no `manual` label)
+  - Task 04: "Run migration and validate data" (`manual` label, depends on 03)
+
+**In the task file for manual tasks**, include a `## Manual Task Prompt` section:
+
+```markdown
+## Manual Task Prompt
+
+**Context:** [What this task is about, what prep was done in prior tasks]
+**Steps:**
+1. [Step-by-step what the human needs to do]
+2. [Including what to verify/validate]
+
+**Success criteria:**
+- [ ] [Checkable items]
+
+**Resources:**
+- Script: `scripts/migrate-data.sh` (from Task 03)
+- Data source: [API endpoint or DB info]
+```
+
+**In the summary.md task table**, mark manual tasks:
+
+```markdown
+| # | Name | Depends | Key Files | Manual |
+|---|------|---------|-----------|--------|
+| 03 | Migration script | 01, 02 | scripts/migrate.sh | No |
+| 04 | Run migration | 03 | - | Yes |
+```
+
 ### Step 4: Split tasks into individual files
 
 For each `### Task N:` section in the writing-plans output, create `tasks/NN-short-name.md`.
