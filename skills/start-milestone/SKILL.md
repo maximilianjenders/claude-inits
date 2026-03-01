@@ -115,9 +115,11 @@ TaskUpdate:
 | `code-complete` | Orchestrator committed, issue closed | Orchestrator |
 | `blocked-failed` | Failed after retry, skipped | Agent/Orchestrator |
 | `pr-review` | Issue created from PR code review findings | create-pr |
+| `manual` | Requires human interaction, skipped by agents | Plan author / Agent (fallback) |
 
 **Flow:** `(none) → in-progress → ready-for-review → code-complete (closed)`
 **Failure:** `in-progress → blocked-failed`
+**Manual:** `manual` (skipped during automated execution, handled interactively after)
 
 ## Argument Parsing
 
@@ -217,7 +219,7 @@ Reuse data already fetched during startup — no additional API calls needed:
 Phases provide checkpoints for crash recovery. Agents work in parallel without committing; the orchestrator commits in a single batch after phase review.
 
 **Per phase:**
-1. **Implementation** — Dispatch parallel agents (max 3). Each: implement → test → self-review → mark `ready-for-review`. Agents do NOT commit.
+1. **Implementation** — Filter out issues labeled `manual` (they are skipped entirely). Dispatch parallel agents (max 3) for remaining issues. Each: implement → test → self-review → mark `ready-for-review`. Agents do NOT commit.
 2. **Review** — Dispatch single review agent with pre-computed diffs. If changes requested → dispatch fix agents → re-review.
 3. **Batch Commit** — Stage all phase files, single commit referencing all issues. Close all issues. This is the checkpoint.
 4. **Context Summary** — Output a concise phase summary so auto-compaction knows what to keep. All implementation details, diffs, and review feedback from the phase can be discarded.
@@ -326,6 +328,7 @@ Note: With batch commits, one commit may reference multiple issues (e.g., `Refs 
 | `ready-for-review` | No | Yes | Inconsistent | Should be closed, fix labels |
 | `in-progress` | No | - | Work incomplete | Dispatch recovery agent |
 | `blocked-failed` | No | - | Failed | Skip (or `--retry-failed`) |
+| `manual` | No | - | Manual task | Skip (handled in interactive loop) |
 | *(none)* | No | - | Not started | Queue for implementation |
 
 ### Recovery Actions by State
