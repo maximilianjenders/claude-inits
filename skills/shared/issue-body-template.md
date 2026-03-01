@@ -18,6 +18,18 @@ Canonical format for all GitHub issue bodies created by skills (`create-mileston
 
 ## Task Spec
 [`tasks/{TASK_FILENAME}`](https://github.com/{OWNER}/{REPO}/blob/{BRANCH}/docs/plans/{PLAN_FOLDER}/tasks/{TASK_FILENAME})
+
+## Manual Task Prompt
+**Context:** {MANUAL_CONTEXT}
+**Steps:**
+1. {MANUAL_STEP_1}
+2. {MANUAL_STEP_2}
+
+**Success criteria:**
+- [ ] {MANUAL_CRITERION_1}
+
+**Resources:**
+- {MANUAL_RESOURCE_1}
 ```
 
 ## Variables
@@ -34,6 +46,10 @@ Canonical format for all GitHub issue bodies created by skills (`create-mileston
 | `{PLAN_FOLDER}` | Date-prefixed plan folder name | "2025-06-15-variety-tracking" |
 | `{TASK_FILENAME}` | Task file name (zero-padded number + kebab-case) | "01-ingredient-model.md" |
 | `{COMMIT_HASH}` | Short commit hash at issue creation time (`git rev-parse --short HEAD`) | "abc1234" |
+| `{MANUAL_CONTEXT}` | Context for the human performing the task | "Migration script from #45 is ready" |
+| `{MANUAL_STEP_N}` | Steps the human needs to follow | "Run `./scripts/migrate.sh` on prod" |
+| `{MANUAL_CRITERION_N}` | Success criteria for the manual task | "All records migrated without errors" |
+| `{MANUAL_RESOURCE_N}` | Scripts, endpoints, or tools needed | "Script: `scripts/migrate.sh` (from #45)" |
 
 ## Rules
 
@@ -46,6 +62,8 @@ Canonical format for all GitHub issue bodies created by skills (`create-mileston
 4. **Milestone link uses relative path.** The `../../milestone/N` format works from any issue page on GitHub.
 
 5. **`## Base Commit` is always included.** Records the commit hash at issue creation time so you can diff against it later to see what changed before implementation starts. Get via `git rev-parse --short HEAD`.
+
+6. **`## Manual Task Prompt` is optional.** Only include for issues labeled `manual`. Omit for all automatable issues.
 
 ## Example: Full Issue Body
 

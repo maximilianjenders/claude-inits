@@ -192,6 +192,12 @@ mcp__workflow__gh_bulk_issues(
             "body": "## Summary\n...\n\n## Acceptance Criteria\n- [ ] ...",
             "labels": ["feature"],
             "blocked_by_indices": [0]  # References first issue in this batch
+        },
+        {
+            "title": "Task 3: Manual validation",
+            "body": "## Summary\n...\n\n## Acceptance Criteria\n- [ ] ...\n\n## Manual Task Prompt\n**Context:** ...\n**Steps:**\n1. ...",
+            "labels": ["manual"],
+            "blocked_by_indices": [1]
         }
     ]
 )

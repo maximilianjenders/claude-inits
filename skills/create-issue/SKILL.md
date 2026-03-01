@@ -54,6 +54,7 @@ If title not provided as argument, ask the user. Then gather:
 - **Summary** (1-2 sentences of context)
 - **Acceptance criteria** (checklist items)
 - **Dependencies** (blocks/blocked-by other issues, if any)
+- **Manual flag** (is this a task requiring human interaction?)
 
 Use `AskUserQuestion` if needed, but keep it lightweight — don't over-prompt for simple issues.
 
