@@ -63,6 +63,9 @@ gh pr view $PR_NUMBER --json title,url,milestone,body
 
 ### Pre-merge (requires user confirmation)
 - [ ] Show summary: PR title, URL, linked issues, milestone
+- [ ] **Check for open `manual` issues in the milestone**
+  - Fetch milestone issues: `mcp__workflow__gh_milestone_issues(milestone=N, state="open")`
+  - If any open issues have the `manual` label → **HARD BLOCK**: refuse to merge, list the open manual issues, and instruct the user to complete them first
 - [ ] **Get explicit user confirmation** before proceeding
 
 ### Documentation (MANDATORY)
@@ -91,6 +94,7 @@ gh pr view $PR_NUMBER --json title,url,milestone,body
    - Linked issues
    - Milestone name
    - What cleanup will happen
+   - **Open manual issues** (if any — BLOCKS merge)
 
 2. **Ask for confirmation:**
    - "Merge this PR and perform cleanup? (y/n)"
@@ -220,6 +224,13 @@ ssh max@pi.local "cd ~/pi-setup && ./build.sh food-butler prod"
 - Stop staging/dev containers on Pi
 - Switch local to master
 - Deploy to production
+
+**⚠️ Manual issues (if any open):**
+Cannot merge — the following manual issues are still open:
+- #46: Run migration and validate data
+- #48: Review enriched dataset
+
+Complete these issues first, then retry /merge-pr.
 
 Proceed? (This will run /update-docs, then merge and deploy to prod)
 ```
