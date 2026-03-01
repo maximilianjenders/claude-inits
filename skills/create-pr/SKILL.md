@@ -78,6 +78,31 @@ git -C "$PROJECT_DIR" status --porcelain
 git -C "$PROJECT_DIR" log origin/$BRANCH..HEAD
 ```
 
+### 3. Check for Open Manual Issues
+
+After resolving the milestone for this branch, check for open manual issues:
+
+```
+# Get milestone for this branch (from milestone description's ## Branch field)
+mcp__workflow__gh_milestone(action="list")
+# Parse milestone descriptions for ## Branch matching current branch
+
+# Check for open manual issues
+mcp__workflow__gh_milestone_issues(milestone=N, state="open")
+# Filter for "manual" label
+```
+
+If open manual issues exist, **warn but proceed**:
+
+```
+Warning: Open manual issues in this milestone:
+- #46: Run migration and validate data
+- #48: Review enriched dataset
+
+These won't block PR creation, but /merge-pr will block until they're closed.
+Proceeding with PR creation...
+```
+
 ## Standard Mode (default)
 
 > **DO NOT run unit tests or `/run-tests`.** Pre-commit hooks already ran the full test suite when code was committed. This skill only runs E2E tests (which require a deployed environment).
@@ -169,6 +194,7 @@ Use after fixing issues found during manual staging testing. Skips PR creation, 
 - [ ] Verify on feature branch (not master)
 - [ ] Check for uncommitted changes — **if any exist, STOP and ask the user** whether to commit, stash, or abort. Do not proceed until resolved.
 - [ ] Verify branch is pushed to remote
+- [ ] Check for open manual issues in milestone — warn if any exist, but proceed (merge will block)
 - [ ] Parse `--retest` flag — if set, skip to Retest section
 - [ ] Parse `--wipe` flag
 
