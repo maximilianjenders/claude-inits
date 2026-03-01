@@ -16,6 +16,8 @@ Example:
 
 For multi-line commit messages, use multiple `-m` flags: first `-m` for title, second `-m` for body (literal newlines in double quotes are fine). Never use `$(cat <<'EOF'...)` heredocs or `$'...\n...'` ANSI-C quoting — both trigger permission prompts even with `git*` whitelisted.
 
+Never use `cd <path> && git ...` compound commands — they trigger "bare repository attacks" permission prompts. Use `git -C <path> ...` instead.
+
 ## Terminology
 
 | Preferred | Avoid |
@@ -51,6 +53,9 @@ Skills reference shared templates (issue body template, plan folder structure) v
 - **Test-first:** Write tests before code. Don't accumulate untested code.
 - **Quality bias:** Never auto-defer quality issues. Fix now or ask user.
 - **Ask, don't work around:** Stop and ask when credentials missing, deps unavailable, or requirements ambiguous.
+- **Understand before fixing:** When given feedback about broken or wrong behavior, don't jump to a fix. Diagnose the root cause, examine the codebase, and capture the actual problem behind the reported symptom.
+- **Verify, don't assert:** Test your fix before claiming it works — run it, show output. Quick fixes especially need validation; "this should work now" without evidence is not acceptable.
+- **Modular by default:** Build small, focused units — functions that do one thing, components that render one concern, files that own one responsibility. When adding to an existing file, ask: does this belong here, or does it need its own module? Bias toward extraction over extension. Guardrails: functions over 50 lines, components over 300 lines, or files over 500 lines should be split.
 
 ## When to Run Tests
 
