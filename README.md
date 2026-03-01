@@ -168,6 +168,7 @@ When MCP servers are configured, use these tools instead of `gh` CLI:
 | `ready-for-review` | Implementation done, awaiting review | Open |
 | `code-complete` | Done on feature branch, awaiting merge | **Closed** |
 | `blocked-failed` | Subagent failed after retry, skipped | Open |
+| `manual` | Requires human interaction, skipped by agents | Open |
 | `pr-review` | Issue created from PR code review findings | Open/Closed |
 
 **Label flow:**
@@ -179,11 +180,15 @@ Agent phase:
 Orchestrator phase (after review):
   ready-for-review → code-complete (closed)
   [commit]           [committed]
+
+Manual tasks:
+  manual (skipped during execution, handled interactively after)
 ```
 
 **Who sets labels:**
 - `in-progress` / `ready-for-review` - Set by agents during implementation
 - `code-complete` - Set by orchestrator after committing
+- `manual` - Set by plan author at issue creation, or by agent as fallback
 
 The `pr-review` label marks issues created during `/create-pr` code review or `/fix-pr` staging feedback. These follow the same flow but are distinguished from original milestone scope.
 
