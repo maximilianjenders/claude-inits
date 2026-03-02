@@ -25,6 +25,21 @@ ln -s /Users/max/Gits/claude-inits/skills/<name> ~/.claude/skills/<name>
 
 **Adding a shared resource:** Place the file in `skills/shared/`. It's already accessible at `~/.claude/shared/` via the directory symlink. Reference it in skills as `~/.claude/shared/<filename>`.
 
+### Hooks
+
+Global Claude Code hooks are version-controlled in `hooks/` and symlinked into `~/.claude/hooks/`:
+
+```bash
+mkdir -p ~/.claude/hooks
+ln -s /Users/max/Gits/claude-inits/hooks/block-compound-git.sh ~/.claude/hooks/block-compound-git.sh
+```
+
+Hooks are registered in `~/.claude/settings.json` under the `hooks` key. They apply globally across all projects.
+
+| Hook | Type | Trigger | Purpose |
+|------|------|---------|---------|
+| `block-compound-git.sh` | PreToolUse | Bash | Blocks `cd && git` compound commands, suggests `git -C` |
+
 ## Skills Overview
 
 | Skill | Purpose |
