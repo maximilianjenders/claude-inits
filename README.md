@@ -38,6 +38,7 @@ Hooks are registered in `~/.claude/settings.json` under the `hooks` key. They ap
 
 | Hook | Type | Trigger | Purpose |
 |------|------|---------|---------|
+| `allow-git-commit.sh` | PreToolUse | Bash | Auto-allows `git commit -m` past "quoted characters" secondary check |
 | `block-compound-git.sh` | PreToolUse | Bash | Blocks all `cd && ...` compound commands, suggests absolute paths |
 
 ## Skills Overview
