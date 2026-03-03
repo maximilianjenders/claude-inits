@@ -38,7 +38,7 @@ Hooks are registered in `~/.claude/settings.json` under the `hooks` key. They ap
 
 | Hook | Type | Trigger | Purpose |
 |------|------|---------|---------|
-| `block-compound-git.sh` | PreToolUse | Bash | Blocks `cd && git` compound commands, suggests `git -C` |
+| `block-compound-git.sh` | PreToolUse | Bash | Blocks all `cd && ...` compound commands, suggests absolute paths |
 
 ## Skills Overview
 

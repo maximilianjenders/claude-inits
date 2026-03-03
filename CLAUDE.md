@@ -16,7 +16,7 @@ Example:
 
 For multi-line commit messages, use multiple `-m` flags: first `-m` for title, second `-m` for body (literal newlines in double quotes are fine). Never use `$(cat <<'EOF'...)` heredocs or `$'...\n...'` ANSI-C quoting — both trigger permission prompts even with `git*` whitelisted.
 
-Never use `cd <path> && git ...` compound commands — they trigger "bare repository attacks" permission prompts. Use `git -C <path> ...` instead. This is enforced by a global PreToolUse hook.
+Never use `cd <path> && ...` compound commands — they trigger permission prompts. Use absolute paths instead (`git -C <path>`, `ls /full/path`, etc.). This is enforced by a global PreToolUse hook that blocks all `cd && ...` / `cd ; ...` patterns.
 
 Never put shell metacharacters (`&&`, `;`, `|`, `$()`) in commit message text — the permission system pattern-matches the raw command string without parsing quoting, so `git commit -m "block cd && git"` triggers a compound-command prompt. Rephrase instead.
 
