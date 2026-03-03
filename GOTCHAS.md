@@ -6,7 +6,19 @@ Quick reference for known pitfalls and their solutions.
 
 ## Codebase
 
-[Add codebase-specific gotchas as you encounter them]
+### Avoid Shell Metacharacters in Commit Messages
+
+The permission system pattern-matches the **raw command string** without parsing shell quoting. Characters like `&&`, `;`, `|` inside quoted `-m` arguments still trigger compound-command detection, causing a confirmation prompt even when `Bash(git:*)` is whitelisted.
+
+```bash
+# BAD — triggers permission prompt because of && in message text
+git commit -m "(feat): Block cd && git compound commands"
+
+# GOOD — no metacharacters in message
+git commit -m "(feat): Block compound cd-then-git commands"
+```
+
+**Rule:** Never put `&&`, `;`, `|`, or `$()` in commit message text. Rephrase instead.
 
 ---
 
