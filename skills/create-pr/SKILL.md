@@ -2,7 +2,7 @@
 name: create-pr
 description: Create a pull request with AI review loop
 user_invocable: true
-argument-hint: "(base-branch) (--retest) (--wipe)"
+argument-hint: "(#milestone) (base-branch) (--retest) (--wipe)"
 ---
 
 # Create PR
@@ -12,8 +12,10 @@ Create a pull request and run AI review loop.
 ## Usage
 
 ```
-/create-pr                    # PR to master, staging data preserved
+/create-pr                    # PR to master, auto-detect milestone from branch
+/create-pr #5                 # PR to master, use milestone #5
 /create-pr --wipe             # PR to master, wipe staging with prod data
+/create-pr #5 --wipe          # PR to master, milestone #5, wipe staging
 /create-pr master             # Explicit base branch
 /create-pr --retest           # Redeploy + E2E only, staging data preserved
 /create-pr --retest --wipe    # Redeploy + E2E only, wipe staging with prod data
@@ -21,7 +23,8 @@ Create a pull request and run AI review loop.
 
 ## Argument Parsing
 
-- First positional arg (optional): base branch (default: `master`)
+- `#N` (optional): Milestone number (e.g., `#5`). Preferred over auto-detection from branch. When provided, skips milestone resolution via branch matching and uses this milestone directly. Also used to resolve the working directory — if on master, the milestone's `## Branch` field identifies which worktree to use.
+- First positional arg (optional, non-`#` non-`--`): base branch (default: `master`)
 - `--retest` flag: Skip PR creation, code review, and unit tests. Only deploy to dev → E2E → deploy to staging.
   - Use case: after fixing issues found during manual staging testing
   - PR is auto-detected from current branch (or resolved worktree). If on master with multiple worktrees, ask user to pick.
@@ -46,13 +49,14 @@ fi
 
 **Resolution logic when on master:**
 
-| Worktrees Found | Action |
-|----------------|--------|
-| None | Error: "Cannot create PR from master" |
-| One feature worktree | Use it automatically |
-| Multiple | Match against open milestone `## Branch` fields (see below) |
+| Condition | Action |
+|-----------|--------|
+| `#N` milestone provided | Fetch milestone `#N`, extract `## Branch` from description, match to worktree |
+| No `#N`, no worktrees | Error: "Cannot create PR from master" |
+| No `#N`, one worktree | Use it automatically |
+| No `#N`, multiple worktrees | Match against open milestone `## Branch` fields (see below) |
 
-**Disambiguating multiple worktrees:** Check open milestones (not Backlog) via `mcp__workflow__gh_milestone(action="list")`. Parse each milestone's description for the `## Branch` field. Match against worktree branches. For backlog issues without a milestone, check issue bodies for `## Branch` metadata.
+**Disambiguating multiple worktrees (no `#N`):** Check open milestones (not Backlog) via `mcp__workflow__gh_milestone(action="list")`. Parse each milestone's description for the `## Branch` field. Match against worktree branches. For backlog issues without a milestone, check issue bodies for `## Branch` metadata.
 
 After resolving, set `PROJECT_DIR` to the worktree root (or main repo root if already on a feature branch):
 
@@ -80,11 +84,11 @@ git -C "$PROJECT_DIR" log origin/$BRANCH..HEAD
 
 ### 3. Check for Open Manual Issues
 
-After resolving the milestone for this branch, check for open manual issues:
+Use the milestone number — either from `#N` argument or resolved from branch matching in step 1:
 
 ```
-# Get milestone for this branch (from milestone description's ## Branch field)
-mcp__workflow__gh_milestone(action="list")
+# If #N was provided, use it directly. Otherwise resolve from branch:
+# mcp__workflow__gh_milestone(action="list")
 # Parse milestone descriptions for ## Branch matching current branch
 
 # Check for open manual issues
@@ -190,7 +194,8 @@ Use after fixing issues found during manual staging testing. Skips PR creation, 
 **DO NOT run unit tests or `/run-tests` at any point. Only E2E tests are run in this skill.**
 
 ### Pre-flight
-- [ ] Resolve working directory — if on master, check `git worktree list` for feature branch worktrees. Auto-select if one, match against milestone `## Branch` if multiple, error if none. Set `PROJECT_DIR` and pass `cwd=PROJECT_DIR` to ALL MCP calls.
+- [ ] Parse `#N` milestone arg — if provided, fetch milestone and extract `## Branch` from description
+- [ ] Resolve working directory — if `#N` provided, match its `## Branch` to a worktree. Otherwise: if on master, check `git worktree list` for feature branch worktrees. Auto-select if one, match against milestone `## Branch` if multiple, error if none. Set `PROJECT_DIR` and pass `cwd=PROJECT_DIR` to ALL MCP calls.
 - [ ] Verify on feature branch (not master)
 - [ ] Check for uncommitted changes — **if any exist, STOP and ask the user** whether to commit, stash, or abort. Do not proceed until resolved.
 - [ ] Verify branch is pushed to remote
