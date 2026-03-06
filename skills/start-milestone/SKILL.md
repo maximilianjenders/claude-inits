@@ -360,12 +360,12 @@ mcp__workflow__gh_milestone_issues(milestone=5, state="all")
 
 If no `manual` issues remain open:
 ```
-All 12 issues complete. Ready for PR. Run /create-pr when you're ready.
+All 12 issues complete. Ready for PR. Run /create-pr #5 when you're ready.
 ```
 
 If `manual` issues are still open:
 ```
-All automated issues are complete (10/12). Run /create-pr when ready.
+All automated issues are complete (10/12). Run /create-pr #5 when ready.
 
 Note: The following manual issues are still open:
 - #46: Run migration and validate data
@@ -374,7 +374,7 @@ Note: The following manual issues are still open:
 Handle these before or after PR creation — /merge-pr will block until all are closed.
 ```
 
-**Do NOT auto-invoke `/create-pr`.** Inform the user that all issues are complete and they can run `/create-pr` manually when ready.
+**Do NOT auto-invoke `/create-pr`.** Inform the user that all issues are complete and they can run `/create-pr #N` (with the milestone number) manually when ready.
 
 ### Partial Failure (Some `blocked-failed`)
 
@@ -388,7 +388,7 @@ Failed: 2 issues
 
 ### Suggestions
 1. Retry failed issues: `/start-milestone 5 --retry-failed`
-2. Skip failures and create PR anyway: `/create-pr`
+2. Skip failures and create PR anyway: `/create-pr #5`
 3. Fix manually, then resume: `/start-milestone 5`
 ```
 
@@ -401,7 +401,7 @@ mcp__workflow__gh_milestone_issues(milestone=5, state="open")
 # Filter for issues with "manual" label
 ```
 
-**If no manual issues remain:** proceed to standard completion (suggest `/create-pr`).
+**If no manual issues remain:** proceed to standard completion (suggest `/create-pr #N`).
 
 **If manual issues exist:** enter interactive loop in the main session (NOT a subagent).
 
@@ -415,10 +415,10 @@ mcp__workflow__gh_milestone_issues(milestone=5, state="open")
 
 ### After Loop
 
-Print summary and suggest `/create-pr`. Always include a reminder about remaining manual issues:
+Print summary and suggest `/create-pr #N` (with actual milestone number). Always include a reminder about remaining manual issues:
 
 ```
-All automated issues are complete. Run /create-pr when ready.
+All automated issues are complete. Run /create-pr #5 when ready.
 
 Note: The following manual issues are still open:
 - #46: Run migration and validate data
@@ -559,6 +559,6 @@ When starting/resuming a milestone:
 - [ ] Verify all non-manual issues are code-complete or blocked-failed
 - [ ] Check for open `manual` issues in milestone
 - [ ] If manual issues exist: enter interactive manual task loop (see Manual Task Loop section)
-- [ ] On success: inform user to run `/create-pr` when ready (do NOT auto-invoke)
-- [ ] **Include reminder about open manual issues** in the `/create-pr` suggestion
+- [ ] On success: inform user to run `/create-pr #N` (with milestone number) when ready (do NOT auto-invoke)
+- [ ] **Include reminder about open manual issues** in the `/create-pr #N` suggestion
 - [ ] On partial failure: show summary and options
