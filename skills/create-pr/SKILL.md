@@ -343,7 +343,7 @@ user-facing behavior — what the user should poke at on staging. Example:
 
 ### Next Steps
 1. Manual testing on staging: http://[project]-staging.home
-2. When ready: `/merge-pr`
+2. When ready: `/merge-pr [PR#]`
 3. If fixes needed after staging testing: fix, commit, then `/create-pr --retest`
 
 ### Cleanup Actions (after merge)
@@ -371,7 +371,7 @@ original PR plus any new fixes applied since last staging deploy.
 
 ### Next Steps
 1. Manual testing on staging: http://[project]-staging.home
-2. When ready: `/merge-pr`
+2. When ready: `/merge-pr [PR#]`
 ```
 
 ## PR Description Template
