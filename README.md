@@ -4,6 +4,18 @@ Custom skills for Claude Code that work across all my projects.
 
 ## Installation
 
+### Shared CLAUDE.md
+
+Shared coding standards are inherited by all projects under `~/Gits/` via the ancestor-chain CLAUDE.md mechanism. Create a symlink so Claude Code picks up the shared rules automatically:
+
+```bash
+ln -sf /Users/max/Gits/claude-inits/shared-claude.md /Users/max/Gits/CLAUDE.md
+```
+
+This means every project under `~/Gits/` inherits the rules in `shared-claude.md` (git safety, workflow rules, terminology, test strategy) without duplicating them. Project-specific CLAUDE.md files only need to contain project-specific content.
+
+### Skills
+
 Skills and shared resources are symlinked into `~/.claude/` so they're accessible from any project:
 
 ```bash
