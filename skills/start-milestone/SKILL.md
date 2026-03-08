@@ -291,6 +291,8 @@ Leave changes staged — the batch commit step uses them directly.
 
 > **Why stage first?** Bare `git diff` misses new/untracked files. Staging then using `--cached` ensures the reviewer sees ALL changes including new files created by implementation agents.
 
+**Large diff threshold:** If the full diff exceeds **1000 lines**, switch to large diff mode — pass only the `--stat` summary (not the full diff) into the reviewer prompt. The reviewer will pull per-file diffs on demand using `git diff --cached -- <file>`. This prevents large diffs from crowding out instructions and review context.
+
 Pass ALL of this into the reviewer prompt. See `phase-reviewer-prompt.md` for the template.
 
 ## Resume & Crash Recovery

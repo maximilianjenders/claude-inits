@@ -33,7 +33,12 @@ Task tool (general-purpose):
     [paste git diff --stat $MERGE_BASE..HEAD output here]
 
     ### Full Diff
-    [paste git diff $MERGE_BASE..HEAD output here]
+    [paste git diff $MERGE_BASE..HEAD output here — OR if large diff mode, replace with the note below]
+
+    > **Large diff mode (if diff > 1000 lines):** Instead of the full diff, the orchestrator
+    > pastes only the stat summary above. Pull diffs yourself using targeted per-file commands:
+    > `git diff [MERGE_BASE]..HEAD -- <file>` for specific files. Review in priority order from
+    > the stat summary — focus on high-change files and files central to the acceptance criteria.
 
     ## Your Task
 
@@ -41,7 +46,7 @@ Task tool (general-purpose):
 
     Also invoke the `/simplify` skill for additional code reuse, quality, and efficiency checks. Run only its review phases (Phases 1-2) — do NOT auto-fix. Include any findings in your review report alongside the code review findings.
 
-    **Use the pre-computed diff above.** Only read individual files if the diff is unclear or you need surrounding context for a specific concern.
+    **Use the pre-computed diff above when provided.** In large diff mode, pull per-file diffs using `git diff [MERGE_BASE]..HEAD -- <file>` as needed. Only read full files if the diff is unclear or you need surrounding context for a specific concern.
 
     Provide this context to the review:
     1. **Scope:** The acceptance criteria for each issue listed above
@@ -106,6 +111,7 @@ Use `merge_base_short` (first 7 chars) in the prompt for traceability.
 ### Preparation (orchestrator does this BEFORE dispatching reviewer)
 - [ ] Get stat diff: `mcp__workflow__git_diff(mode="stat")` → captures merge_base_short
 - [ ] Get full diff: `mcp__workflow__git_diff(mode="full")`
+- [ ] Check diff line count — if > 1000 lines, use large diff mode (omit full diff from prompt)
 - [ ] Gather linked issue titles and acceptance criteria from milestone
 - [ ] Get design doc path from milestone description (if any)
 
@@ -115,7 +121,7 @@ Use `merge_base_short` (first 7 chars) in the prompt for traceability.
 
 ## Key Points
 
-- **Pre-computed diffs** — orchestrator pins to merge-base hash, reviewer doesn't run git commands
+- **Pre-computed diffs** — orchestrator pins to merge-base hash; if diff > 1000 lines, only stat is inlined and reviewer pulls per-file diffs via `git diff [MERGE_BASE]..HEAD -- <file>`
 - **Issue context included** — reviewer sees acceptance criteria inline, doesn't need to fetch issues
 - **Design doc access** — reviewer receives path, reads only if provided
 - **Fresh agent** — no implementation bias, dedicated context for review

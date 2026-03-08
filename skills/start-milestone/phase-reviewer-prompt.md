@@ -31,7 +31,12 @@ Task tool (general-purpose):
     [paste git diff --stat output here]
 
     ### Full Diff (pre-computed)
-    [paste git diff output here]
+    [paste git diff output here — OR if large diff mode, replace with the note below]
+
+    > **Large diff mode (if diff > 1000 lines):** Instead of the full diff, the orchestrator
+    > pastes only the stat summary above. Pull diffs yourself using targeted per-file commands:
+    > `git diff --cached -- <file>` for specific files. Review in priority order from the stat
+    > summary — focus on high-change files and files central to the acceptance criteria.
 
     ### Agent Reports
     [For each issue: what was implemented, files changed, self-review findings]
@@ -45,7 +50,7 @@ Task tool (general-purpose):
 
     Also invoke the `/simplify` skill for additional code reuse, quality, and efficiency checks. Run only its review phases (Phases 1-2) — do NOT auto-fix. Include any findings in your review report alongside the code review findings.
 
-    **Use the pre-computed diff above.** Only read individual files if the diff is unclear or you need surrounding context for a specific concern.
+    **Use the pre-computed diff above when provided.** In large diff mode, pull per-file diffs using `git diff --cached -- <file>` as needed. Only read full files if the diff is unclear or you need surrounding context for a specific concern.
 
     Provide this context to the review:
     1. **Scope:** The acceptance criteria for each issue listed above
@@ -137,7 +142,7 @@ Task tool (general-purpose):
 ## Key Points
 
 - **Uses `superpowers:requesting-code-review`** for consistent review standards
-- **Pre-computed diffs** — orchestrator stages all changes (`git add -A`), then captures `git diff --cached --stat` and `git diff --cached`. Changes stay staged for the batch commit step.
+- **Pre-computed diffs** — orchestrator stages all changes (`git add -A`), then captures `git diff --cached --stat` and `git diff --cached`. If diff > 1000 lines, only stat is inlined and reviewer pulls per-file diffs via `git diff --cached -- <file>`. Changes stay staged for the batch commit step.
 - **Agent summaries** — orchestrator collects what each agent built, files changed, and self-review findings
 - **Design doc access** — reviewer receives `design_doc_path` to verify design compliance
 - **Fresh agent** - no implementation bias, dedicated context for review

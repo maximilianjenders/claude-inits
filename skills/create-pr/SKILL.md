@@ -124,6 +124,7 @@ Proceeding with PR creation...
 
 3. **AI Review:**
    - Pre-compute diffs pinned to merge base via MCP: `mcp__workflow__git_diff(mode="stat")` and `mcp__workflow__git_diff(mode="full")`
+   - **Large diff threshold:** If full diff > **1000 lines**, use large diff mode — pass only stat summary to reviewer, which pulls per-file diffs on demand
    - Gather linked issue titles and acceptance criteria
    - Dispatch reviewer agent using template in [`reviewer-prompt.md`](reviewer-prompt.md)
    - Review for: spec compliance, design doc adherence, code quality, CLAUDE.md violations
