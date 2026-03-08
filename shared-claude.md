@@ -41,6 +41,10 @@ Use `/update-docs` at session end.
 - **Understand before fixing:** When given feedback about broken or wrong behavior, don't jump to a fix. Diagnose the root cause, examine the codebase, and capture the actual problem behind the reported symptom.
 - **Verify, don't assert:** Test your fix before claiming it works — run it, show output. Quick fixes especially need validation; "this should work now" without evidence is not acceptable.
 - **Modular by default:** Build small, focused units — functions that do one thing, components that render one concern, files that own one responsibility. When adding to an existing file, ask: does this belong here, or does it need its own module? Bias toward extraction over extension. Guardrails: functions over 50 lines, components over 300 lines, or files over 500 lines should be split.
+- **File-level targets in refactoring:** When refactoring for size, acceptance criteria MUST include file-level line count targets, not just function-level. AI will minimize functions without reducing files unless explicitly told to.
+- **Extract at 400 lines, not 500:** Before adding code to a file over 400 lines, extract to a new module first. The 500-line limit is a hard ceiling, not a target.
+- **No `dict[str, Any]` for structured data:** Use TypedDict, dataclass, or NamedTuple for data passed between functions. `dict[str, Any]` is only acceptable at I/O boundaries (JSON parsing, external APIs).
+- **Helpers near callers, not sources:** When extracting helpers, place them where they're used. If 2+ functions across different files would benefit, extract to a shared module immediately — don't leave helpers stranded in their original file.
 - **Generalize fixes:** When fixing a bug or mistake, assume it could be a recurring pattern. Search for similar instances across the codebase. If you find them, flag them to the user and suggest a principled fix. If the root cause is a common trap, suggest adding it to GOTCHAS.md.
 
 ## When to Run Tests
