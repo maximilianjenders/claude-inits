@@ -37,11 +37,28 @@ Use `/update-docs` at session end.
 
 **No silent data loss in forms.** Never let a form submit successfully while silently discarding user-entered values. If input can't be parsed, validated, or fetched, show an inline error and keep the form open. Prefer `type="text" inputMode="decimal"` over `type="number"` for decimal inputs to avoid locale-dependent parsing bugs (e.g., German locale uses comma as decimal separator, causing dot-separated values to be silently dropped). Silent `catch` blocks that swallow errors without user feedback are a code smell — always surface failures visibly.
 
-## Plannotator Review Gates
+## HARD OVERRIDE: Plannotator Review Gate
 
-After `superpowers:brainstorming` produces a design doc, **stop and invoke `plannotator:plannotator-annotate`** on it before proceeding. Address all annotation feedback, then continue to `writing-implementation-tasks`. This is not optional — skipping it means the user loses their interactive review step.
+**AFTER writing any design doc or spec, BEFORE invoking writing-plans or writing-implementation-tasks:**
+1. Write the design doc to `docs/superpowers/specs/`
+2. Commit it
+3. Invoke `plannotator:plannotator-annotate` on the document
+4. Address all annotation feedback
+5. ONLY THEN proceed to implementation planning
+
+**This overrides the brainstorming skill's flow** which goes straight from design doc to writing-plans. The skill's spec-review-subagent step is replaced by plannotator-annotate. Do NOT skip this even if the skill checklist says to proceed — the user's interactive review step is mandatory.
 
 The `ExitPlanMode` hook in plannotator is disabled — this explicit invocation replaces it.
+
+## Scope Integrity
+
+**Never silently drop scope.** When implementing a plan, every task and every acceptance criterion must be either:
+1. Implemented and verified, or
+2. Explicitly flagged to the user as incomplete before marking the issue done.
+
+An issue is NOT code-complete if acceptance criteria are unmet. If time/context pressure forces partial implementation, say so — don't mark it done and move on. Quietly reducing scope is worse than stopping and asking, because it creates false confidence that the work is finished.
+
+When reviewing issues for completion, check each acceptance criterion individually against the actual code changes. "Backend supports it" does not satisfy a frontend acceptance criterion.
 
 ## Workflow Rules
 
