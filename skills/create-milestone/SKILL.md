@@ -260,3 +260,7 @@ Since you can't know issue numbers until they're created:
    - **If `## Dependencies` exists** (issue has blockers): append `- Blocks: #X (Title)` line to the existing section
    - **If `## Dependencies` doesn't exist** (root tasks with no blockers): create a new `## Dependencies` section with the `- Blocks: #X (Title)` line, placed after `## Acceptance Criteria`
 3. **Update milestone description** with complete dependency graph
+
+## Completion Message
+
+When finished, include the **milestone number** in the summary so the user can reference it directly (e.g., "Milestone #5 is ready. All issues have bidirectional dependency links... Ready to kick off with `/start-milestone 5`").
