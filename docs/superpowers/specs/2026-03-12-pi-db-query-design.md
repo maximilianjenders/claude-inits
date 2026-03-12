@@ -61,16 +61,17 @@ New function, **separate from `sanitizeInput()`** — SQL legitimately uses pare
 Steps:
 1. Trim whitespace
 2. Reject if starts with `.` (blocks dot-commands like `.shell`, `.read`)
-3. Strip SQL comments (`--` line comments, `/* */` block comments)
-4. Normalize to uppercase for keyword matching
-5. Check first keyword is one of: `SELECT`, `PRAGMA`, `EXPLAIN`, `WITH`
-6. Block write keywords anywhere in normalized query: `INSERT`, `UPDATE`, `DELETE`, `DROP`, `ALTER`, `CREATE`, `REPLACE`, `ATTACH`, `DETACH`
+3. Reject if contains double quotes (`"`) or backslashes (`\`) — prevents shell injection when the query is interpolated into the SSH command string. Single quotes are fine (SQLite standard for string literals).
+4. Strip SQL comments for keyword checking only (naive regex, not a parser — `--` to end of line, `/* ... */` non-greedy). The original query is sent to sqlite3, not the stripped version.
+5. Normalize stripped version to uppercase for keyword matching
+6. Check first keyword is one of: `SELECT`, `PRAGMA`, `EXPLAIN`, `WITH`
+7. Block write/dangerous keywords anywhere in normalized query: `INSERT`, `UPDATE`, `DELETE`, `DROP`, `ALTER`, `CREATE`, `REPLACE`, `ATTACH`, `DETACH`, `VACUUM`, `REINDEX`, `BEGIN`, `SAVEPOINT`
 
 ## Pagination
 
-- If the query does not contain `LIMIT`, append `LIMIT <limit>` (default 500)
-- If `offset > 0`, append `OFFSET <offset>`
-- If the query already has an explicit `LIMIT`, respect it (do not override)
+- Check for existing `LIMIT` using word-boundary regex (`/\bLIMIT\b/i`). Simple substring match — may false-positive on column names like `rate_limit`, but the worst case is pagination not auto-applying, which is harmless.
+- If no `LIMIT` found, append `LIMIT <limit>` (default 500) and `OFFSET <offset>` (if > 0)
+- If the query already has an explicit `LIMIT`, do not append `LIMIT` or `OFFSET` (the user's query owns pagination entirely)
 
 ## Execution
 
@@ -78,16 +79,19 @@ Container name derived from `APP_CONFIG[app].containerPrefix` + `-` + `env`.
 DB path from `APP_CONFIG[app].dbPath`.
 
 ```bash
-docker exec <container> sqlite3 -readonly -header -separator '|' <dbPath> "<query>"
+timeout 30 docker exec <container> sqlite3 -readonly -header -separator '|' <dbPath> '<query>'
 ```
 
-Run via `executeSSH()` like all other tools.
+- 30-second timeout prevents runaway queries (cartesian joins, etc.) from tying up the Pi
+- Single quotes around query (double quotes and backslashes are rejected by `validateQuery`, so single-quote shell quoting is safe)
+- Run via `executeSSH()` like all other tools
 
 ## Safety Layers (in order)
 
-1. **`validateQuery()`** — fast-fail on non-read statements and dot-commands
+1. **`validateQuery()`** — fast-fail on non-read statements, dot-commands, and shell-unsafe characters (`"`, `\`)
 2. **`sqlite3 -readonly`** — engine-level write prevention (refuses writes even if validation is bypassed)
-3. **Implicit `LIMIT 500`** — prevents accidental context-window flooding
+3. **`timeout 30`** — kills queries that run longer than 30 seconds
+4. **Implicit `LIMIT 500`** — prevents accidental context-window flooding
 
 `sanitizeInput()` is intentionally **not** applied to the query parameter. It is still applied to `app` and `env` via `validateApp()`/`validateEnv()`.
 
@@ -105,17 +109,23 @@ Run via `executeSSH()` like all other tools.
 | `DROP TABLE ingredients` | Blocked |
 | `UPDATE ingredients SET ...` | Blocked |
 | `ATTACH DATABASE ...` | Blocked |
+| `VACUUM` | Blocked |
+| `BEGIN TRANSACTION` | Blocked |
+| `SELECT "name" FROM ingredients` | Blocked (double quotes rejected) |
+| `SELECT 'name' FROM ingredients` | Allowed (single quotes OK) |
 | `.shell ls /` | Blocked (dot-command) |
 | `.read /etc/passwd` | Blocked (dot-command) |
 | `/* comment */ DROP TABLE ingredients` | Blocked (comment stripped, DROP detected) |
 | `SELECT * FROM x` (no LIMIT) | Gets `LIMIT 500` appended |
 | `SELECT * FROM x LIMIT 10` | Keeps `LIMIT 10` |
-| `offset: 100` | Gets `OFFSET 100` appended |
+| `offset: 100` (no explicit LIMIT) | Gets `LIMIT 500 OFFSET 100` appended |
+| `SELECT * FROM x LIMIT 10` + `offset: 5` | No pagination appended (explicit LIMIT owns it) |
+| Query running > 30s | Killed by timeout |
 
 ## Files Changed
 
-- `mcp/pi/server.js` — add `validateQuery()`, add `dbPath` to `APP_CONFIG`, add tool definition and handler
-- `mcp/pi/server.test.js` — add test cases for query validation and pagination
+- `mcp/pi/server.js` — add `validateQuery()`, add `dbPath` to `APP_CONFIG`, add tool definition and handler, export `validateQuery`
+- `mcp/pi/server.test.js` — add test cases for query validation, pagination, and timeout
 
 ## Scope
 
