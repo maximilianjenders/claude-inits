@@ -30,10 +30,12 @@ const APP_CONFIG = {
   "food-butler": {
     containerPrefix: "butler",
     seedCommand: "python -m app.scripts.seed_e2e_fixtures",
+    dbPath: "/app/data/food_butler.db",
   },
   spendee: {
     containerPrefix: "spendee",
     seedCommand: "python -m spendee_visualiser.scripts.seed_e2e_fixtures",
+    dbPath: "/app/data/spendee.db",
   },
   // Example for future apps:
   // "new-app": {
@@ -92,6 +94,68 @@ function validateCommand(command) {
     throw new Error(`Command not allowed: ${command}. Must be one of: ${ALLOWED_COMMANDS.join(", ")}`);
   }
   return command;
+}
+
+// Allowed first keywords for SQL queries
+const ALLOWED_QUERY_STARTS = ["SELECT", "PRAGMA", "EXPLAIN", "WITH"];
+
+// Blocked SQL keywords (write/admin operations)
+const BLOCKED_QUERY_KEYWORDS = [
+  "INSERT", "UPDATE", "DELETE", "DROP", "ALTER", "CREATE",
+  "REPLACE", "ATTACH", "DETACH", "VACUUM", "REINDEX", "BEGIN", "SAVEPOINT",
+];
+
+function validateQuery(query) {
+  if (typeof query !== "string") {
+    throw new Error("Query must be a string");
+  }
+  query = query.trim();
+  if (!query) {
+    throw new Error("Query must not be empty");
+  }
+  // Block dot-commands (.shell, .read, etc.)
+  if (query.startsWith(".")) {
+    throw new Error("Dot-commands are not allowed (e.g. .shell, .read)");
+  }
+  // Block double quotes and backslashes (shell injection prevention)
+  if (/["\\]/.test(query)) {
+    throw new Error("Query must not contain double quotes or backslashes (use single quotes for strings)");
+  }
+  // Strip comments for keyword checking (naive regex, not a parser)
+  const stripped = query
+    .replace(/--[^\n]*/g, "")        // line comments
+    .replace(/\/\*[\s\S]*?\*\//g, "") // block comments
+    .trim();
+  const upper = stripped.toUpperCase();
+  // Block write/admin keywords anywhere (check before first-keyword check
+  // so that e.g. INSERT gets a "blocked" error, not "must start with")
+  for (const keyword of BLOCKED_QUERY_KEYWORDS) {
+    if (new RegExp(`\\b${keyword}\\b`).test(upper)) {
+      throw new Error(`Blocked keyword: ${keyword}. Only read-only queries are allowed.`);
+    }
+  }
+  // Check first keyword
+  const firstWord = upper.split(/\s+/)[0];
+  if (!ALLOWED_QUERY_STARTS.includes(firstWord)) {
+    throw new Error(`Query must start with one of: ${ALLOWED_QUERY_STARTS.join(", ")}`);
+  }
+  return query;
+}
+
+function applyPagination(query, limit, offset) {
+  const hasLimit = /\bLIMIT\b/i.test(query);
+  if (!hasLimit) {
+    query += ` LIMIT ${limit}`;
+    if (offset > 0) {
+      query += ` OFFSET ${offset}`;
+    }
+  }
+  return query;
+}
+
+// DB path mapping (uses APP_CONFIG)
+function getDbPath(app) {
+  return APP_CONFIG[app]?.dbPath;
 }
 
 // Container name mapping (uses APP_CONFIG)
@@ -359,6 +423,41 @@ const TOOLS = [
       required: ["image", "command"],
     },
   },
+  {
+    name: "pi_db_query",
+    description:
+      "Run a read-only SQL query against an app's SQLite database. " +
+      "Available databases: food-butler (/app/data/food_butler.db), spendee (/app/data/spendee.db). " +
+      "Environments: prod (live data), staging (prod copy for testing), dev (seeded test fixtures). " +
+      "Supports SELECT, PRAGMA, EXPLAIN, WITH. Results are pipe-delimited with headers. " +
+      "Default limit: 500 rows. Use limit/offset for pagination.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        app: {
+          type: "string",
+          description: "Application name (food-butler or spendee)",
+        },
+        env: {
+          type: "string",
+          description: "Environment (prod, staging, or dev)",
+        },
+        query: {
+          type: "string",
+          description: "SQL query (SELECT, PRAGMA, EXPLAIN, or WITH only)",
+        },
+        limit: {
+          type: "number",
+          description: "Max rows to return (default: 500). Appended as LIMIT if query has none.",
+        },
+        offset: {
+          type: "number",
+          description: "Row offset for pagination (default: 0)",
+        },
+      },
+      required: ["app", "env", "query"],
+    },
+  },
 ];
 
 // Tool handlers (stubs - to be implemented in later issues)
@@ -522,6 +621,32 @@ const toolHandlers = {
     const result = await executeSSH(cmdParts.join(" "));
     return { content: [{ type: "text", text: formatResult(result) }] };
   },
+
+  pi_db_query: async (args) => {
+    validateApp(args.app);
+    validateEnv(args.env);
+    validateQuery(args.query);
+
+    const containerPrefix = getContainerPrefix(args.app);
+    const container = `${containerPrefix}-${args.env}`;
+    const dbPath = getDbPath(args.app);
+    if (!dbPath) {
+      return {
+        content: [{ type: "text", text: `Error: No database path configured for ${args.app}` }],
+        isError: true,
+      };
+    }
+
+    const limit = args.limit || 500;
+    const offset = args.offset || 0;
+    const query = applyPagination(args.query.trim(), limit, offset);
+    // Escape single quotes for shell: replace ' with '\''
+    const escapedQuery = query.replace(/'/g, "'\\''");
+
+    const command = `timeout 30 docker exec ${container} sqlite3 -readonly -header -separator '|' ${dbPath} '${escapedQuery}'`;
+    const result = await executeSSH(command);
+    return { content: [{ type: "text", text: formatResult(result) }] };
+  },
 };
 
 // Create and configure the MCP server
@@ -580,8 +705,11 @@ export {
   validateEnv,
   validatePath,
   validateCommand,
+  validateQuery,
+  applyPagination,
   getContainerPrefix,
   getSeedCommand,
+  getDbPath,
   executeSSH,
   formatResult,
   server,

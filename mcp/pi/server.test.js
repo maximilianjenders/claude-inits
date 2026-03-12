@@ -6,6 +6,8 @@ import {
   validateEnv,
   validatePath,
   validateCommand,
+  validateQuery,
+  applyPagination,
   ALLOWED_COMMANDS,
 } from "./server.js";
 
@@ -75,5 +77,114 @@ describe("validateCommand", () => {
 describe("ALLOWED_COMMANDS", () => {
   it("does not include env", () => {
     assert.ok(!ALLOWED_COMMANDS.includes("env"), "env command should not be in ALLOWED_COMMANDS");
+  });
+});
+
+describe("validateQuery", () => {
+  it("allows SELECT queries", () => {
+    assert.equal(validateQuery("SELECT * FROM ingredients"), "SELECT * FROM ingredients");
+  });
+
+  it("allows SELECT with parentheses and functions", () => {
+    assert.equal(
+      validateQuery("SELECT COUNT(*) FROM ingredients WHERE name LIKE '%chicken%'"),
+      "SELECT COUNT(*) FROM ingredients WHERE name LIKE '%chicken%'"
+    );
+  });
+
+  it("allows PRAGMA queries", () => {
+    assert.equal(validateQuery("PRAGMA table_info(ingredients)"), "PRAGMA table_info(ingredients)");
+  });
+
+  it("allows EXPLAIN queries", () => {
+    assert.equal(validateQuery("EXPLAIN SELECT * FROM ingredients"), "EXPLAIN SELECT * FROM ingredients");
+  });
+
+  it("allows WITH (CTE) queries", () => {
+    const q = "WITH cte AS (SELECT * FROM ingredients) SELECT * FROM cte";
+    assert.equal(validateQuery(q), q);
+  });
+
+  it("allows single-quoted strings", () => {
+    assert.equal(validateQuery("SELECT 'name' FROM ingredients"), "SELECT 'name' FROM ingredients");
+  });
+
+  it("rejects INSERT", () => {
+    assert.throws(() => validateQuery("INSERT INTO ingredients VALUES (1, 'test')"), /blocked/i);
+  });
+
+  it("rejects DELETE", () => {
+    assert.throws(() => validateQuery("DELETE FROM ingredients"), /blocked/i);
+  });
+
+  it("rejects DROP", () => {
+    assert.throws(() => validateQuery("DROP TABLE ingredients"), /blocked/i);
+  });
+
+  it("rejects UPDATE", () => {
+    assert.throws(() => validateQuery("UPDATE ingredients SET name = 'x'"), /blocked/i);
+  });
+
+  it("rejects ATTACH", () => {
+    assert.throws(() => validateQuery("ATTACH DATABASE '/tmp/x.db' AS x"), /blocked/i);
+  });
+
+  it("rejects VACUUM", () => {
+    assert.throws(() => validateQuery("VACUUM"), /blocked/i);
+  });
+
+  it("rejects BEGIN", () => {
+    assert.throws(() => validateQuery("BEGIN TRANSACTION"), /blocked/i);
+  });
+
+  it("rejects dot-commands", () => {
+    assert.throws(() => validateQuery(".shell ls /"), /dot-command/i);
+    assert.throws(() => validateQuery(".read /etc/passwd"), /dot-command/i);
+  });
+
+  it("rejects double quotes (shell injection)", () => {
+    assert.throws(() => validateQuery('SELECT "name" FROM ingredients'), /double quote|backslash/i);
+  });
+
+  it("rejects backslashes (shell injection)", () => {
+    assert.throws(() => validateQuery("SELECT * FROM ingredients WHERE name = '\\x'"), /double quote|backslash/i);
+  });
+
+  it("blocks write keywords hidden in comments", () => {
+    assert.throws(() => validateQuery("/* comment */ DROP TABLE ingredients"), /blocked/i);
+  });
+
+  it("blocks write keywords after line comments", () => {
+    assert.throws(() => validateQuery("-- comment\nDROP TABLE ingredients"), /blocked/i);
+  });
+
+  it("rejects queries with unknown first keyword", () => {
+    assert.throws(() => validateQuery("RELEASE savepoint1"), /must start with/i);
+  });
+
+  it("trims whitespace", () => {
+    assert.equal(validateQuery("  SELECT 1  "), "SELECT 1");
+  });
+});
+
+describe("applyPagination", () => {
+  it("appends LIMIT when query has none", () => {
+    assert.equal(applyPagination("SELECT * FROM x", 500, 0), "SELECT * FROM x LIMIT 500");
+  });
+
+  it("appends LIMIT and OFFSET when offset > 0", () => {
+    assert.equal(applyPagination("SELECT * FROM x", 500, 100), "SELECT * FROM x LIMIT 500 OFFSET 100");
+  });
+
+  it("respects explicit LIMIT in query", () => {
+    assert.equal(applyPagination("SELECT * FROM x LIMIT 10", 500, 0), "SELECT * FROM x LIMIT 10");
+  });
+
+  it("does not append OFFSET when query has explicit LIMIT", () => {
+    assert.equal(applyPagination("SELECT * FROM x LIMIT 10", 500, 50), "SELECT * FROM x LIMIT 10");
+  });
+
+  it("uses custom limit value", () => {
+    assert.equal(applyPagination("SELECT * FROM x", 100, 0), "SELECT * FROM x LIMIT 100");
   });
 });
