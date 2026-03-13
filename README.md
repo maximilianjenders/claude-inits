@@ -286,8 +286,11 @@ claude mcp add pi /Users/max/Gits/claude-inits/mcp/pi/start.sh --scope user
 | `pi_reset_dev` | Wipe dev data and reseed |
 | `pi_copy_prod_to_staging` | Copy prod data to staging |
 | `pi_seed_dev` | Seed E2E fixtures in dev environment |
+| `pi_db_query` | Run read-only SQL query against app's SQLite database |
 
 **Debug Commands:** `pi_docker_exec` and `pi_docker_run` are restricted to read-only commands: `cat`, `ls`, `head`, `tail`, `find`, `grep`, `ps`, `stat`.
+
+**DB Queries:** `pi_db_query` supports `SELECT`, `PRAGMA`, `EXPLAIN`, and `WITH` statements with `sqlite3 -readonly`. Uses `app` + `env` params (not container name). Default limit: 500 rows with pagination support.
 
 **Hostname:** Uses `max@pi` (Tailscale MagicDNS).
 
