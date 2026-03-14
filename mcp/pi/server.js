@@ -11,6 +11,7 @@ import { spawn } from "child_process";
 const PI_HOST = "max@pi";
 const VALID_APPS = ["food-butler", "spendee"];
 const VALID_ENVS = ["prod", "staging", "dev"];
+const VALID_INFRA_SERVICES = ["traefik", "pihole"];
 
 // Allowed commands for docker exec/run (read-only operations)
 // NOTE: "env" intentionally excluded — it dumps all container env vars including secrets
@@ -86,6 +87,14 @@ function validatePath(path) {
     }
   }
   return path;
+}
+
+function validateInfraService(service) {
+  sanitizeInput(service);
+  if (!VALID_INFRA_SERVICES.includes(service)) {
+    throw new Error(`Invalid infrastructure service: ${service}. Must be one of: ${VALID_INFRA_SERVICES.join(", ")}`);
+  }
+  return service;
 }
 
 function validateCommand(command) {
@@ -464,6 +473,20 @@ const TOOLS = [
       required: ["app", "env", "query"],
     },
   },
+  {
+    name: "pi_docker_compose_up",
+    description: "Pull latest image and recreate a docker compose service on the Pi (for infrastructure services like traefik, pihole)",
+    inputSchema: {
+      type: "object",
+      properties: {
+        service: {
+          type: "string",
+          description: `Service name as defined in docker-compose.yml (must be one of: ${VALID_INFRA_SERVICES.join(", ")})`,
+        },
+      },
+      required: ["service"],
+    },
+  },
 ];
 
 // Tool handlers (stubs - to be implemented in later issues)
@@ -651,6 +674,19 @@ const toolHandlers = {
     const result = await executeSSH(command);
     return { content: [{ type: "text", text: formatResult(result) }] };
   },
+
+  pi_docker_compose_up: async (args) => {
+    validateInfraService(args.service);
+
+    const pullResult = await executeSSH(`cd ~/pi-setup && docker compose pull ${args.service}`);
+    if (pullResult.exitCode !== 0) {
+      return { content: [{ type: "text", text: `Pull failed:\n${formatResult(pullResult)}` }], isError: true };
+    }
+
+    const upResult = await executeSSH(`cd ~/pi-setup && docker compose up -d ${args.service}`);
+    const output = `=== Pull ===\n${formatResult(pullResult)}\n\n=== Up ===\n${formatResult(upResult)}`;
+    return { content: [{ type: "text", text: output }] };
+  },
 };
 
 // Create and configure the MCP server
@@ -709,6 +745,7 @@ export {
   validateEnv,
   validatePath,
   validateCommand,
+  validateInfraService,
   validateQuery,
   applyPagination,
   getContainerPrefix,
@@ -719,4 +756,5 @@ export {
   server,
   ALLOWED_COMMANDS,
   BLOCKED_PATH_PATTERNS,
+  VALID_INFRA_SERVICES,
 };

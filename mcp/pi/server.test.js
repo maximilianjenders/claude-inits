@@ -6,9 +6,11 @@ import {
   validateEnv,
   validatePath,
   validateCommand,
+  validateInfraService,
   validateQuery,
   applyPagination,
   ALLOWED_COMMANDS,
+  VALID_INFRA_SERVICES,
 } from "./server.js";
 
 describe("sanitizeInput", () => {
@@ -77,6 +79,23 @@ describe("validateCommand", () => {
 describe("ALLOWED_COMMANDS", () => {
   it("does not include env", () => {
     assert.ok(!ALLOWED_COMMANDS.includes("env"), "env command should not be in ALLOWED_COMMANDS");
+  });
+});
+
+describe("validateInfraService", () => {
+  it("allows valid infrastructure services", () => {
+    assert.equal(validateInfraService("traefik"), "traefik");
+    assert.equal(validateInfraService("pihole"), "pihole");
+  });
+
+  it("rejects invalid services", () => {
+    assert.throws(() => validateInfraService("nginx"), /invalid infrastructure service/i);
+    assert.throws(() => validateInfraService("food-butler"), /invalid infrastructure service/i);
+  });
+
+  it("rejects shell metacharacters", () => {
+    assert.throws(() => validateInfraService("traefik;rm"), /dangerous/i);
+    assert.throws(() => validateInfraService("pihole|cat"), /dangerous/i);
   });
 });
 
