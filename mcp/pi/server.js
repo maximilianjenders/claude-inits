@@ -117,9 +117,10 @@ function validateQuery(query) {
   if (query.startsWith(".")) {
     throw new Error("Dot-commands are not allowed (e.g. .shell, .read)");
   }
-  // Block double quotes and backslashes (shell injection prevention)
-  if (/["\\]/.test(query)) {
-    throw new Error("Query must not contain double quotes or backslashes (use single quotes for strings)");
+  // Block shell-special characters (injection prevention via double-quote wrapping)
+  // Double quotes and backslashes were already blocked; $ and ` are special inside double quotes
+  if (/["\\$`]/.test(query)) {
+    throw new Error("Query must not contain double quotes, backslashes, $ or backticks (use single quotes for strings)");
   }
   // Strip comments for keyword checking (naive regex, not a parser)
   const stripped = query
@@ -143,6 +144,11 @@ function validateQuery(query) {
 }
 
 function applyPagination(query, limit, offset) {
+  // PRAGMA statements don't support LIMIT/OFFSET
+  const firstWord = query.trim().split(/\s+/)[0].toUpperCase();
+  if (firstWord === "PRAGMA") {
+    return query;
+  }
   const hasLimit = /\bLIMIT\b/i.test(query);
   if (!hasLimit) {
     query += ` LIMIT ${limit}`;
@@ -640,10 +646,8 @@ const toolHandlers = {
     const limit = args.limit || 500;
     const offset = args.offset || 0;
     const query = applyPagination(args.query.trim(), limit, offset);
-    // Escape single quotes for shell: replace ' with '\''
-    const escapedQuery = query.replace(/'/g, "'\\''");
-
-    const command = `timeout 30 docker exec ${container} sqlite3 -readonly -header -separator '|' ${dbPath} '${escapedQuery}'`;
+    // Safe to use double-quote wrapping: validateQuery blocks " \ $ ` characters
+    const command = `timeout 30 docker exec ${container} sqlite3 -readonly -header -separator '|' ${dbPath} "${query}"`;
     const result = await executeSSH(command);
     return { content: [{ type: "text", text: formatResult(result) }] };
   },

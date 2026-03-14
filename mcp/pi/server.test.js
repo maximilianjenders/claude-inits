@@ -150,6 +150,14 @@ describe("validateQuery", () => {
     assert.throws(() => validateQuery("SELECT * FROM ingredients WHERE name = '\\x'"), /double quote|backslash/i);
   });
 
+  it("rejects dollar signs (shell injection via double-quote wrapping)", () => {
+    assert.throws(() => validateQuery("SELECT * FROM ingredients WHERE name = $var"), /\$|backtick/i);
+  });
+
+  it("rejects backticks (shell injection via double-quote wrapping)", () => {
+    assert.throws(() => validateQuery("SELECT * FROM `ingredients`"), /\$|backtick/i);
+  });
+
   it("blocks write keywords hidden in comments", () => {
     assert.throws(() => validateQuery("/* comment */ DROP TABLE ingredients"), /blocked/i);
   });
@@ -186,5 +194,13 @@ describe("applyPagination", () => {
 
   it("uses custom limit value", () => {
     assert.equal(applyPagination("SELECT * FROM x", 100, 0), "SELECT * FROM x LIMIT 100");
+  });
+
+  it("skips LIMIT for PRAGMA queries", () => {
+    assert.equal(applyPagination("PRAGMA table_info(ingredients)", 500, 0), "PRAGMA table_info(ingredients)");
+  });
+
+  it("skips LIMIT for PRAGMA queries case-insensitive", () => {
+    assert.equal(applyPagination("pragma table_list", 500, 0), "pragma table_list");
   });
 });
