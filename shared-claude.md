@@ -6,9 +6,24 @@ These rules apply to all projects under `~/Gits/`.
 
 For multi-line commit messages, use multiple `-m` flags: first `-m` for title, second `-m` for body (literal newlines in double quotes are fine). Never use `$(cat <<'EOF'...)` heredocs or `$'...\n...'` ANSI-C quoting — both trigger permission prompts even with `git*` whitelisted.
 
-Never use `cd <path> && ...` compound commands — they trigger permission prompts. Use absolute paths instead (`git -C <path>`, `ls /full/path`, etc.). This is enforced by a global PreToolUse hook that blocks all `cd && ...` / `cd ; ...` patterns.
+Never use `cd <path> && ...` or `cd <path> ; ...` compound commands — they trigger permission prompts. This is enforced by a global PreToolUse hook. Use absolute paths or tool-specific flags instead:
+
+| Instead of | Use |
+|------------|-----|
+| `cd dir && git ...` | `git -C dir ...` |
+| `cd dir && ls` | `ls dir` |
+| `cd dir && poetry run pytest ...` | `poetry -C dir run pytest ...` |
+| `cd dir && poetry run python ...` | `poetry -C dir run python ...` |
+| `cd dir && npm ...` | `npm --prefix dir ...` |
+| `cd dir && command` | Separate Bash calls: first `cd dir`, then `command` |
+
+The last row is the general fallback — split into two sequential Bash tool calls. Never combine `cd` with another command using `&&`, `;`, or `|`.
 
 Never put shell metacharacters (`&&`, `;`, `|`, `$()`) in commit message text — the permission system pattern-matches the raw command string without parsing quoting, so `git commit -m "block cd && git"` triggers a compound-command prompt. Rephrase instead.
+
+Never use `#` comments in multi-line inline scripts (e.g., `python -c "..."`, heredocs). A quoted newline followed by a `#`-prefixed line triggers a permission prompt ("can hide arguments from line-based permission checks"). Remove comments or move the script to a file.
+
+Never dispatch subagents with `mode: "bypassPermissions"` — it skips PreToolUse hooks, disabling safety guardrails like the compound-command blocker. Use `mode: "default"` instead; allow rules in `settings.json` handle auto-approval of whitelisted commands.
 
 ## Terminology
 
@@ -75,7 +90,7 @@ When reviewing issues for completion, check each acceptance criterion individual
 - **File-level targets in refactoring:** When refactoring for size, acceptance criteria MUST include file-level line count targets, not just function-level. AI will minimize functions without reducing files unless explicitly told to.
 - **No `dict[str, Any]` for structured data:** Use TypedDict, dataclass, or NamedTuple for data passed between functions. `dict[str, Any]` is only acceptable at I/O boundaries (JSON parsing, external APIs).
 - **Helpers near callers, not sources:** When extracting helpers, place them where they're used. If 2+ functions across different files would benefit, extract to a shared module immediately — don't leave helpers stranded in their original file.
-- **Generalize fixes:** When fixing a bug or mistake, assume it could be a recurring pattern. Search for similar instances across the codebase. If you find them, flag them to the user and suggest a principled fix. If the root cause is a common trap, suggest adding it to GOTCHAS.md.
+- **Generalize fixes:** When fixing a bug or mistake, assume it could be a recurring pattern. Search for similar instances across the codebase. If you find them, flag them to the user and suggest a principled fix. If the root cause is a common trap, suggest adding it to GOTCHAS.md. A fix is not complete until either (1) the prevention is implemented, or (2) an issue is created for it. Describing the root cause without acting on it is not a fix.
 
 ## When to Run Tests
 
