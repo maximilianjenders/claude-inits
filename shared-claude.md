@@ -17,7 +17,9 @@ Never use `cd <path> && ...` or `cd <path> ; ...` compound commands — they tri
 | `cd dir && npm ...` | `npm --prefix dir ...` |
 | `cd dir && command` | Separate Bash calls: first `cd dir`, then `command` |
 
-The last row is the general fallback — split into two sequential Bash tool calls. Never combine `cd` with another command using `&&`, `;`, or `|`.
+The last row is the general fallback — split into two sequential Bash tool calls.
+
+**Never chain commands with `&&`, `;`, or `|` in a single Bash call.** This applies to all commands, not just `cd`. Use separate sequential Bash tool calls instead. Example: `git diff && git status` → two separate Bash calls, one for `git diff`, one for `git status`.
 
 Never put shell metacharacters (`&&`, `;`, `|`, `$()`) in commit message text — the permission system pattern-matches the raw command string without parsing quoting, so `git commit -m "block cd && git"` triggers a compound-command prompt. Rephrase instead.
 
