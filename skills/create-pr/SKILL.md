@@ -122,12 +122,15 @@ Proceeding with PR creation...
    - Generate description with summary and linked issues
    - Use `Fixes #X` syntax (issues are already closed via `update-issue`)
 
-3. **AI Review:**
+3. **Plan Audit + AI Review (parallel):**
    - Pre-compute diffs pinned to merge base via MCP: `mcp__workflow__git_diff(mode="stat")` and `mcp__workflow__git_diff(mode="full")`
-   - **Large diff threshold:** If full diff > **1000 lines**, use large diff mode — pass only stat summary to reviewer, which pulls per-file diffs on demand
+   - **Large diff threshold:** If full diff > **1000 lines**, use large diff mode — pass only stat summary to agents, which pull per-file diffs on demand
    - Gather linked issue titles and acceptance criteria
-   - Dispatch reviewer agent using template in [`reviewer-prompt.md`](reviewer-prompt.md)
-   - Review for: spec compliance, design doc adherence, code quality, CLAUDE.md violations
+   - Fetch design doc and implementation plan paths from milestone description
+   - Dispatch **two agents in parallel:**
+     - **Plan audit agent** using template in [`plan-audit-prompt.md`](plan-audit-prompt.md) — checks design doc + implementation plan vs actual changes
+     - **Code review agent** using template in [`reviewer-prompt.md`](reviewer-prompt.md) — checks code quality, standards, spec compliance
+   - **If plan audit finds gaps:** STOP and present gaps prominently to user. User must acknowledge each gap (accept as-is, defer to backlog issue, or fix now) before proceeding to deploy.
 
 4. **Create Issues for Review Findings:**
    - If review finds issues, create a GitHub issue for EACH finding
@@ -211,14 +214,18 @@ Use after fixing issues found during manual staging testing. Skips PR creation, 
 - [ ] Get milestone and design doc link
 - [ ] Create PR with title, description, linked issues
 
-### Code Review Loop (skip if `--retest` — repeat until approved)
+### Plan Audit + Code Review (skip if `--retest` — code review repeats until approved)
 - [ ] Pre-compute diffs: `mcp__workflow__git_diff(mode="stat")` and `mcp__workflow__git_diff(mode="full")`
 - [ ] Gather linked issue titles and acceptance criteria
-- [ ] Dispatch reviewer agent using [`reviewer-prompt.md`](reviewer-prompt.md) template
-- [ ] If issues found: create GitHub issue for EACH finding with `pr-review` label
+- [ ] Fetch design doc and implementation plan paths from milestone description
+- [ ] Dispatch **two agents in parallel:**
+  - [ ] Plan audit agent using [`plan-audit-prompt.md`](plan-audit-prompt.md) template
+  - [ ] Code review agent using [`reviewer-prompt.md`](reviewer-prompt.md) template
+- [ ] **If plan audit found gaps: STOP and present to user.** User must acknowledge each gap (accept as-is, defer to backlog issue, or fix now) before proceeding to deploy.
+- [ ] If code review issues found: create GitHub issue for EACH finding with `pr-review` label
 - [ ] Fix ALL pr-review issues using `/start-issue` workflow
-- [ ] Re-run review after fixes
-- [ ] **Only exit loop when review passes with no new issues**
+- [ ] Re-run code review after fixes (plan audit does NOT re-run)
+- [ ] **Only exit loop when code review passes with no new issues**
 
 ### Deploy & E2E (always runs)
 - [ ] Reset dev data: `pi_reset_dev("[project]")`
@@ -434,3 +441,12 @@ The design doc provides:
 - Data model designs to check against
 - API contracts to validate
 - UI/UX patterns to confirm
+
+### Getting Implementation Plan for Audit
+
+Implementation plans live in `docs/plans/` or are linked from the milestone description alongside the design doc. Look for a `## Plan` or `## Implementation Plan` heading in the milestone description.
+
+The implementation plan provides:
+- Task breakdown with acceptance criteria per task
+- File-level targets and scope boundaries
+- Phased delivery structure (which tasks in which order)

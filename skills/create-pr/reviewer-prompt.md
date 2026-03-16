@@ -124,5 +124,6 @@ Use `merge_base_short` (first 7 chars) in the prompt for traceability.
 - **Pre-computed diffs** — orchestrator pins to merge-base hash; if diff > 1000 lines, only stat is inlined and reviewer pulls per-file diffs via `git diff [MERGE_BASE]..HEAD -- <file>`
 - **Issue context included** — reviewer sees acceptance criteria inline, doesn't need to fetch issues
 - **Design doc access** — reviewer receives path, reads only if provided
+- **Plan audit is separate** — a parallel agent handles design doc / plan vs implementation gap analysis. This reviewer focuses on code quality and standards only.
 - **Fresh agent** — no implementation bias, dedicated context for review
 - **Quality gate** — must approve before deploying to dev
