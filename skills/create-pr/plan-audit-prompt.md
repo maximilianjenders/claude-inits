@@ -53,6 +53,8 @@ Task tool (general-purpose):
 
     5. **Backend-frontend wiring** — For every new or changed API endpoint, verify the frontend actually calls it. For every new UI feature, verify there's a backend endpoint supporting it. Check that request/response shapes match between frontend fetch calls and backend handlers. Unwired code (backend endpoint nobody calls, frontend component hitting a non-existent route) is a gap.
 
+    5b. **Schema read/write symmetry** — For every new field added to a model, check: is it in response schemas only, or also in create/update schemas? A field users can see but not set is a bug unless it's explicitly computed-only (e.g., `created_at`, `id`). Also check the reverse: does the frontend have a UI control to set the field? A field in the API that no UI exposes is equally a gap.
+
     6. **Edge cases and error handling** — Does the design doc mention error scenarios, validation rules, or edge cases that aren't handled in the implementation?
 
     7. **Intentional omissions vs gaps** — Some things may have been deliberately descoped during implementation. Check issue comments, commit messages, and plan annotations for evidence of intentional deferral. Separate these from unintentional gaps.

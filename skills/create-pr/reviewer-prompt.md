@@ -53,6 +53,9 @@ Task tool (general-purpose):
     2. **Standards:** Read CLAUDE.md for project coding standards
     3. **Design doc:** Read the design doc at [design_doc_path] to verify design compliance (if provided)
 
+    **Additional project-specific checks:**
+    - **Schema read/write symmetry:** For every new model field, verify it appears in both response AND create/update schemas (unless explicitly computed-only like `created_at`). A field users can read but not write is a silent feature gap. Also verify a frontend UI control exists to set the field.
+
     ## Output Format
 
     After running the code review skill, report:
