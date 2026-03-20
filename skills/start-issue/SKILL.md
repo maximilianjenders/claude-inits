@@ -174,8 +174,8 @@ After pre-flight checks pass:
 ### Completion
 - [ ] Mark `ready-for-review` (swap labels)
 - [ ] Report: what implemented, files changed, test results
-- [ ] **Do NOT commit** — remind user: "Changes ready. Review and commit when done."
-- [ ] **Do NOT run full test suite** — pre-commit hook handles that at commit time
+- [ ] **Commit** — stage changed files and commit using project commit format. The pre-commit hook runs the full test suite automatically.
+- [ ] **Do NOT push** — remind user: "Committed. Review the diff and push when ready, or use `/create-pr` to open a pull request."
 
 ## Output Format
 
@@ -202,6 +202,5 @@ After pre-flight checks pass:
 - No issues found
 
 ### Next Steps
-Changes are ready. Review and commit when done.
-The pre-commit hook will run the full test suite.
+Committed. Review the diff and push when ready, or use `/create-pr` to open a pull request.
 ```
