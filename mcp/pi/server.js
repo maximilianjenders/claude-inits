@@ -217,14 +217,28 @@ function executeSSH(command) {
   });
 }
 
+// Truncate long output, keeping head and tail for context
+function truncateOutput(text, maxLines = 100) {
+  const lines = text.split("\n");
+  if (lines.length <= maxLines) return text;
+  const headLines = 10;
+  const tailLines = maxLines - headLines - 1;
+  const skipped = lines.length - headLines - tailLines;
+  return [
+    ...lines.slice(0, headLines),
+    `... (${skipped} lines omitted) ...`,
+    ...lines.slice(-tailLines),
+  ].join("\n");
+}
+
 // Format SSH result for MCP response
 function formatResult(result) {
   const parts = [];
   if (result.stdout) {
-    parts.push(result.stdout);
+    parts.push(truncateOutput(result.stdout));
   }
   if (result.stderr) {
-    parts.push(`[stderr] ${result.stderr}`);
+    parts.push(`[stderr] ${truncateOutput(result.stderr)}`);
   }
   parts.push(`[exit code: ${result.exitCode}]`);
   return parts.join("\n");
