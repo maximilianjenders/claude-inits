@@ -56,14 +56,19 @@ Use `/update-docs` at session end.
 
 ## HARD OVERRIDE: Plannotator Review Gate
 
-**AFTER writing any design doc or spec, BEFORE invoking writing-plans or writing-implementation-tasks:**
-1. Write the design doc to `docs/superpowers/specs/`
-2. Commit it
-3. Invoke `plannotator:plannotator-annotate` on the document
-4. Address all annotation feedback
-5. ONLY THEN proceed to implementation planning
+**Every design doc or spec MUST go through plannotator before implementation planning.** This applies regardless of how the doc was created — brainstorming skill, manual writing, or any other flow.
 
-**This overrides the brainstorming skill's flow** which goes straight from design doc to writing-plans. The skill's spec-review-subagent step is replaced by plannotator-annotate. Do NOT skip this even if the skill checklist says to proceed — the user's interactive review step is mandatory.
+After writing any design doc:
+1. Commit it
+2. Immediately invoke `plannotator:plannotator-annotate` on the document
+3. Address all annotation feedback
+4. ONLY THEN proceed to writing-plans or writing-implementation-tasks
+
+**Brainstorming skill override (steps 5-8):** After clarifying questions and approach selection (steps 1-4), skip verbal design presentation — write the spec directly to `docs/superpowers/specs/`, then follow the gate above. Verbal presentation is redundant when plannotator gives an interactive visual review.
+
+- Step 5 (present design sections verbally) → skipped, write the doc instead
+- Step 7 (spec-review-subagent loop) → replaced by plannotator-annotate
+- Step 8 (user reviews spec) → replaced by plannotator-annotate
 
 The `ExitPlanMode` hook in plannotator is disabled — this explicit invocation replaces it.
 
