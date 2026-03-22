@@ -22,11 +22,17 @@ if echo "$COMMAND" | grep -qE '^\s*cd\s+[^;&|]*[;&|]+'; then
   # For non-whitelisted commands, the user gets an auth prompt regardless —
   # blocking just adds an extra round-trip without preventing anything.
   if echo "$AFTER" | grep -qE '^\s*(git|gh|mkdir|poetry|npm|npx)\b'; then
-    jq -n '{
+    # Build a specific suggestion based on the command
+    SUGGESTION="Use absolute paths instead."
+    if echo "$AFTER" | grep -qE '^\s*git\b'; then
+      DIR=$(echo "$COMMAND" | sed -E 's/^\s*cd\s+([^;&|]*)\s*[;&|]+.*/\1/')
+      SUGGESTION="Use: git -C $DIR ${AFTER#git }"
+    fi
+    jq -n --arg reason "BLOCKED: Compound cd commands trigger permission prompts. $SUGGESTION" '{
       hookSpecificOutput: {
         hookEventName: "PreToolUse",
         permissionDecision: "deny",
-        permissionDecisionReason: "Compound cd commands (cd && ..., cd ; ..., cd | ...) trigger permission prompts for whitelisted commands. Use absolute paths instead. For git: git -C <path>. For other commands: use full paths directly."
+        permissionDecisionReason: $reason
       }
     }'
     exit 0

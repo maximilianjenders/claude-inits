@@ -45,6 +45,22 @@ Once setup is complete and execution begins, proceed through ALL phases continuo
 
 The task list provides real-time visibility into progress - users can see what's happening without being interrupted.
 
+## Git Commands in Worktrees
+
+**CRITICAL: ALL git commands MUST use `git -C <worktree-path>`. NEVER use `cd <path> && git ...`.**
+
+Compound `cd` commands trigger permission prompts and are blocked by a PreToolUse hook. The orchestrator runs from the project root, not the worktree, so every git command needs `-C`:
+
+```bash
+# CORRECT
+git -C /path/to/.worktrees/my-branch add -A
+git -C /path/to/.worktrees/my-branch commit -m "message"
+git -C /path/to/.worktrees/my-branch diff --cached --stat
+
+# WRONG — triggers permission prompt
+cd /path/to/.worktrees/my-branch && git add -A
+```
+
 ## Context Loading Rules
 
 **CRITICAL: The orchestrator coordinates — it does NOT need architectural context.**
@@ -275,14 +291,15 @@ Before dispatching parallel agents within a phase, check for file overlap:
 **Before dispatching the review agent**, the orchestrator must prepare:
 
 ```bash
+# All git commands use -C to target the worktree. NEVER use cd && git.
 # 1. Stage all changes (including new files) so diff captures everything
-git add -A
+git -C <worktree-path> add -A
 
 # 2. Capture diff summary (staged changes)
-git diff --cached --stat
+git -C <worktree-path> diff --cached --stat
 
 # 3. Capture full diff (staged changes)
-git diff --cached
+git -C <worktree-path> diff --cached
 
 # 4. Collect agent summaries (what they built, files changed, self-review notes)
 ```
@@ -300,7 +317,7 @@ Pass ALL of this into the reviewer prompt. See `phase-reviewer-prompt.md` for th
 ### State Sources
 
 1. **GitHub labels** - Issue status (in-progress, ready-for-review, code-complete, blocked-failed)
-2. **Git log** - Which issues have commits (`git log --oneline --grep="Refs #N"`)
+2. **Git log** - Which issues have commits (`git -C <worktree-path> log --oneline --grep="Refs #N"`)
 3. **Issue state** - Open vs closed
 
 ### On Startup: State Assessment
@@ -315,7 +332,7 @@ mcp__workflow__gh_milestone_issues(milestone=5, state="all")
 
 ```bash
 # For each issue number, check if commit exists
-git log --oneline --grep="Refs #N" --grep="#N" | head -1
+git -C <worktree-path> log --oneline --grep="Refs #N" --grep="#N" | head -1
 ```
 
 Note: With batch commits, one commit may reference multiple issues (e.g., `Refs #70, #71, #72`). The grep still works — it finds the commit containing each issue number.
@@ -341,7 +358,7 @@ Note: With batch commits, one commit may reference multiple issues (e.g., `Refs 
 - After review passes, orchestrator commits and closes
 
 **`in-progress` issues:**
-- Check for partial work: `git status`, `git diff`, commits
+- Check for partial work: `git -C <worktree-path> status`, `git -C <worktree-path> diff`, commits
 - Dispatch recovery agent with context (see `recovery-prompt.md`)
 - Agent continues work → marks ready-for-review
 - Then proceeds to review → commit flow
@@ -458,17 +475,13 @@ After review passes, the orchestrator commits ALL phase changes in a single comm
 
 ```bash
 # 1. Changes are already staged from the pre-review diff step (git add -A)
-#    Verify with: git diff --cached --stat
+#    Verify with: git -C <worktree-path> diff --cached --stat
 
 # 2. Single commit referencing all phase issues
-git commit -m "$(cat <<'EOF'
-(feat): Phase N - [summary of phase work]
+#    IMPORTANT: Use git -C, never cd && git. Use multiple -m flags, never heredocs.
+git -C <worktree-path> commit -m "(feat): Phase N - [summary of phase work]" -m "Refs #70, #71, #72
 
-Refs #70, #71, #72
-
-Co-Authored-By: Claude <noreply@anthropic.com>
-EOF
-)"
+Co-Authored-By: Claude <noreply@anthropic.com>"
 
 # 3. Close all issues and add code-complete label
 mcp__workflow__gh_bulk_issues(action="close", issues=[70, 71, 72], label="code-complete")
@@ -529,7 +542,7 @@ When starting/resuming a milestone:
 
 ### Resume Check
 - [ ] Query all issues and their labels
-- [ ] Check git log for commits referencing each issue
+- [ ] Check git log (`git -C <worktree-path> log`) for commits referencing each issue
 - [ ] Categorize issues by state (done, ready-for-review, in-progress, not-started)
 - [ ] Display resume state to user
 - [ ] Determine which phase to resume from
@@ -542,14 +555,14 @@ When starting/resuming a milestone:
   - [ ] Agents DO NOT commit
   - [ ] Wait for all agents to complete or fail
 - [ ] **Step 2: Review** - Dispatch single review agent for phase
-  - [ ] Stage all changes: `git add -A`
-  - [ ] Pre-compute: run `git diff --cached --stat` and `git diff --cached`, collect agent summaries
+  - [ ] Stage all changes: `git -C <worktree-path> add -A`
+  - [ ] Pre-compute: run `git -C <worktree-path> diff --cached --stat` and `git -C <worktree-path> diff --cached`, collect agent summaries
   - [ ] Pass pre-computed diffs, agent summaries, and `design_doc_path` to reviewer
   - [ ] If approved → proceed to Step 3
   - [ ] If changes requested → dispatch fix agents → re-review (re-stage + re-diff before re-review)
 - [ ] **Step 3: Batch Commit** - Orchestrator commits all phase changes at once
   - [ ] Changes already staged from Step 2
-  - [ ] Single `git commit` with `Refs #N1, #N2, #N3`
+  - [ ] Single `git -C <worktree-path> commit` with `Refs #N1, #N2, #N3`
   - [ ] `gh_bulk_issues(action="close", issues=[...], label="code-complete")`
   - [ ] CHECKPOINT - safe to resume from here
 - [ ] **Step 4: Context Summary** - Output concise carry-forward state for auto-compaction
