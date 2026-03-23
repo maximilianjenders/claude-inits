@@ -263,8 +263,11 @@ mcp__workflow__gh_bulk_issues(action="close", issues=[101, 102], label="code-com
 abc1234 - (fix) Refs #101, #102: Fix staging feedback
 
 ### Next Steps
-Run `/create-pr --retest` to deploy and verify.
+Run `/create-pr --retest 42` to deploy and verify.
+**Milestone:** [ACTIVE] #5 Phase 5: Variety Tracking
 ```
+
+Include the actual PR number in the command and milestone as context info.
 
 ## Checklist
 
@@ -297,7 +300,7 @@ Run `/create-pr --retest` to deploy and verify.
 - [ ] Push to PR branch
 - [ ] Mark all issues `code-complete` (close + label)
 - [ ] Output summary with commit hash
-- [ ] Suggest: "Run `/create-pr --retest` to deploy and verify"
+- [ ] Suggest: "Run `/create-pr --retest <PR#>` to deploy and verify" — include actual PR number in the command, milestone as context
 
 ## Execution
 
@@ -381,5 +384,6 @@ Include the actual PR number in the suggestion.
 abc1234 - (fix) Refs #101, #102: Fix staging feedback
 
 ### Next Steps
-Run `/create-pr --retest` to deploy and verify.
+Run `/create-pr --retest 42` to deploy and verify.
+**Milestone:** [ACTIVE] #5 Phase 5: Variety Tracking
 ```

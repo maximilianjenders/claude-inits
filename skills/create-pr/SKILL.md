@@ -2,7 +2,7 @@
 name: create-pr
 description: Create a pull request with AI review loop
 user_invocable: true
-argument-hint: "(#milestone) (base-branch) (--retest) (--wipe)"
+argument-hint: "(#milestone) (base-branch) (--retest PR#) (--wipe)"
 ---
 
 # Create PR
@@ -17,7 +17,8 @@ Create a pull request and run AI review loop.
 /create-pr --wipe             # PR to master, wipe staging with prod data
 /create-pr #5 --wipe          # PR to master, milestone #5, wipe staging
 /create-pr master             # Explicit base branch
-/create-pr --retest           # Redeploy + E2E only, staging data preserved
+/create-pr --retest           # Redeploy + E2E only, auto-detect PR from branch
+/create-pr --retest 42        # Redeploy + E2E only, explicit PR #42
 /create-pr --retest --wipe    # Redeploy + E2E only, wipe staging with prod data
 ```
 
@@ -27,7 +28,8 @@ Create a pull request and run AI review loop.
 - First positional arg (optional, non-`#` non-`--`): base branch (default: `master`)
 - `--retest` flag: Skip PR creation, code review, and unit tests. Only deploy to dev → E2E → deploy to staging.
   - Use case: after fixing issues found during manual staging testing
-  - PR is auto-detected from current branch (or resolved worktree). If on master with multiple worktrees, ask user to pick.
+  - Accepts optional PR number (e.g., `--retest 42`). When provided, uses the PR's `headRefName` to resolve the working directory (worktree or branch).
+  - If no PR number: auto-detected from current branch (or resolved worktree). If on master with multiple worktrees, ask user to pick.
 - `--wipe` flag: After deploying to staging, sync prod data to staging via `pi_copy_prod_to_staging`. Default: no wipe (staging data preserved).
 
 ## Pre-flight Checks
@@ -352,7 +354,7 @@ user-facing behavior — what the user should poke at on staging. Example:
 ### Next Steps
 1. Manual testing on staging: http://[project]-staging.home
 2. When ready: `/merge-pr [PR#]`
-3. If fixes needed after staging testing: fix, commit, then `/create-pr --retest`
+3. If fixes needed after staging testing: fix, commit, then `/create-pr --retest [PR#]`
 
 ### Cleanup Actions (after merge)
 - Merge PR to master
