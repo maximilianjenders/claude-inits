@@ -132,6 +132,8 @@ After displaying context, process the user's feedback.
 
 For each piece of feedback, read the relevant code to understand scope and impact.
 
+When feedback involves parameter/limit failures (timeouts, token limits, size limits), do not triage as "simple: increase the limit" without measuring the actual values. Query the database, check logs, or estimate from real data. If the current limit should be sufficient, the root cause is elsewhere.
+
 ### Step 2: Triage Complexity
 
 For each piece of feedback, determine:
