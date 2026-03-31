@@ -82,6 +82,11 @@ An issue is NOT code-complete if acceptance criteria are unmet. If time/context 
 
 When reviewing issues for completion, check each acceptance criterion individually against the actual code changes. "Backend supports it" does not satisfy a frontend acceptance criterion.
 
+## Test Infrastructure
+
+- **New test files must use existing conftest fixtures** — before writing inline setup, check `conftest.py` in the test directory. If a fixture doesn't exist but the pattern repeats 3+ times, create one.
+- **No expensive operations in test setup loops** — bcrypt, subprocess calls, network requests, and file I/O should be computed once (module/session-scoped) and reused. If a test needs a fresh value, justify it.
+
 ## Workflow Rules
 
 - **Test-first:** Write tests before code. Don't accumulate untested code.
