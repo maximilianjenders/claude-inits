@@ -55,9 +55,14 @@ if echo "$FIRST_LINE" | grep -qE '^\s*cd\s+'; then
   fi
 fi
 
-# 3. Block pipes in commands that start with whitelisted tools
-if echo "$COMMAND" | grep -qE '\|'; then
-  FIRST_CMD=$(echo "$COMMAND" | sed -E 's/\|.*//')
+# 3. Block pipes to post-processing commands (tail, head, grep, etc.)
+# Skip for git commit/tag — their -m args may contain literal | characters.
+PIPE_TARGETS='(tail|head|grep|awk|sed|wc|sort|cut|tee|less|more|cat)'
+if echo "$COMMAND" | grep -qE "\|[[:space:]]*${PIPE_TARGETS}\b"; then
+  if echo "$COMMAND" | grep -qE '^\s*git\s+(commit|tag)\b'; then
+    : # skip — pipe is likely inside a -m message string
+  else
+  FIRST_CMD=$(echo "$COMMAND" | sed -E "s/\|[[:space:]]*${PIPE_TARGETS}\b.*//")
   if echo "$FIRST_CMD" | grep -qE "^\s*(cd\s+.*\s+)?${WHITELISTED}\b"; then
     jq -n --arg reason "BLOCKED: Piped command. Run the command without the pipe — use separate Bash calls if you need to post-process output." '{
       hookSpecificOutput: {
@@ -67,6 +72,7 @@ if echo "$COMMAND" | grep -qE '\|'; then
       }
     }'
     exit 0
+  fi
   fi
 fi
 
