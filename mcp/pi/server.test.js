@@ -9,6 +9,7 @@ import {
   validateInfraService,
   validateQuery,
   applyPagination,
+  getDbType,
   ALLOWED_COMMANDS,
   VALID_INFRA_SERVICES,
 } from "./server.js";
@@ -191,6 +192,26 @@ describe("validateQuery", () => {
 
   it("trims whitespace", () => {
     assert.equal(validateQuery("  SELECT 1  "), "SELECT 1");
+  });
+});
+
+describe("validateApp (immich)", () => {
+  it("accepts immich as a valid app", () => {
+    assert.equal(validateApp("immich"), "immich");
+  });
+});
+
+describe("getDbType", () => {
+  it("returns postgres for immich", () => {
+    assert.equal(getDbType("immich"), "postgres");
+  });
+
+  it("returns sqlite for food-butler", () => {
+    assert.equal(getDbType("food-butler"), "sqlite");
+  });
+
+  it("returns sqlite for spendee", () => {
+    assert.equal(getDbType("spendee"), "sqlite");
   });
 });
 

@@ -9,7 +9,7 @@ import { spawn } from "child_process";
 // Configuration
 // Use Tailscale MagicDNS name for remote access (pi.local only works on LAN)
 const PI_HOST = "max@pi";
-const VALID_APPS = ["food-butler", "spendee"];
+const VALID_APPS = ["food-butler", "spendee", "immich"];
 const VALID_ENVS = ["prod", "staging", "dev"];
 const VALID_INFRA_SERVICES = ["traefik", "pihole"];
 
@@ -38,11 +38,12 @@ const APP_CONFIG = {
     seedCommand: "python -m spendee_visualiser.scripts.seed_e2e_fixtures",
     dbPath: "/app/data/spendee.db",
   },
-  // Example for future apps:
-  // "new-app": {
-  //   containerPrefix: "newapp",
-  //   seedCommand: "python -m app.scripts.seed_fixtures",
-  // },
+  immich: {
+    dbType: "postgres",
+    dbContainer: "immich-postgres",
+    dbUser: "postgres",
+    dbName: "immich",
+  },
 };
 
 // Input sanitization - reject shell metacharacters
@@ -171,6 +172,11 @@ function applyPagination(query, limit, offset) {
 // DB path mapping (uses APP_CONFIG)
 function getDbPath(app) {
   return APP_CONFIG[app]?.dbPath;
+}
+
+// DB type mapping — defaults to "sqlite" for backwards compatibility
+function getDbType(app) {
+  return APP_CONFIG[app]?.dbType || "sqlite";
 }
 
 // Container name mapping (uses APP_CONFIG)
@@ -455,9 +461,9 @@ const TOOLS = [
   {
     name: "pi_db_query",
     description:
-      "Run a read-only SQL query against an app's SQLite database. " +
-      "Available databases: food-butler (/app/data/food_butler.db), spendee (/app/data/spendee.db). " +
-      "Environments: prod (live data), staging (prod copy for testing), dev (seeded test fixtures). " +
+      "Run a read-only SQL query against an app's database. " +
+      "SQLite databases: food-butler, spendee (require env: prod/staging/dev). " +
+      "PostgreSQL databases: immich (no env needed, single instance). " +
       "Supports SELECT, PRAGMA, EXPLAIN, WITH. Results are pipe-delimited with headers. " +
       "Default limit: 500 rows. Use limit/offset for pagination.",
     inputSchema: {
@@ -465,11 +471,11 @@ const TOOLS = [
       properties: {
         app: {
           type: "string",
-          description: "Application name (food-butler or spendee)",
+          description: "Application name (food-butler, spendee, or immich)",
         },
         env: {
           type: "string",
-          description: "Environment (prod, staging, or dev)",
+          description: "Environment (prod, staging, or dev). Required for food-butler/spendee, not used for immich.",
         },
         query: {
           type: "string",
@@ -484,7 +490,7 @@ const TOOLS = [
           description: "Row offset for pagination (default: 0)",
         },
       },
-      required: ["app", "env", "query"],
+      required: ["app", "query"],
     },
   },
   {
@@ -667,24 +673,40 @@ const toolHandlers = {
 
   pi_db_query: async (args) => {
     validateApp(args.app);
-    validateEnv(args.env);
     validateQuery(args.query);
 
-    const containerPrefix = getContainerPrefix(args.app);
-    const container = `${containerPrefix}-${args.env}`;
-    const dbPath = getDbPath(args.app);
-    if (!dbPath) {
-      return {
-        content: [{ type: "text", text: `Error: No database path configured for ${args.app}` }],
-        isError: true,
-      };
-    }
-
+    const dbType = getDbType(args.app);
     const limit = args.limit || 500;
     const offset = args.offset || 0;
     const query = applyPagination(args.query.trim(), limit, offset);
-    // Safe to use double-quote wrapping: validateQuery blocks " \ $ ` characters
-    const command = `timeout 30 docker exec ${container} sqlite3 -readonly -header -separator '|' ${dbPath} "${query}"`;
+    let command;
+
+    if (dbType === "postgres") {
+      const { dbContainer, dbUser, dbName } = APP_CONFIG[args.app];
+      // psql flags: -A (unaligned), -F '|' (pipe separator), --pset footer=off (no row count)
+      // Safe to use double-quote wrapping: validateQuery blocks " \ $ ` characters
+      command = `timeout 30 docker exec ${dbContainer} psql -U ${dbUser} -d ${dbName} -A -F '|' --pset footer=off -c "${query}"`;
+    } else {
+      if (!args.env) {
+        return {
+          content: [{ type: "text", text: `Error: env is required for ${args.app} (prod, staging, or dev)` }],
+          isError: true,
+        };
+      }
+      validateEnv(args.env);
+      const containerPrefix = getContainerPrefix(args.app);
+      const container = `${containerPrefix}-${args.env}`;
+      const dbPath = getDbPath(args.app);
+      if (!dbPath) {
+        return {
+          content: [{ type: "text", text: `Error: No database path configured for ${args.app}` }],
+          isError: true,
+        };
+      }
+      // Safe to use double-quote wrapping: validateQuery blocks " \ $ ` characters
+      command = `timeout 30 docker exec ${container} sqlite3 -readonly -header -separator '|' ${dbPath} "${query}"`;
+    }
+
     const result = await executeSSH(command);
     return { content: [{ type: "text", text: formatResult(result) }] };
   },
@@ -765,6 +787,7 @@ export {
   getContainerPrefix,
   getSeedCommand,
   getDbPath,
+  getDbType,
   executeSSH,
   formatResult,
   server,
