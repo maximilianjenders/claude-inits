@@ -22,12 +22,28 @@ When a working session is reset (context pressure, cache window expiring, switch
 | Scheduled session start on a new day | No — use `/start-session` |
 | Pure conversational/exploratory session with no code changes | No — nothing to resume |
 
+## Invocation
+
+```
+/resume-prompt [optional free-text focus for next session]
+```
+
+The skill accepts an optional trailing argument. When present, the argument is the user's explicit direction for what the next session should focus on — it takes precedence over the skill's auto-derived Suggested Next Steps.
+
+Examples:
+- `/resume-prompt` — no direction, skill derives everything from conversation + git state
+- `/resume-prompt focus on the failing migration test, ignore the UI work` — user steers the next session
+- `/resume-prompt first validate the new auth flow end-to-end, then clean up the TODO comments` — ordered direction
+
+The argument is surfaced as a dedicated **User Direction** section at the top of the output (right after the preamble, before Session Summary). Its presence does not suppress the other sections — Summary, State, Validation, Blockers, Skipped, Learnings, and auto-derived Next Steps still appear — but the receiving agent is instructed to treat User Direction as the primary steering signal.
+
 ## Inputs (Sources)
 
-The skill draws from two sources only:
+The skill draws from three sources:
 
-1. **Current conversation** — the authoritative source for intent, skipped steps, blockers, learnings. Claude has this already; no tool call needed.
-2. **Git state** — branch, worktree (if applicable), uncommitted files, last commit. Preferred via the workflow MCP:
+1. **User's trailing argument** (optional) — explicit direction; highest priority.
+2. **Current conversation** — the authoritative source for intent, skipped steps, blockers, learnings. Claude has this already; no tool call needed.
+3. **Git state** — branch, worktree (if applicable), uncommitted files, last commit. Preferred via the workflow MCP:
    ```
    mcp__workflow__git_state()
    ```
@@ -51,9 +67,18 @@ The skill outputs a single fenced markdown block to chat. No file is written. Th
 ```markdown
 ## Instruction Preamble
 You are resuming work from a previous Claude Code session. Below is the
-state at the point of reset. Before acting, confirm the branch matches
-and run `git status` to verify the working tree. Then ask which of the
-"Suggested Next Steps" to tackle, or wait for new direction.
+state at the point of reset. Before acting, confirm the branch (and
+worktree, if listed) matches and run `git status` to verify the working
+tree. If a "User Direction" section is present, treat it as the primary
+steering signal — work toward it first, and only fall back to "Suggested
+Next Steps" once the user's direction is satisfied or blocked. If no
+User Direction is present, ask which of the Suggested Next Steps to
+tackle, or wait for new direction.
+
+## User Direction
+<Verbatim copy of the user's trailing argument to /resume-prompt.
+ Preserve their wording exactly — don't paraphrase or reorder.>
+<If no argument was provided: omit section entirely>
 
 ## Session Summary
 <1-3 sentences: what we set out to do and what got done>
@@ -107,7 +132,9 @@ and run `git status` to verify the working tree. Then ask which of the
 
 ## Suggested Next Steps
 <Ordered list. Lead with whatever most needs human validation or is most
- load-bearing for continued work.>
+ load-bearing for continued work. If User Direction was provided, this
+ section is auxiliary — list items the next session should pick up AFTER
+ satisfying the user's direction, or items the user may have overlooked.>
 ```
 
 ### Section Rules
@@ -115,6 +142,7 @@ and run `git status` to verify the working tree. Then ask which of the
 | Section | Required | Omit when empty? |
 |---------|----------|------------------|
 | Instruction Preamble | Yes | Never |
+| User Direction | Optional | Yes (omit when no argument passed) |
 | Session Summary | Yes | Never |
 | Current State | Yes | Never (even on clean tree — show "none") |
 | Needs Validation | Optional | Yes |
@@ -176,6 +204,7 @@ Include one complete sample output in the SKILL.md — not a realistic session, 
 ### Checklist
 
 Must include, in order:
+- [ ] Capture the user's trailing argument (if any) verbatim — this becomes the User Direction section
 - [ ] Gather git state (via `mcp__workflow__git_state()` or the bash fallbacks) — include worktree path if applicable
 - [ ] Draft Session Summary (1-3 sentences)
 - [ ] Scan conversation for Skipped/Incomplete work — run through all seven detection prompts, split into (a) untracked work and (b) mis-tracked work
@@ -213,9 +242,10 @@ Must include, in order:
 2. Running the skill on any session with code changes produces a fenced markdown block matching the Structure above.
 3. "Skipped / Incomplete Work" section always present, with "None identified" when empty.
 4. "Current State" section populated from actual git state (verified against `git status` output).
-5. One worked example in SKILL.md that a reader can use to calibrate section voice.
-6. No file I/O — skill outputs to chat only.
-7. MEMORY.md entry under "Key Skills" updated to mention `/resume-prompt`.
+5. When invoked without an argument, User Direction section is omitted; when invoked with trailing free-text, User Direction contains the text verbatim and the Instruction Preamble references it as the primary steering signal.
+6. One worked example in SKILL.md that a reader can use to calibrate section voice — should include a second minimal variant showing the User Direction form.
+7. No file I/O — skill outputs to chat only.
+8. MEMORY.md entry under "Key Skills" updated to mention `/resume-prompt`.
 
 ## Open Questions
 
