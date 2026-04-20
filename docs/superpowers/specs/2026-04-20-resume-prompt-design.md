@@ -27,12 +27,18 @@ When a working session is reset (context pressure, cache window expiring, switch
 The skill draws from two sources only:
 
 1. **Current conversation** — the authoritative source for intent, skipped steps, blockers, learnings. Claude has this already; no tool call needed.
-2. **Git state** — branch, uncommitted files, last commit. Gathered via three commands:
+2. **Git state** — branch, worktree (if applicable), uncommitted files, last commit. Preferred via the workflow MCP:
+   ```
+   mcp__workflow__git_state()
+   ```
+   Fallback via bash:
    ```bash
    git branch --show-current
+   git worktree list
    git status --short
    git log -1 --format='%h %s'
    ```
+   If the current checkout is inside a worktree (not the primary clone), note both the branch and the worktree path — the next session may need to `cd` into the same worktree to resume.
 
 Explicitly **out of scope for inputs:** GitHub issues/PRs, milestones, CI state, remote branches. If the user is mid-PR-review or mid-milestone, those systems are already the source of truth and the resume prompt should reference them by number, not duplicate them.
 
@@ -54,12 +60,18 @@ and run `git status` to verify the working tree. Then ask which of the
 
 ## Current State
 - **Branch:** <name>
+- **Worktree:** <path, only when not the primary clone; omit line otherwise>
 - **Uncommitted changes:** <file list from `git status --short`, or "none">
 - **Last commit:** <hash + title>
 
 ## Needs Validation
 <Bugs fixed or features built that haven't been tested in-situ yet.
- One bullet per item, include *where* to validate.>
+ One bullet per item. For each item, state **how to validate** concretely
+ — the exact action the user (or next agent) takes to confirm it works.
+ Examples: "run `pytest tests/auth/test_login.py::test_missing_password`",
+ "open the ingredient edit dialog at /ingredients/42 and submit with empty name",
+ "curl POST /api/v1/sync with stale ETag". Avoid vague phrasings like
+ "test the login flow" — name the test, URL, or UI path.>
 <If empty: omit section entirely>
 
 ## Blockers & Deeper Issues
@@ -69,10 +81,21 @@ and run `git status` to verify the working tree. Then ask which of the
 <If empty: omit section entirely>
 
 ## Skipped / Incomplete Work
-<ALWAYS INCLUDED. Call out anything that was supposed to happen but
- didn't: steps from a command/skill that got abbreviated, acceptance
- criteria from an issue that weren't met, tasks the user asked for that
- weren't completed. One bullet per item.>
+<ALWAYS INCLUDED. Two kinds of drift to call out:
+
+ (a) Work that was supposed to happen but didn't — steps from a
+     command/skill that got abbreviated, acceptance criteria from the
+     active issue that weren't met, tasks the user asked for that
+     weren't completed.
+
+ (b) Work that was identified but not properly tracked — issues that
+     should exist but weren't created, items filed into generic Backlog
+     when they belong in the active milestone, items filed into a
+     different milestone than the one in scope, scope that got done
+     but wasn't part of the active issue/PR.
+
+ One bullet per item. Mark each as (a) or (b) so the next session knows
+ whether to resume the work or create/recategorize tracking.>
 <If empty: write "None identified — but the next session should verify
  against the original request.">
 
@@ -104,14 +127,22 @@ The asymmetry around "Skipped / Incomplete Work" is deliberate: the absence of s
 
 ## Skipped-Work Detection
 
-This is the section most likely to be underfilled without explicit prompting. The skill's checklist forces Claude to scan the conversation for:
+This is the section most likely to be underfilled without explicit prompting. The skill's checklist forces Claude to scan the conversation for two categories:
+
+**Category (a) — Work that was supposed to happen but didn't:**
 
 1. **Commands/skills whose steps were abbreviated.** Did any skill's checklist items get skipped? Did a command stop partway?
 2. **Issue acceptance criteria not verified.** If an issue was worked on, were each of its acceptance criteria demonstrably met in the code?
 3. **User requests deferred or half-addressed.** Did the user ask for something that got partially done, or got accepted verbally but not implemented?
 4. **Test coverage gaps.** Was new code added without corresponding tests (per the project's test-first rule)?
 
-Each item should name *what* was skipped and *why* (if known — context ran out, blocked on dependency, forgotten).
+**Category (b) — Work that was identified but not properly tracked:**
+
+5. **Bugs or ideas surfaced without an issue.** Did the conversation turn up a problem or improvement that no one filed an issue for?
+6. **Items parked in the wrong bucket.** Was something dumped into generic Backlog when it belongs in the active milestone, or put into a different milestone than the one in scope?
+7. **Scope creep without tracking.** Did the session implement work that wasn't part of the active issue/PR, without a corresponding issue existing for it?
+
+Each item should name *what* was skipped or mis-tracked and *why* (if known — context ran out, blocked on dependency, forgotten, unclear where it belongs).
 
 ## Skill File Structure
 
@@ -145,9 +176,9 @@ Include one complete sample output in the SKILL.md — not a realistic session, 
 ### Checklist
 
 Must include, in order:
-- [ ] Run the three git commands
+- [ ] Gather git state (via `mcp__workflow__git_state()` or the bash fallbacks) — include worktree path if applicable
 - [ ] Draft Session Summary (1-3 sentences)
-- [ ] Scan conversation for Skipped/Incomplete work (four detection prompts above)
+- [ ] Scan conversation for Skipped/Incomplete work — run through all seven detection prompts, split into (a) untracked work and (b) mis-tracked work
 - [ ] Identify Needs Validation items
 - [ ] Identify Blockers
 - [ ] Extract Key Learnings (skip if already in GOTCHAS.md)
