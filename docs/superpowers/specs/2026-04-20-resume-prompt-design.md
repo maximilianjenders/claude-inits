@@ -76,8 +76,18 @@ User Direction is present, ask which of the Suggested Next Steps to
 tackle, or wait for new direction.
 
 ## User Direction
-<Verbatim copy of the user's trailing argument to /resume-prompt.
- Preserve their wording exactly — don't paraphrase or reorder.>
+<The user's trailing argument to /resume-prompt, optionally amended with
+ session context. The user's intent is load-bearing — preserve it — but
+ the skill may:
+ - Expand shorthand with concrete references (e.g. user says "fix the
+   flaky test" → skill adds the test path/name seen in conversation)
+ - Disambiguate vague referents ("the migration" → which migration?)
+ - Append tightly related context the user clearly had in mind but
+   didn't spell out (file paths, error messages, issue numbers)
+ The skill must NOT: replace the user's goals with different ones,
+ reorder their priorities, or drop items they mentioned. When amending,
+ keep the user's original phrasing recognizable — think "clarified" not
+ "rewritten".>
 <If no argument was provided: omit section entirely>
 
 ## Session Summary
@@ -204,7 +214,7 @@ Include one complete sample output in the SKILL.md — not a realistic session, 
 ### Checklist
 
 Must include, in order:
-- [ ] Capture the user's trailing argument (if any) verbatim — this becomes the User Direction section
+- [ ] Capture the user's trailing argument (if any) — preserve intent but expand shorthand, disambiguate vague referents, and append tightly related session context; do not replace, reorder, or drop user items
 - [ ] Gather git state (via `mcp__workflow__git_state()` or the bash fallbacks) — include worktree path if applicable
 - [ ] Draft Session Summary (1-3 sentences)
 - [ ] Scan conversation for Skipped/Incomplete work — run through all seven detection prompts, split into (a) untracked work and (b) mis-tracked work
@@ -242,7 +252,7 @@ Must include, in order:
 2. Running the skill on any session with code changes produces a fenced markdown block matching the Structure above.
 3. "Skipped / Incomplete Work" section always present, with "None identified" when empty.
 4. "Current State" section populated from actual git state (verified against `git status` output).
-5. When invoked without an argument, User Direction section is omitted; when invoked with trailing free-text, User Direction contains the text verbatim and the Instruction Preamble references it as the primary steering signal.
+5. When invoked without an argument, User Direction section is omitted. When invoked with trailing free-text, User Direction contains the user's intent preserved but may be amended with session context (shorthand expanded, vague referents disambiguated, related file paths/error messages/issue numbers appended). The Instruction Preamble references User Direction as the primary steering signal.
 6. One worked example in SKILL.md that a reader can use to calibrate section voice — should include a second minimal variant showing the User Direction form.
 7. No file I/O — skill outputs to chat only.
 8. MEMORY.md entry under "Key Skills" updated to mention `/resume-prompt`.
