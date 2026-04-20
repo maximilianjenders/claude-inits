@@ -25,3 +25,13 @@ Skills reference shared templates (issue body template, plan folder structure) v
 
 **Never edit installed skills outside this repo.** Skills installed from external sources (e.g., `~/.claude/skills/`) may be auto-updated, so local edits get overwritten. Only edit skills that live in `skills/` within this repo.
 
+## Adding a New Skill
+
+After creating a skill under `skills/<name>/`, add a symlink so Claude Code can discover it:
+
+```bash
+ln -s /Users/max/Gits/claude-inits/skills/<name> /Users/max/.claude/skills/<name>
+```
+
+Without the symlink the skill exists in the repo but won't appear in the available-skills list.
+
