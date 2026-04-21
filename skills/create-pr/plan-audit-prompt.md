@@ -59,7 +59,13 @@ Task tool (general-purpose):
 
     7. **Intentional omissions vs gaps** — Some things may have been deliberately descoped during implementation. Check issue comments, commit messages, and plan annotations for evidence of intentional deferral. Separate these from unintentional gaps.
 
-    If no design doc or implementation plan is available, report that and skip the audit.
+    8. **Issue-level plan discovery** — The milestone may not be the only source of plans. For each issue in this PR, read the issue body and search for paths to `docs/plans/…`, `docs/superpowers/plans/…`, `docs/superpowers/specs/…`, or similar plan/spec files. If an issue references such a path, read that plan's task list and audit it against the diff task-by-task. An issue driven by a plan that lacks corresponding task-level GitHub issues is itself a process gap — flag it.
+
+    9. **Commit-message claim audit** — For each commit in the PR, scan the message for claims at a coarser granularity than the diff: "Layer N", "Task N", "N layers", "phases X-Y", enumerated bullet lists describing distinct subsystems. For each such claim, verify the diff contains code changes implementing that specific claim. A commit saying "Layer 3: persistence — new `foo_flags` table, `bar_scenarios` column" with no matching migration is a red flag and must be reported as a gap. This check catches silent scope drops where a single commit absorbs a multi-task plan by rewriting its story.
+
+    10. **Task-issue coverage** — If the PR references a plan with N tasks, count the task-level GitHub issues the PR closes (look for `closes #N` / `fixes #N` syntax in commit messages and PR body). If `task_issue_count < plan_task_count`, report the shortfall. A single issue closing a multi-task plan is a structural silent-drop vector — the repo should have one issue per plan task.
+
+    If no design doc or implementation plan is available, report that and skip the audit — but still perform check #8 (an issue-level plan may exist even without a milestone-level one).
 
     ## Output Format
 

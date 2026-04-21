@@ -55,6 +55,7 @@ Task tool (general-purpose):
 
     **Additional project-specific checks:**
     - **Schema read/write symmetry:** For every new model field, verify it appears in both response AND create/update schemas (unless explicitly computed-only like `created_at`). A field users can read but not write is a silent feature gap. Also verify a frontend UI control exists to set the field.
+    - **Commit-message claim audit:** Scan each commit message for claims at a coarser granularity than the diff — phrases like "Layer N", "Task N", "N layers", "phases X-Y", or enumerated bullet lists describing distinct subsystems. For each claim, spot-check the diff for corresponding code. If a commit says "Layer 3: persistence — new `foo_flags` table, `bar_scenarios` column" but no migration or column addition is visible, that is a silent scope drop — report it as a review finding, not a nit. Do NOT let commit-message prose alone satisfy a claim; the diff must carry the weight.
 
     ## Output Format
 

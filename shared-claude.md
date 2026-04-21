@@ -82,6 +82,18 @@ An issue is NOT code-complete if acceptance criteria are unmet. If time/context 
 
 When reviewing issues for completion, check each acceptance criterion individually against the actual code changes. "Backend supports it" does not satisfy a frontend acceptance criterion.
 
+## Plan Execution — Task Accounting
+
+When implementing from a plan document with numbered `## Task N` sections (e.g. `docs/superpowers/plans/*.md`, `docs/plans/*/`), follow these rules — they exist because the prescriptive "never drop scope" rule above was violated and went undetected until a user caught it by eye. Mechanical checkpoints, not self-honesty, are what close the gap.
+
+**Plan tasks become GitHub issues before any code is written.** Use `/create-milestone`, `/writing-implementation-tasks`, or `/create-issue` to generate one issue per `## Task N`. The plan doc is the reference; the issues are the work. Implementing from a plan without creating the task issues first is forbidden — it makes scope drops invisible because there is no task-granularity tracker for anyone (human or audit agent) to check against.
+
+**One task = one commit = one closed issue.** A commit body must cite the specific task issue(s) it closes, by number: `(feat) refs #505, closes #560: task 3 — PayoutScenario typed-dict`. A commit that claims to implement "multiple layers", "six layers", or "several tasks" without listing each issue number is a silent-drop red flag — split it into one commit per task, each closing its own issue.
+
+**Driver-issue close gate.** When a plan has a "driver" issue (the user-facing symptom that spawned the plan), the driver may not close while any task issue in the plan remains open. To defer a task: leave the task issue open, label it `deferred`, and reference it from the driver's close comment. Absent an explicit defer, every plan task is required before the driver closes. Closing the driver with open task issues is the signature of the silent-drop bug.
+
+**Verify each acceptance criterion at close.** Before closing a task issue, each acceptance criterion gets evidence in the close comment: a test name that exercises it, a query output, or a screenshot URL. No evidence = not closed. The PR test-plan checkbox ("[x] unit tests pass") is not AC-level evidence.
+
 ## Test Infrastructure
 
 - **New test files must use existing conftest fixtures** — before writing inline setup, check `conftest.py` in the test directory. If a fixture doesn't exist but the pattern repeats 3+ times, create one.
