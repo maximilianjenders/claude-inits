@@ -59,7 +59,7 @@ git log -1 --format='%h %s'
 
 If the current checkout is inside a worktree (not the primary clone), note both the branch and the worktree path — the next session may need to `cd` into the same worktree to resume.
 
-**Out of scope for inputs:** GitHub issues/PRs, milestones, CI state, remote branches. If the user is mid-PR-review or mid-milestone, those systems are already the source of truth — reference them by number instead of duplicating.
+**Out of scope for resume prompt inputs:** CI state, remote branches. GitHub issues/milestones are fetched during the Learnings Triage step (not for the resume prompt itself). If the user is mid-PR-review or mid-milestone, reference them by number instead of duplicating.
 
 ## Output Format
 
@@ -69,23 +69,10 @@ The skill outputs a single fenced markdown block to chat. No file is written. Th
 
 ```
 ## Instruction Preamble
-You are resuming work from a previous Claude Code session. Below is the
-state at the point of reset. Before acting, confirm the branch (and
-worktree, if listed) matches and run `git status` to verify the working
-tree. If a "User Direction" section is present, treat it as the primary
-steering signal — work toward it first, and only fall back to "Suggested
-Next Steps" once the user's direction is satisfied or blocked. If no
-User Direction is present, ask which of the Suggested Next Steps to
-tackle, or wait for new direction.
+You are resuming work from a previous Claude Code session. Below is the state at the point of reset. Before acting, confirm the branch (and worktree, if listed) matches and run `git status` to verify the working tree. If a "User Direction" section is present, treat it as the primary steering signal — work toward it first, and only fall back to "Suggested Next Steps" once the user's direction is satisfied or blocked. If no User Direction is present, ask which of the Suggested Next Steps to tackle, or wait for new direction.
 
 ## User Direction
-<The user's trailing argument to /resume-prompt, optionally amended with
- session context. Preserve the user's intent; you may expand shorthand
- with concrete references (test paths, file names), disambiguate vague
- referents, and append tightly related context the user clearly had in
- mind (error messages, issue numbers). Do NOT replace their goals,
- reorder their priorities, or drop items they mentioned. Keep their
- phrasing recognizable — "clarified" not "rewritten".>
+<The user's trailing argument to /resume-prompt, optionally amended with session context. Preserve the user's intent; you may expand shorthand with concrete references (test paths, file names), disambiguate vague referents, and append tightly related context the user clearly had in mind (error messages, issue numbers). Do NOT replace their goals, reorder their priorities, or drop items they mentioned. Keep their phrasing recognizable — "clarified" not "rewritten".>
 <If no argument was provided: omit section entirely>
 
 ## Session Summary
@@ -98,46 +85,26 @@ tackle, or wait for new direction.
 - **Last commit:** <hash + title>
 
 ## Needs Validation
-<Bugs fixed or features built that haven't been tested in-situ yet. One
- bullet per item. For each item, state how to validate concretely — the
- exact action to confirm it works. Examples:
- "run pytest tests/auth/test_login.py::test_missing_password",
- "open /ingredients/42 and submit with empty name",
- "curl POST /api/v1/sync with stale ETag".
- Avoid vague phrasings like "test the login flow" — name the test, URL,
- or UI path.>
+<Bugs fixed or features built that haven't been tested in-situ yet. One bullet per item. For each item, state how to validate concretely — the exact action to confirm it works. Examples: "run pytest tests/auth/test_login.py::test_missing_password", "open /ingredients/42 and submit with empty name", "curl POST /api/v1/sync with stale ETag". Avoid vague phrasings like "test the login flow" — name the test, URL, or UI path.>
 <If empty: omit section entirely>
 
 ## Blockers & Deeper Issues
-<Problems encountered that weren't fully resolved — root causes not yet
- understood, tests that revealed unexpected behavior, dependencies that
- failed. One bullet per item.>
+<Problems encountered that weren't fully resolved — root causes not yet understood, tests that revealed unexpected behavior, dependencies that failed. One bullet per item.>
 <If empty: omit section entirely>
 
 ## Skipped / Incomplete Work
-<ALWAYS INCLUDED. Two categories:
- (a) Work that was supposed to happen but didn't — skill steps
-     abbreviated, issue acceptance criteria unmet, user requests
-     deferred or half-addressed.
- (b) Work that was identified but not properly tracked — issues that
-     should exist but weren't created, items dumped into generic
-     Backlog when they belong in the active milestone, items in the
-     wrong milestone, scope done outside the active issue/PR.
- One bullet per item, marked (a) or (b).>
-<If empty: write "None identified — but the next session should verify
- against the original request.">
+<ALWAYS INCLUDED. Two categories: (a) Work that was supposed to happen but didn't — skill steps abbreviated, issue acceptance criteria unmet, user requests deferred or half-addressed. (b) Work that was identified but not properly tracked — issues that should exist but weren't created, items dumped into generic Backlog when they belong in the active milestone, items in the wrong milestone, scope done outside the active issue/PR. One bullet per item, marked (a) or (b).>
+<If empty: write "None identified — but the next session should verify against the original request.">
 
 ## Key Learnings
-<Non-obvious things discovered — gotchas, wrong assumptions corrected,
- decisions made with rationale. Skip anything already in GOTCHAS.md or
- code comments.>
+<Non-obvious things discovered — gotchas, wrong assumptions corrected, decisions made with rationale. Skip anything already in GOTCHAS.md or code comments.>
 <If empty: omit section entirely>
 
+## Learnings Triage
+<This section is NOT part of the resume prompt output. It is work the skill performs before assembling the output. See the Learnings Triage section below for the full procedure.>
+
 ## Suggested Next Steps
-<Ordered list. Lead with whatever most needs human validation or is
- most load-bearing for continued work. If User Direction was provided,
- this section is auxiliary — items to pick up AFTER the user's
- direction, or things they may have overlooked.>
+<Ordered list. Lead with whatever most needs human validation or is most load-bearing for continued work. If User Direction was provided, this section is auxiliary — items to pick up AFTER the user's direction, or things they may have overlooked.>
 ```
 
 ### Section Rules
@@ -185,15 +152,10 @@ Invoked as `/resume-prompt`. User Direction is omitted.
 
 ```
 ## Instruction Preamble
-You are resuming work from a previous Claude Code session. Below is the
-state at the point of reset. Before acting, confirm the branch matches
-and run git status to verify the working tree. If no User Direction
-is present, ask which of the Suggested Next Steps to tackle, or wait
-for new direction.
+You are resuming work from a previous Claude Code session. Below is the state at the point of reset. Before acting, confirm the branch matches and run git status to verify the working tree. If no User Direction is present, ask which of the Suggested Next Steps to tackle, or wait for new direction.
 
 ## Session Summary
-Refactored ingredient-edit form to use controlled inputs. Tests pass
-locally; staging not yet deployed.
+Refactored ingredient-edit form to use controlled inputs. Tests pass locally; staging not yet deployed.
 
 ## Current State
 - **Branch:** feature/ingredient-edit-refactor
@@ -201,8 +163,7 @@ locally; staging not yet deployed.
 - **Last commit:** a3f8921 (refactor) #142: controlled inputs for ingredient edit
 
 ## Needs Validation
-- Open /ingredients/new on staging and submit with a comma-separated
-  quantity (e.g. "1,5") — verify the decimal isn't silently dropped
+- Open /ingredients/new on staging and submit with a comma-separated quantity (e.g. "1,5") — verify the decimal isn't silently dropped
 
 ## Skipped / Incomplete Work
 - (a) Issue #142 acceptance criterion "update Storybook snapshot" not done — Storybook isn't installed in this worktree yet
@@ -219,19 +180,13 @@ Invoked as `/resume-prompt focus on the Storybook snapshot before deploying`. Us
 
 ```
 ## Instruction Preamble
-You are resuming work from a previous Claude Code session. Treat the
-User Direction section below as your primary steering signal — work
-toward it first, and only fall back to Suggested Next Steps once the
-direction is satisfied or blocked.
+You are resuming work from a previous Claude Code session. Treat the User Direction section below as your primary steering signal — work toward it first, and only fall back to Suggested Next Steps once the direction is satisfied or blocked.
 
 ## User Direction
-Focus on the Storybook snapshot before deploying. (Context from session:
-Storybook not yet installed in this worktree; update needed for issue
-#142 acceptance criteria.)
+Focus on the Storybook snapshot before deploying. (Context from session: Storybook not yet installed in this worktree; update needed for issue #142 acceptance criteria.)
 
 ## Session Summary
-Refactored ingredient-edit form to use controlled inputs. Tests pass
-locally; staging not yet deployed.
+Refactored ingredient-edit form to use controlled inputs. Tests pass locally; staging not yet deployed.
 
 ## Current State
 - **Branch:** feature/ingredient-edit-refactor
@@ -247,6 +202,62 @@ locally; staging not yet deployed.
 3. Open PR
 ```
 
+## Learnings Triage
+
+After extracting Key Learnings, triage each one before assembling the resume prompt. This step has two modes: **auto-act** (GitHub updates) and **suggest** (doc changes).
+
+### Auto-act: Update GitHub issues and milestones
+
+For each learning, check whether it relates to an open issue or milestone in the current repo:
+
+1. Fetch open issues and milestones using MCP tools:
+   - `mcp__workflow__gh_issue({ action: "list", state: "open", limit: 50 })`
+   - `mcp__workflow__gh_milestone({ action: "list" })`
+2. For each learning, determine if it provides context that would be valuable on an existing open issue or milestone — e.g., a discovered root cause, a gotcha that affects implementation, a decision that narrows scope.
+3. If a match is found, post a comment on the issue via Bash: `gh issue comment <number> --body "**Session learning:** <1-3 sentences>"`. Keep it brief — just enough for the person picking up the issue to benefit.
+4. If a learning reveals that an issue's description or acceptance criteria are wrong or incomplete, note this in the comment but do NOT edit the issue body — flag it for the user instead.
+5. Report what was updated: "Posted learning about SQLite tzinfo on #142" in a brief summary line to the user before the resume prompt output.
+
+**Skip auto-act when:** the learning is purely about tooling/workflow (e.g., "always use `uv --directory`") rather than domain/feature knowledge, or when no open issue is relevant.
+
+### Suggest: Documentation updates
+
+For each learning, evaluate whether it belongs in project documentation. Present suggestions to the user as a numbered list **before** outputting the resume prompt. The user approves, dismisses, or defers each one. Do not write to any doc file without approval.
+
+Triage criteria:
+
+| Learning type | Target | Example |
+|---------------|--------|---------|
+| Reusable trap/workaround that will bite again | GOTCHAS.md | "SQLite strips tzinfo on datetime round-trips" |
+| Workflow rule or coding standard | CLAUDE.md | "Always use `uv --directory` instead of `cd && uv`" |
+| Architectural decision with rationale | DECISIONS.md | "We write to both legacy and new flag tables until migration lands" |
+| Project context useful across sessions | Memory | "Mobile team's merge freeze begins 2026-03-05" |
+| Already documented or too session-specific | Skip | — |
+
+Format the suggestions as:
+
+```
+### Learnings Triage
+
+**GitHub updates posted:**
+- Posted learning about <topic> on #<number>
+- (or "No open issues matched any learnings")
+
+**Suggested doc updates** (approve/dismiss each before I continue):
+1. **GOTCHAS.md**: <one-line summary of what to add>
+2. **CLAUDE.md**: <one-line summary of what to add>
+3. **DECISIONS.md**: <one-line summary of what to add>
+4. **Memory**: <one-line summary of what to save>
+(or "No doc updates suggested")
+```
+
+Wait for user response. Then:
+- **Approved items**: Apply the changes (append to the relevant file, or save to memory).
+- **Dismissed items**: Skip silently.
+- **Deferred items**: Add to "Suggested Next Steps" in the resume prompt.
+
+After triage is resolved, proceed to assemble and output the resume prompt.
+
 ## Checklist
 
 Follow this checklist in order:
@@ -258,7 +269,8 @@ Follow this checklist in order:
 - [ ] Identify Needs Validation items — each with a concrete how-to-validate action
 - [ ] Identify Blockers & Deeper Issues
 - [ ] Extract Key Learnings (skip anything already in GOTCHAS.md)
-- [ ] Order Suggested Next Steps by load-bearingness
+- [ ] Triage learnings — auto-post to relevant GitHub issues, then present doc update suggestions to user and wait for approval before continuing (see Learnings Triage section)
+- [ ] Order Suggested Next Steps by load-bearingness (include any deferred triage items)
 - [ ] Assemble fenced markdown block matching the Structure above
 - [ ] Include Instruction Preamble verbatim
 - [ ] Run the Secrets Scan (see Guardrails)
@@ -266,7 +278,8 @@ Follow this checklist in order:
 
 ## Guardrails
 
+- **No hard-wrapped prose:** Output paragraphs as single unwrapped lines. Let the reader's terminal soft-wrap to its width. Do not insert manual line breaks mid-paragraph. Bullet lists and headings are naturally short — wrap only between list items, not within them.
 - **Secrets scan:** Before outputting, check the prompt for secrets (API keys, tokens, passwords) that may have surfaced in the conversation. Redact with `<redacted>` and note the redaction inside the Preamble.
 - **Length cap:** If total output exceeds ~200 lines, compress — prefer brevity over completeness. Resume prompts are consumed under context pressure on the receiving side too.
-- **No file writes:** The skill never writes to disk. Persistence is the user's choice.
+- **No file writes for the resume prompt:** The resume prompt itself is never written to disk — output to chat only. The Learnings Triage step may write to doc files (GOTCHAS.md, CLAUDE.md, DECISIONS.md) or memory, but only after explicit user approval.
 - **Always include Skipped / Incomplete Work:** Even when empty. Write "None identified — but the next session should verify against the original request." An omitted section could mean forgotten; an explicit "None identified" means checked.
