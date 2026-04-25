@@ -11,7 +11,10 @@ import { spawn } from "child_process";
 const PI_HOST = "max@pi";
 const VALID_APPS = ["food-butler", "spendee", "immich"];
 const VALID_ENVS = ["prod", "staging", "dev"];
-const VALID_INFRA_SERVICES = ["traefik", "pihole"];
+const INFRA_SERVICE_DIRS = {
+  traefik: "~/pi-setup",
+  pihole: "~/pihole",
+};
 
 // Allowed commands for docker exec/run (read-only operations)
 // NOTE: "env" intentionally excluded — it dumps all container env vars including secrets
@@ -92,8 +95,9 @@ function validatePath(path) {
 
 function validateInfraService(service) {
   sanitizeInput(service);
-  if (!VALID_INFRA_SERVICES.includes(service)) {
-    throw new Error(`Invalid infrastructure service: ${service}. Must be one of: ${VALID_INFRA_SERVICES.join(", ")}`);
+  const valid = Object.keys(INFRA_SERVICE_DIRS);
+  if (!valid.includes(service)) {
+    throw new Error(`Invalid infrastructure service: ${service}. Must be one of: ${valid.join(", ")}`);
   }
   return service;
 }
@@ -501,7 +505,7 @@ const TOOLS = [
       properties: {
         service: {
           type: "string",
-          description: `Service name as defined in docker-compose.yml (must be one of: ${VALID_INFRA_SERVICES.join(", ")})`,
+          description: `Service name as defined in docker-compose.yml (must be one of: ${Object.keys(INFRA_SERVICE_DIRS).join(", ")})`,
         },
       },
       required: ["service"],
@@ -713,13 +717,14 @@ const toolHandlers = {
 
   pi_docker_compose_up: async (args) => {
     validateInfraService(args.service);
+    const composeDir = INFRA_SERVICE_DIRS[args.service];
 
-    const pullResult = await executeSSH(`cd ~/pi-setup && docker compose pull ${args.service}`);
+    const pullResult = await executeSSH(`cd ${composeDir} && docker compose pull ${args.service}`);
     if (pullResult.exitCode !== 0) {
       return { content: [{ type: "text", text: `Pull failed:\n${formatResult(pullResult)}` }], isError: true };
     }
 
-    const upResult = await executeSSH(`cd ~/pi-setup && docker compose up -d ${args.service}`);
+    const upResult = await executeSSH(`cd ${composeDir} && docker compose up -d ${args.service}`);
     const output = `=== Pull ===\n${formatResult(pullResult)}\n\n=== Up ===\n${formatResult(upResult)}`;
     return { content: [{ type: "text", text: output }] };
   },
@@ -793,5 +798,5 @@ export {
   server,
   ALLOWED_COMMANDS,
   BLOCKED_PATH_PATTERNS,
-  VALID_INFRA_SERVICES,
+  INFRA_SERVICE_DIRS,
 };

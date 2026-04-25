@@ -11,7 +11,7 @@ import {
   applyPagination,
   getDbType,
   ALLOWED_COMMANDS,
-  VALID_INFRA_SERVICES,
+  INFRA_SERVICE_DIRS,
 } from "./server.js";
 
 describe("sanitizeInput", () => {
