@@ -72,6 +72,17 @@ After writing any design doc:
 
 The `ExitPlanMode` hook in plannotator is disabled — this explicit invocation replaces it.
 
+## HARD OVERRIDE: Plan → Milestone Gate
+
+**`writing-plans`' own "Execution Handoff" step is disabled.** That step offers "Subagent-Driven" vs "Inline Execution" as an in-session choice — but presenting it skips issue creation entirely, which is exactly how a plan gets executed with no task-level GitHub issues to check scope against.
+
+After a plan is saved — whether via `superpowers:writing-plans` directly (e.g. dispatched from brainstorming) or via `writing-implementation-tasks` — replace that step with:
+
+1. Immediately invoke `/create-milestone` (Workflow B) to create one GitHub issue per `## Task N`, link them to a milestone, and bring it to `[READY]`.
+2. Tell the user the milestone is ready and that execution happens in a **new session** — suggest running `/start-milestone <milestone-number>` there. Do not ask "Subagent-Driven or Inline Execution?" in this session.
+
+Applies regardless of which plan document path was used (`docs/superpowers/plans/*.md` or `docs/plans/*/`). See "Plan Execution — Task Accounting" below for why the issues must exist before any code is written.
+
 ## Scope Integrity
 
 **Never silently drop scope.** When implementing a plan, every task and every acceptance criterion must be either:
