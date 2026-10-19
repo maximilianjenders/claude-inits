@@ -83,6 +83,14 @@ After a plan is saved — whether via `superpowers:writing-plans` directly (e.g.
 
 Applies regardless of which plan document path was used (`docs/superpowers/plans/*.md` or `docs/plans/*/`). See "Plan Execution — Task Accounting" below for why the issues must exist before any code is written.
 
+## Skill Stop Boundaries
+
+**An explicit STOP in a skill is authoritative, not a suggestion to weigh against the user's phrasing.** Skills sometimes define a hard checkpoint — e.g. `/fix-pr`'s Feedback Mode: "STOP here. Do NOT implement. The whole point is to create issues in a small context, then implement in a fresh one." When a skill says this, only cross it on an explicit, unambiguous instruction to proceed past it — a fresh command invocation (e.g. `/fix-pr --implement`), or the user saying so in plain terms in response to that exact question.
+
+**Do not infer permission to cross a stop boundary from wording given in answer to a different question.** A user answering "how should we handle these findings" with "fix everything" is scoping *what* should eventually be fixed, not authorizing skipping the skill's designed handoff point. If a skill's stop instruction and the user's literal words could both be read either way, resolve it by stopping and asking — never by picking the reading that lets you keep going. Reasoning like "I'm already deep in context so the rationale for a fresh session doesn't apply to me" is not a valid basis for skipping a documented checkpoint — the checkpoint may exist for reasons beyond context size (e.g. giving the user a review/approval point), and it is not your call to decide it doesn't apply.
+
+**Why:** silently blew through `/fix-pr`'s Feedback Mode → Implement Mode boundary — created the requested issues, then kept going into full implementation on an ambiguous "fix everything" without the user ever confirming they wanted implementation to start in this session. See [[feedback_skill_stop_boundaries]].
+
 ## Scope Integrity
 
 **Never silently drop scope.** When implementing a plan, every task and every acceptance criterion must be either:
