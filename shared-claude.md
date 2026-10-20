@@ -56,40 +56,20 @@ Use `/update-docs` at session end.
 
 ## HARD OVERRIDE: Plannotator Review Gate
 
-**Every design doc or spec MUST go through plannotator before implementation planning.** This applies regardless of how the doc was created — brainstorming skill, manual writing, or any other flow.
+**Every design doc or spec MUST go through plannotator before implementation planning**, however it was created. After writing it: commit → invoke `plannotator:plannotator-annotate` → address all feedback → ONLY THEN writing-plans / writing-implementation-tasks.
 
-After writing any design doc:
-1. Commit it
-2. Immediately invoke `plannotator:plannotator-annotate` on the document
-3. Address all annotation feedback
-4. ONLY THEN proceed to writing-plans or writing-implementation-tasks
-
-**Brainstorming skill override (steps 5-8):** After clarifying questions and approach selection (steps 1-4), skip verbal design presentation — write the spec directly to `docs/superpowers/specs/`, then follow the gate above. Verbal presentation is redundant when plannotator gives an interactive visual review.
-
-- Step 5 (present design sections verbally) → skipped, write the doc instead
-- Step 7 (spec-review-subagent loop) → replaced by plannotator-annotate
-- Step 8 (user reviews spec) → replaced by plannotator-annotate
-
-The `ExitPlanMode` hook in plannotator is disabled — this explicit invocation replaces it.
+**Brainstorming override:** after steps 1-4 (questions, approach), skip step 5 (verbal design presentation) and write the spec straight to `docs/superpowers/specs/`. Steps 7 (spec-review subagent) and 8 (user reviews spec) are replaced by plannotator-annotate. The plannotator `ExitPlanMode` hook is disabled — this explicit invocation replaces it.
 
 ## HARD OVERRIDE: Plan → Milestone Gate
 
-**`writing-plans`' own "Execution Handoff" step is disabled.** That step offers "Subagent-Driven" vs "Inline Execution" as an in-session choice — but presenting it skips issue creation entirely, which is exactly how a plan gets executed with no task-level GitHub issues to check scope against.
+**`writing-plans`' "Execution Handoff" step is disabled** — it skips issue creation. After any plan is saved (`docs/superpowers/plans/*.md` or `docs/plans/*/`, via writing-plans or writing-implementation-tasks):
 
-After a plan is saved — whether via `superpowers:writing-plans` directly (e.g. dispatched from brainstorming) or via `writing-implementation-tasks` — replace that step with:
-
-1. Immediately invoke `/create-milestone` (Workflow B) to create one GitHub issue per `## Task N`, link them to a milestone, and bring it to `[READY]`.
-2. Tell the user the milestone is ready and that execution happens in a **new session** — suggest running `/start-milestone <milestone-number>` there. Do not ask "Subagent-Driven or Inline Execution?" in this session.
-
-Applies regardless of which plan document path was used (`docs/superpowers/plans/*.md` or `docs/plans/*/`). See "Plan Execution — Task Accounting" below for why the issues must exist before any code is written.
+1. Immediately invoke `/create-milestone` (Workflow B): one issue per `## Task N`, milestone to `[READY]`.
+2. Tell the user execution happens in a **new session** via `/start-milestone <number>`. Never ask "Subagent-Driven or Inline Execution?".
 
 ## Skill Stop Boundaries
 
-**An explicit STOP in a skill is authoritative, not a suggestion to weigh against the user's phrasing.** Skills sometimes define a hard checkpoint — e.g. `/fix-pr`'s Feedback Mode: "STOP here. Do NOT implement. The whole point is to create issues in a small context, then implement in a fresh one." When a skill says this, only cross it on an explicit, unambiguous instruction to proceed past it — a fresh command invocation (e.g. `/fix-pr --implement`), or the user saying so in plain terms in response to that exact question.
-
-**Do not infer permission to cross a stop boundary from wording given in answer to a different question.** A user answering "how should we handle these findings" with "fix everything" is scoping *what* should eventually be fixed, not authorizing skipping the skill's designed handoff point. If a skill's stop instruction and the user's literal words could both be read either way, resolve it by stopping and asking — never by picking the reading that lets you keep going. Reasoning like "I'm already deep in context so the rationale for a fresh session doesn't apply to me" is not a valid basis for skipping a documented checkpoint — the checkpoint may exist for reasons beyond context size (e.g. giving the user a review/approval point), and it is not your call to decide it doesn't apply.
-
-**Why:** silently blew through `/fix-pr`'s Feedback Mode → Implement Mode boundary — created the requested issues, then kept going into full implementation on an ambiguous "fix everything" without the user ever confirming they wanted implementation to start in this session. See [[feedback_skill_stop_boundaries]].
+**An explicit STOP in a skill is authoritative** (e.g. `/fix-pr` Feedback Mode). Cross it only on an unambiguous instruction to proceed past that point — a fresh invocation like `/fix-pr --implement`, or a plain yes to that exact question. An answer to a different question ("fix everything") scopes *what* gets fixed; it doesn't authorize skipping the handoff. If either reading is possible, stop and ask. "I already have the context" is no reason to skip a checkpoint — it may exist to give the user a review point. See [[feedback_skill_stop_boundaries]].
 
 ## Scope Integrity
 
@@ -103,17 +83,14 @@ When reviewing issues for completion, check each acceptance criterion individual
 
 ## Plan Execution — Task Accounting
 
-When implementing from a plan document with numbered `## Task N` sections (e.g. `docs/superpowers/plans/*.md`, `docs/plans/*/`), follow these rules — they exist because the prescriptive "never drop scope" rule above was violated and went undetected until a user caught it by eye. Mechanical checkpoints, not self-honesty, are what close the gap.
+When implementing from a plan with `## Task N` sections:
 
-**Plan tasks become GitHub issues before any code is written.** Use `/create-milestone`, `/writing-implementation-tasks`, or `/create-issue` to generate one issue per `## Task N`. The plan doc is the reference; the issues are the work. Implementing from a plan without creating the task issues first is forbidden — it makes scope drops invisible because there is no task-granularity tracker for anyone (human or audit agent) to check against.
+- **One GitHub issue per task before any code is written.**
+- **One task = one commit = one closed issue**, citing the issue number. Only exception: `/start-milestone` phase batch commits — reviewers must then verify each task's acceptance criteria individually against the diff.
+- **Driver issue can't close while task issues are open.** Defer a task by labelling it `deferred` and referencing it in the driver's close comment.
+- **Each acceptance criterion needs evidence at close** (test name, query output, screenshot URL). No evidence = not closed.
 
-**One task = one commit = one closed issue, with one accepted exception.** A commit body must cite the specific task issue(s) it closes, by number: `(feat) refs #505, closes #560: task 3 — PayoutScenario typed-dict`. A commit that claims to implement "multiple layers", "six layers", or "several tasks" without listing each issue number is a silent-drop red flag — split it into one commit per task, each closing its own issue.
-
-**Exception — `/start-milestone` phase batch commits.** `/start-milestone` may commit an entire phase (multiple tasks implemented in parallel) as a single commit citing every issue it closes (`Refs #70, #71, #72`), instead of one commit per task. This is a deliberate cost trade: batching means the audit can no longer use "commit references exactly one issue" as a cheap mechanical proxy for "this task's scope wasn't dropped" — so whoever reviews a batched commit (phase reviewer, PR reviewer, or plan audit) MUST manually verify each task's acceptance criteria individually against the shared diff, per the "Verify each acceptance criterion at close" rule below. Do not wave through a batched commit on the strength of correct issue citations alone — citations being correct is necessary, not sufficient. Outside of `/start-milestone`'s phase execution, the one-commit-per-task rule is not optional.
-
-**Driver-issue close gate.** When a plan has a "driver" issue (the user-facing symptom that spawned the plan), the driver may not close while any task issue in the plan remains open. To defer a task: leave the task issue open, label it `deferred`, and reference it from the driver's close comment. Absent an explicit defer, every plan task is required before the driver closes. Closing the driver with open task issues is the signature of the silent-drop bug.
-
-**Verify each acceptance criterion at close.** Before closing a task issue, each acceptance criterion gets evidence in the close comment: a test name that exercises it, a query output, or a screenshot URL. No evidence = not closed. The PR test-plan checkbox ("[x] unit tests pass") is not AC-level evidence.
+Full rules and rationale: `~/.claude/shared/plan-execution.md` — read it before closing plan task issues or reviewing a plan-driven PR.
 
 ## Test Infrastructure
 
@@ -125,20 +102,15 @@ When implementing from a plan document with numbered `## Task N` sections (e.g. 
 - **Test-first:** Write tests before code. Don't accumulate untested code.
 - **Quality bias:** Never auto-defer quality issues. Fix now or ask user.
 - **Ask, don't work around:** Stop and ask when credentials missing, deps unavailable, or requirements ambiguous.
-- **Understand before fixing:** When given feedback about broken or wrong behavior, don't jump to a fix. Diagnose the root cause, examine the codebase, and capture the actual problem behind the reported symptom.
-  - Don't tune parameters blindly. When a limit, threshold, or budget appears insufficient, investigate why it's being exceeded before adjusting it. "MAX_TOKENS hit → increase max_tokens" is symptom-chasing. The root cause may be entirely different (e.g., hidden token consumption, wrong model defaults, misconfigured middleware). Verify the actual data — measure sizes, query the DB, check logs — before proposing a number change.
-- **Verify, don't assert:** Test your fix before claiming it works — run it, show output. Quick fixes especially need validation; "this should work now" without evidence is not acceptable.
-- **Modular by default:** Build small, focused units — functions that do one thing, components that render one concern, files that own one responsibility. When adding to an existing file, ask: does this belong here, or does it need its own module? Bias toward extraction over extension. Guardrails: functions over 50 lines, components over 300 lines.
-- **File size — why it matters:** Large files with mixed concerns (routes + helpers, UI + logic, multiple domains) force AI to scan hundreds of lines to locate relevant code. The cost is not the line count itself but the navigation overhead of interleaved concerns. Keep logic-containing files small so each file owns one responsibility.
-- **File size — guidelines for logic files:** Extract at 400 lines, split by 500. These apply to files with branching logic: route handlers, service modules, React components, utility libraries. 400 is the warning to extract; 500 is the hard ceiling.
-- **File size — test files:** 500-line guideline. Split when a test file covers multiple behaviors that could live in separate files (e.g., CRUD vs. analytics, unit vs. integration). A single cohesive test suite that happens to be long is less costly than a mixed one.
-- **File size — exempt: data-only files.** Seed data, lookup tables, generated code, and configuration files with no branching logic are exempt from line limits. No mixed concerns = no navigation cost. Exemptions are declared in directory-level CLAUDE.md files close to the code.
-- **File-level targets in refactoring:** When refactoring for size, acceptance criteria MUST include file-level line count targets, not just function-level. AI will minimize functions without reducing files unless explicitly told to.
-- **No `dict[str, Any]` for structured data:** Use TypedDict, dataclass, or NamedTuple for data passed between functions. `dict[str, Any]` is only acceptable at I/O boundaries (JSON parsing, external APIs).
-- **Declarative mappings over imperative wiring:** When data flows through multiple layers (e.g., external format → service → model), define the field mapping once as a declarative data structure — not as imperative code repeated across files. Each manual `if field: set(field)` is a silent-drop bug waiting to happen. A single mapping table + a generic applicator means adding a field = adding one row. Test coverage: one test that iterates the mapping and verifies every field arrives at the destination.
-- **Never accept-and-ignore function parameters:** If a function signature accepts a parameter, the function body must use it. Accepting a parameter and then hardcoding the value (e.g., `def f(flag=False): ... flag_field=False`) is a silent bug — callers believe they're controlling behavior but aren't. Lint for this: any parameter not referenced in the function body is suspect.
-- **Helpers near callers, not sources:** When extracting helpers, place them where they're used. If 2+ functions across different files would benefit, extract to a shared module immediately — don't leave helpers stranded in their original file.
-- **Generalize fixes:** When fixing a bug or mistake, assume it could be a recurring pattern. Search for similar instances across the codebase. If you find them, flag them to the user and suggest a principled fix. If the root cause is a common trap, suggest adding it to GOTCHAS.md. A fix is not complete until either (1) the prevention is implemented, or (2) an issue is created for it. Describing the root cause without acting on it is not a fix.
+- **Understand before fixing:** Diagnose the root cause behind a reported symptom before changing anything. Don't tune parameters blindly — "MAX_TOKENS hit → increase max_tokens" is symptom-chasing; measure sizes, query the DB, check logs first.
+- **Verify, don't assert:** Run the fix and show output before claiming it works. "This should work now" is not evidence.
+- **Modular by default:** Small units that each own one responsibility; bias toward extraction over extension. Guardrails: functions over 50 lines, components over 300 lines.
+- **File size:** Mixed concerns in one file cost navigation, not line count. Logic files (routes, services, components, utilities): extract at 400 lines, hard ceiling 500. Test files: ~500, split when they cover separable behaviors. Data-only files (seed data, lookup tables, generated code, config) are exempt — declare exemptions in a directory-level CLAUDE.md. When refactoring for size, acceptance criteria MUST include file-level line targets, not just function-level.
+- **No `dict[str, Any]` for structured data:** Use TypedDict, dataclass, or NamedTuple; `dict[str, Any]` only at I/O boundaries (JSON parsing, external APIs).
+- **Declarative mappings over imperative wiring:** When data flows through layers, define the field mapping once as a table + generic applicator, with one test iterating the mapping to the destination. Each manual `if field: set(field)` is a silent-drop bug.
+- **Never accept-and-ignore parameters:** Every parameter in a signature must be used in the body; an unreferenced parameter is a silent bug.
+- **Helpers near callers:** Place extracted helpers where they're used; if 2+ files need them, extract to a shared module immediately.
+- **Generalize fixes:** Assume a bug is a pattern — search for similar instances, flag them, suggest a principled fix (and a GOTCHAS.md entry for common traps). A fix isn't complete until the prevention is implemented or an issue is created for it.
 
 ## When to Run Tests
 

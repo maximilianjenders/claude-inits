@@ -160,4 +160,4 @@ A plan document alone is not a work tracker. Before any code is written against 
 2. Each issue references its task file via `## Task Spec` (per create-milestone's template).
 3. The driver issue (the one that spawned the plan) must list the task issues as blockers/children.
 
-Implementing from this plan's task files without task-level issues violates the shared `~/Gits/CLAUDE.md` "Plan Execution — Task Accounting" rule and is the primary mechanism by which scope drops go undetected. If the user asks to skip issue creation and go straight to implementation, push back: the issues take minutes to create and make every later audit possible.
+Implementing from this plan's task files without task-level issues violates the "Plan Execution — Task Accounting" rules (`~/.claude/shared/plan-execution.md`) and is the primary mechanism by which scope drops go undetected. If the user asks to skip issue creation and go straight to implementation, push back: the issues take minutes to create and make every later audit possible.

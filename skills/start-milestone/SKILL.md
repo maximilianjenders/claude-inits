@@ -314,145 +314,13 @@ Pass ALL of this into the reviewer prompt. See `phase-reviewer-prompt.md` for th
 
 ## Resume & Crash Recovery
 
-### State Sources
+**Fresh start** (milestone `[READY]` and no issue carries a status label): skip — nothing to recover.
 
-1. **GitHub labels** - Issue status (in-progress, ready-for-review, code-complete, blocked-failed)
-2. **Git log** - Which issues have commits (`git -C <worktree-path> log --oneline --grep="Refs #N"`)
-3. **Issue state** - Open vs closed
+**Otherwise** (milestone `[ACTIVE]`, or any issue labelled `in-progress` / `ready-for-review` / `code-complete` / `blocked-failed`, or `--retry-failed`): read `~/.claude/skills/start-milestone/resume.md` for state assessment and recovery actions before dispatching anything.
 
-### On Startup: State Assessment
+## Completion, PR Handoff & Manual Tasks
 
-**Step 1: Fetch all issue data**
-
-```
-mcp__workflow__gh_milestone_issues(milestone=5, state="all")
-```
-
-**Step 2: Check commits for each issue**
-
-```bash
-# For each issue number, check if commit exists
-git -C <worktree-path> log --oneline --grep="Refs #N" --grep="#N" | head -1
-```
-
-Note: With batch commits, one commit may reference multiple issues (e.g., `Refs #70, #71, #72`). The grep still works — it finds the commit containing each issue number.
-
-**Step 3: Categorize each issue**
-
-| Label | Closed? | Has Commit? | State | Action |
-|-------|---------|-------------|-------|--------|
-| `code-complete` | Yes | Yes | Done | Skip |
-| `code-complete` | Yes | No | Inconsistent | Warn user, verify manually |
-| `ready-for-review` | No | No | Review pending | Queue for review → commit |
-| `ready-for-review` | No | Yes | Inconsistent | Should be closed, fix labels |
-| `in-progress` | No | - | Work incomplete | Dispatch recovery agent |
-| `blocked-failed` | No | - | Failed | Skip (or `--retry-failed`) |
-| `manual` | No | - | Manual task | Skip (handled in interactive loop) |
-| *(none)* | No | - | Not started | Queue for implementation |
-
-### Recovery Actions by State
-
-**`ready-for-review` issues:**
-- Already implemented, tests passed, self-reviewed
-- Dispatch review agent to review all pending changes
-- After review passes, orchestrator commits and closes
-
-**`in-progress` issues:**
-- Check for partial work: `git -C <worktree-path> status`, `git -C <worktree-path> diff`, commits
-- Dispatch recovery agent with context (see `recovery-prompt.md`)
-- Agent continues work → marks ready-for-review
-- Then proceeds to review → commit flow
-
-**`blocked-failed` with `--retry-failed`:**
-- Reset label to none
-- Queue for fresh implementation attempt
-
-## Completion & PR Handoff
-
-### Final State Query
-
-```
-mcp__workflow__gh_milestone_issues(milestone=5, state="all")
-```
-
-### Happy Path (All non-manual issues `code-complete`)
-
-If no `manual` issues remain open:
-```
-All 12 issues complete. Ready for PR. Run /create-pr #5 when you're ready.
-```
-
-If `manual` issues are still open:
-```
-All automated issues are complete (10/12). Run /create-pr #5 when ready.
-
-Note: The following manual issues are still open:
-- #46: Run migration and validate data
-- #48: Review enriched dataset
-
-Handle these before or after PR creation — /merge-pr will block until all are closed.
-```
-
-**Do NOT auto-invoke `/create-pr`.** Inform the user that all issues are complete and they can run `/create-pr #N` (with the milestone number) manually when ready.
-
-### Partial Failure (Some `blocked-failed`)
-
-```
-## Milestone Summary
-
-Complete: 10 issues
-Failed: 2 issues
-  - #15: Add retry endpoint (failed: tests not passing after retry)
-  - #18: Widget component (failed: spec review rejected twice)
-
-### Suggestions
-1. Retry failed issues: `/start-milestone 5 --retry-failed`
-2. Skip failures and create PR anyway: `/create-pr #5`
-3. Fix manually, then resume: `/start-milestone 5`
-```
-
-## Manual Task Loop
-
-After all automated phases complete, check for open `manual` issues:
-
-```
-mcp__workflow__gh_milestone_issues(milestone=5, state="open")
-# Filter for issues with "manual" label
-```
-
-**If no manual issues remain:** proceed to standard completion (suggest `/create-pr #N`).
-
-**If manual issues exist:** enter interactive loop in the main session (NOT a subagent).
-
-### Per Manual Issue
-
-1. Present the issue title and `## Manual Task Prompt` section from the issue body
-2. Ask the user via `AskUserQuestion`:
-   - **"Work on this now"** — Stay in terminal, read full issue, assist interactively. When done, ask if issue should be closed with `code-complete` label.
-   - **"Skip for later"** — Move to next manual issue
-   - **"Already done"** — Close issue with `code-complete` label via `gh_bulk_issues(action="close", issues=[N], label="code-complete")`
-
-### After Loop
-
-Print summary and suggest `/create-pr #N` (with actual milestone number). Always include a reminder about remaining manual issues:
-
-```
-All automated issues are complete. Run /create-pr #5 when ready.
-
-Note: The following manual issues are still open:
-- #46: Run migration and validate data
-- #48: Review enriched dataset
-
-Handle these before or after PR creation — /merge-pr will block until all are closed.
-```
-
-If all manual issues were handled, omit the note.
-
-### Multi-Session Resume
-
-When `/start-milestone` is re-run and all automated issues are `code-complete`:
-- Skip straight to the manual task loop
-- Issue bodies (Manual Task Prompt) are the source of truth — no session state needed
+After the last automated phase is committed — or on a re-run where all automated issues are already `code-complete` — read `~/.claude/skills/start-milestone/completion.md` and follow it. **Never auto-invoke `/create-pr`.**
 
 ## Execution
 
@@ -492,17 +360,11 @@ mcp__workflow__gh_bulk_issues(action="close", issues=[70, 71, 72], label="code-c
 - Issues are still traceable via `Refs #N` in the commit message
 - Resume still works: `git log --grep="Refs #70"` finds the batch commit
 
-### Label Updates (by agents)
-
-```
-# Mark in-progress (agent starting work)
-mcp__workflow__gh_update_issue(issue=15, add_labels=["in-progress"])
-
-# Mark ready-for-review (agent finished, no commit)
-mcp__workflow__gh_update_issue(issue=15, remove_labels=["in-progress"], add_labels=["ready-for-review"])
-```
+Batch commits are the documented exception in `~/.claude/shared/plan-execution.md` — they are only acceptable because the phase reviewer verifies each issue's acceptance criteria individually against the shared diff.
 
 ### Label Updates (by orchestrator)
+
+Agents set `in-progress` / `ready-for-review` themselves (see the subagent prompt templates).
 
 ```
 # Mark code-complete after batch commit (close all phase issues)
@@ -541,11 +403,8 @@ When starting/resuming a milestone:
 - [ ] **Write `## Branch` section to milestone description** with branch name and worktree path (skip if already active)
 
 ### Resume Check
-- [ ] Query all issues and their labels
-- [ ] Check git log (`git -C <worktree-path> log`) for commits referencing each issue
-- [ ] Categorize issues by state (done, ready-for-review, in-progress, not-started)
-- [ ] Display resume state to user
-- [ ] Determine which phase to resume from
+- [ ] Fresh start (`[READY]`, no status labels on any issue) → skip to Phase Execution
+- [ ] Otherwise: read `~/.claude/skills/start-milestone/resume.md`, categorize issues, display resume state, determine resume phase
 
 ### Phase Execution (repeat for each phase - NO STOPPING BETWEEN PHASES)
 - [ ] **Step 1: Implementation** - Dispatch parallel agents for unblocked issues
@@ -571,9 +430,5 @@ When starting/resuming a milestone:
 - [ ] **Immediately proceed to next phase** (do NOT ask user to continue)
 
 ### Completion
-- [ ] Verify all non-manual issues are code-complete or blocked-failed
-- [ ] Check for open `manual` issues in milestone
-- [ ] If manual issues exist: enter interactive manual task loop (see Manual Task Loop section)
-- [ ] On success: inform user to run `/create-pr #N` (with milestone number) when ready (do NOT auto-invoke)
-- [ ] **Include reminder about open manual issues** in the `/create-pr #N` suggestion
-- [ ] On partial failure: show summary and options
+- [ ] Read `~/.claude/skills/start-milestone/completion.md` and follow it (final state query, manual task loop, `/create-pr #N` suggestion with manual-issue reminder, partial-failure summary)
+- [ ] Do NOT auto-invoke `/create-pr`
