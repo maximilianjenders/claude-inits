@@ -125,14 +125,28 @@ Proceeding with PR creation...
    - Use `Fixes #X` syntax (issues are already closed via `update-issue`)
 
 3. **Plan Audit + AI Review (parallel):**
-   - Pre-compute diffs pinned to merge base via MCP: `mcp__workflow__git_diff(mode="stat")` and `mcp__workflow__git_diff(mode="full")`
-   - **Large diff threshold:** If full diff > **1000 lines**, use large diff mode — pass only stat summary to agents, which pull per-file diffs on demand
+   - Pin the merge base: `mcp__workflow__git_diff(mode="stat")` → `merge_base`. **Do NOT fetch the full diff and do NOT read the prompt templates** — the agents read both themselves, so neither enters this session.
    - Gather linked issue titles and acceptance criteria
    - Fetch design doc and implementation plan paths from milestone description
-   - Dispatch **two agents in parallel:**
-     - **Plan audit agent** using template in [`plan-audit-prompt.md`](plan-audit-prompt.md) — checks design doc + implementation plan vs actual changes
-     - **Code review agent** using template in [`reviewer-prompt.md`](reviewer-prompt.md) — checks code quality, standards, spec compliance
+   - Dispatch **two agents in parallel** with the short prompt below:
+     - **Plan audit agent** → `~/.claude/skills/create-pr/plan-audit-prompt.md` — design doc + implementation plan vs actual changes
+     - **Code review agent** → `~/.claude/skills/create-pr/reviewer-prompt.md` — code quality, standards, spec compliance
    - **If plan audit finds gaps:** STOP and present gaps prominently to user. User must acknowledge each gap (accept as-is, defer to backlog issue, or fix now) before proceeding to deploy.
+   - **Stalled agent:** if an agent sends 3+ idle notifications with no report, stop waiting — see GOTCHAS.md "/create-pr review agent stalls". TaskStop it and redispatch the same prompt.
+
+   Dispatch prompt (fill the values, nothing else):
+   ```
+   Read ~/.claude/skills/create-pr/<reviewer-prompt.md | plan-audit-prompt.md> and follow it.
+   PR: #<N> — <title>
+   Branch: <branch> → <base>
+   Milestone: <title>
+   Working directory: <PROJECT_DIR>
+   Merge base: <merge_base>
+   Design doc: <path or None>
+   Implementation plan: <path or None>   (plan audit only)
+   Issues:
+   - #12: <title> — <brief acceptance criteria>
+   ```
 
 4. **Create Issues for Review Findings:**
    - If review finds issues, create a GitHub issue for EACH finding
@@ -217,12 +231,12 @@ Use after fixing issues found during manual staging testing. Skips PR creation, 
 - [ ] Create PR with title, description, linked issues
 
 ### Plan Audit + Code Review (skip if `--retest` — code review repeats until approved)
-- [ ] Pre-compute diffs: `mcp__workflow__git_diff(mode="stat")` and `mcp__workflow__git_diff(mode="full")`
+- [ ] Pin merge base: `mcp__workflow__git_diff(mode="stat")` — no full diff, no template reads in this session
 - [ ] Gather linked issue titles and acceptance criteria
 - [ ] Fetch design doc and implementation plan paths from milestone description
-- [ ] Dispatch **two agents in parallel:**
-  - [ ] Plan audit agent using [`plan-audit-prompt.md`](plan-audit-prompt.md) template
-  - [ ] Code review agent using [`reviewer-prompt.md`](reviewer-prompt.md) template
+- [ ] Dispatch **two agents in parallel** with the short dispatch prompt (template path + values):
+  - [ ] Plan audit agent → `plan-audit-prompt.md`
+  - [ ] Code review agent → `reviewer-prompt.md`
 - [ ] **If plan audit found gaps: STOP and present to user.** User must acknowledge each gap (accept as-is, defer to backlog issue, or fix now) before proceeding to deploy.
 - [ ] If code review issues found: create GitHub issue for EACH finding with `pr-review` label
 - [ ] Fix ALL pr-review issues using `/start-issue` workflow
@@ -249,10 +263,9 @@ Use after fixing issues found during manual staging testing. Skips PR creation, 
 
 **Preferred: MCP**
 ```
-# Pre-compute diffs for review (pinned to merge-base)
+# Pin the merge base for the review agents (they pull the diff themselves)
 # IMPORTANT: Always pass cwd=PROJECT_DIR (resolved in pre-flight)
 mcp__workflow__git_diff(base="master", mode="stat", cwd=PROJECT_DIR)
-mcp__workflow__git_diff(base="master", mode="full", cwd=PROJECT_DIR)
 
 # Create PR with full metadata
 mcp__workflow__gh_create_pr(
