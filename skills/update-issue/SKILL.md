@@ -138,6 +138,7 @@ gh issue view $ISSUE_NUMBER --json milestone --jq '.milestone.title'
 - [ ] Verify current status (check existing labels)
 - [ ] Verify transition is valid (see table above)
 - [ ] For `code-complete`: confirm work was committed first
+- [ ] For `code-complete` on a plan task or driver issue: follow `~/.claude/shared/plan-execution.md` (AC evidence in the close comment; driver stays open while task issues are open)
 
 ### After Updating
 - [ ] Check if milestone status should change:

@@ -39,7 +39,7 @@ Task tool (general-purpose):
 
     ## Your Task
 
-    Read the design document and implementation plan fully, then systematically check the implementation against them.
+    Read the design document and implementation plan fully, then systematically check the implementation against them. The task-accounting rules you are enforcing are in `~/.claude/shared/plan-execution.md`.
 
     ### Audit Checklist
 
