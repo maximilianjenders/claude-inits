@@ -49,7 +49,7 @@ Also analyze the current conversation for:
 Read each file individually:
 - [ ] Read `CLAUDE.md` (root and any sub-project CLAUDE.md files)
 - [ ] Read `README.md`
-- [ ] Read `GOTCHAS.md` (if exists)
+- [ ] `GOTCHAS.md` (if exists): **do not read it in full** — it grows unbounded and is append-mostly. List its headings with `grep -n "^##" GOTCHAS.md`, then read only the sections related to this session's work (by line range) to check for duplicates or stale entries before adding.
 
 ### 3. Classify Changes
 
@@ -96,7 +96,7 @@ Do not remove anything without explicit approval. If nothing to prune, skip this
 
 ```bash
 # Stage only if changed
-git add CLAUDE.md README.md 2>/dev/null
+git add CLAUDE.md README.md GOTCHAS.md 2>/dev/null
 git status --short
 ```
 
@@ -133,7 +133,7 @@ Report what was updated and why.
 ### Read ALL Docs (mandatory before any decisions)
 - [ ] Read `CLAUDE.md` (root + sub-project files)
 - [ ] Read `README.md`
-- [ ] Read `GOTCHAS.md` (if exists)
+- [ ] `GOTCHAS.md` (if exists): headings via `grep -n "^##"`, then only the related sections — never the full file
 
 ### Classify Changes
 - [ ] CLAUDE.md: Apply landmine test — non-obvious conventions/rules only
