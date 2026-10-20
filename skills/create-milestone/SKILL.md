@@ -202,8 +202,8 @@ mcp__workflow__gh_bulk_issues(
     ]
 )
 
-# Update issue body (e.g., to add bidirectional dependency links)
-mcp__workflow__gh_update_issue(issue=15, body="$UPDATED_BODY")
+# Add bidirectional dependency links (appended server-side, no body re-read)
+mcp__workflow__gh_update_issue(issue=15, append_body="Blocks: #16, #17")
 ```
 
 **IMPORTANT:** Do NOT use `gh api -f description=...` in Bash for milestone descriptions — it corrupts newlines into literal `\n`. Always use the MCP `gh_milestone` tool for create/edit operations.

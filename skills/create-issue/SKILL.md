@@ -78,7 +78,7 @@ git rev-parse --short HEAD
 ### Step 4: Create Issue
 
 **Preferred: MCP**
-**Read `~/.claude/shared/issue-body-template.md`** for the issue body template. Include `## Base Commit` with the hash from Step 3. For quick issues, omit the `## Task Spec` section (no implementation plan exists).
+Quick issues use the skeleton below — do not read the full template. Sections in this order: `## Summary`, `## Milestone` (relative link), `## Acceptance Criteria`, `## Base Commit` (hash from Step 3). No `## Task Spec` and no `## Dependencies` (pass `blocked_by_issues` instead). For a `manual` issue, add `## Manual Task Prompt` with **Context**, **Steps**, **Success criteria**, **Resources**.
 
 ```
 mcp__workflow__gh_bulk_issues(
@@ -86,7 +86,7 @@ mcp__workflow__gh_bulk_issues(
     milestone="Backlog",
     new_issues=[{
         "title": "Issue title",
-        "body": "## Summary\n[What this accomplishes]\n\n## Milestone\n[Milestone Name](../../milestone/N)\n\n## Acceptance Criteria\n- [ ] Criterion 1\n- [ ] Criterion 2",
+        "body": "## Summary\n[What this accomplishes]\n\n## Milestone\n[Milestone Name](../../milestone/N)\n\n## Acceptance Criteria\n- [ ] Criterion 1\n- [ ] Criterion 2\n\n## Base Commit\n`abc1234`",
         "labels": []
     }]
 )
@@ -102,11 +102,8 @@ gh issue create --title "Issue title" --body "..." --milestone "Backlog"
 If the issue has dependencies on existing issues, update those issues to add "Blocks: #N" references:
 
 ```
-# Read existing issue body
-mcp__workflow__gh_issue(action="view", issue=42)
-
-# Update with new "Blocks" reference
-mcp__workflow__gh_update_issue(issue=42, body="$UPDATED_BODY_WITH_BLOCKS_REF")
+# Appended server-side — no need to read the existing body
+mcp__workflow__gh_update_issue(issue=42, append_body="Blocks: #123")
 ```
 
 ### Step 5: Output
@@ -204,7 +201,7 @@ Run `/create-milestone` to set up the milestone, or `/start-milestone` if milest
 
 ## Issue Body Template
 
-**Read `~/.claude/shared/issue-body-template.md`** for the canonical template with all variables and rules.
+Full mode: **read `~/.claude/shared/issue-body-template.md`** for the canonical template with all variables and rules. Quick mode uses the inline skeleton in Step 4.
 
 Key points:
 - No `## Dependencies` section (handled by `blocked_by_indices` / `blocked_by_issues` in `gh_bulk_issues`)
@@ -226,8 +223,7 @@ mcp__workflow__gh_milestone(action="find", identifier="Backlog")
 mcp__workflow__gh_bulk_issues(action="create", milestone="Backlog", new_issues=[...])
 
 # Update bidirectional dependencies
-mcp__workflow__gh_issue(action="view", issue=42)
-mcp__workflow__gh_update_issue(issue=42, body="$UPDATED_BODY")
+mcp__workflow__gh_update_issue(issue=42, append_body="Blocks: #123")
 ```
 
 **Fallback: Bash**
