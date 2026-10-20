@@ -237,7 +237,7 @@ Phases provide checkpoints for crash recovery. Agents work in parallel without c
 
 **Per phase:**
 1. **Implementation** — Filter out issues labeled `manual` (they are skipped entirely). Dispatch parallel agents (max 3) for remaining issues. Each: implement → test → self-review → mark `ready-for-review`. Agents do NOT commit.
-2. **Review** — Dispatch single review agent with pre-computed diffs. If changes requested → dispatch fix agents → re-review.
+2. **Review** — Stage the phase, dispatch a single review agent that pulls the staged diff itself. If changes requested → dispatch fix agents → re-stage → re-review.
 3. **Batch Commit** — Stage all phase files, single commit referencing all issues. Close all issues. This is the checkpoint.
 4. **Context Summary** — Output a concise phase summary so auto-compaction knows what to keep. All implementation details, diffs, and review feedback from the phase can be discarded.
 
@@ -267,8 +267,8 @@ Before dispatching parallel agents within a phase, check for file overlap:
 6. **DO NOT commit or close issue**
 
 **Review Agent (per phase):**
-1. Receive pre-computed diffs and agent summaries from orchestrator
-2. Review all changes from phase together
+1. Receive worktree path, stat summary and agent summaries from orchestrator; pull the staged diff with `git -C <worktree> diff --cached`
+2. Review all changes from phase together; report the `--stat` totals line it reviewed
 3. Check code quality, patterns, cross-issue consistency
 4. Only read individual files if diff is unclear or surrounding context needed
 5. Approve or list specific issues needing fixes
@@ -282,36 +282,48 @@ Before dispatching parallel agents within a phase, check for file overlap:
 
 **Orchestrator (this skill):**
 1. Coordinate phases and agents
-2. Pre-compute review context (diffs, agent summaries) before dispatching reviewer
+2. Stage the phase and prepare review context (stat summary, agent summaries) before dispatching reviewer — never the full diff
 3. After review passes, batch commit all phase changes in a single commit
 4. Mark all phase issues code-complete and close them
 5. Track checkpoints for resume
 
-## Pre-Computed Review Context
+## Review Context
 
-**Before dispatching the review agent**, the orchestrator must prepare:
+**Before dispatching the review agent**, the orchestrator prepares:
 
 ```bash
 # All git commands use -C to target the worktree. NEVER use cd && git.
-# 1. Stage all changes (including new files) so diff captures everything
+# 1. Stage all changes (including new files) so the staged diff captures everything
 git -C <worktree-path> add -A
 
-# 2. Capture diff summary (staged changes)
+# 2. Capture the diff summary (staged changes) — the only diff output the orchestrator reads
 git -C <worktree-path> diff --cached --stat
 
-# 3. Capture full diff (staged changes)
-git -C <worktree-path> diff --cached
-
-# 4. Collect agent summaries (what they built, files changed, self-review notes)
+# 3. Collect agent summaries (what they built, files changed, self-review notes)
 ```
 
-Leave changes staged — the batch commit step uses them directly.
+Leave changes staged — the batch commit step uses them directly. Nothing touches the worktree between staging and review (implementation agents are done, fix agents run after the review), so the staged state is the snapshot.
 
 > **Why stage first?** Bare `git diff` misses new/untracked files. Staging then using `--cached` ensures the reviewer sees ALL changes including new files created by implementation agents.
 
-**Large diff threshold:** If the full diff exceeds **1000 lines**, switch to large diff mode — pass only the `--stat` summary (not the full diff) into the reviewer prompt. The reviewer will pull per-file diffs on demand using `git diff --cached -- <file>`. This prevents large diffs from crowding out instructions and review context.
+**Do NOT capture the full diff or read `phase-reviewer-prompt.md`.** The reviewer runs `git -C <worktree-path> diff --cached` and reads its own instructions. A pasted diff would sit in this long-lived session for every later phase, cost output tokens to retype, and can be silently altered in transcription.
 
-Pass ALL of this into the reviewer prompt. See `phase-reviewer-prompt.md` for the template.
+Dispatch prompt (fill the values, nothing else):
+```
+Read ~/.claude/skills/start-milestone/phase-reviewer-prompt.md and follow it.
+Phase: <N> of milestone "<title>"
+Branch: <branch>
+Working directory: <worktree-path>
+Design doc: <path or None>
+Stat summary (staged):
+<paste git diff --cached --stat output>
+Issues:
+- #70: <title> — <brief acceptance criteria>
+Agent reports:
+- #70: <what was built, files changed, self-review findings>
+```
+
+**Snapshot check:** the reviewer's report starts with the `--stat` totals line it reviewed (e.g. `5 files changed, 621 insertions(+)`). If it doesn't match the stat you passed, the reviewer saw a different diff — re-dispatch rather than commit.
 
 ## Resume & Crash Recovery
 
@@ -380,7 +392,7 @@ mcp__workflow__gh_bulk_issues(action="label", issues=[15], label="blocked-failed
 
 - `./implementer-prompt.md` - For implementation subagents (parallel, no commits)
 - `./recovery-prompt.md` - For continuing in-progress work (no commits)
-- `./phase-reviewer-prompt.md` - For reviewing all changes in a phase (single agent)
+- `./phase-reviewer-prompt.md` - For reviewing all changes in a phase (single agent; the agent reads it, not the orchestrator — see Review Context)
 - `./fix-agent-prompt.md` - For addressing specific review feedback (no commits)
 
 **When dispatching subagents, include:**
@@ -417,10 +429,11 @@ When starting/resuming a milestone:
   - [ ] Wait for all agents to complete or fail
 - [ ] **Step 2: Review** - Dispatch single review agent for phase
   - [ ] Stage all changes: `git -C <worktree-path> add -A`
-  - [ ] Pre-compute: run `git -C <worktree-path> diff --cached --stat` and `git -C <worktree-path> diff --cached`, collect agent summaries
-  - [ ] Pass pre-computed diffs, agent summaries, and `design_doc_path` to reviewer
+  - [ ] Run `git -C <worktree-path> diff --cached --stat` only (no full diff), collect agent summaries
+  - [ ] Dispatch with the short prompt (template path, worktree, stat, agent summaries, `design_doc_path`) — do not read the template yourself
+  - [ ] Snapshot check: reviewer's reported stat totals match yours, else re-dispatch
   - [ ] If approved → proceed to Step 3
-  - [ ] If changes requested → dispatch fix agents → re-review (re-stage + re-diff before re-review)
+  - [ ] If changes requested → dispatch fix agents → re-stage (`add -A`) + re-run `--stat` → re-review with the new stat
 - [ ] **Step 3: Batch Commit** - Orchestrator commits all phase changes at once
   - [ ] Changes already staged from Step 2
   - [ ] Single `git -C <worktree-path> commit` with `Refs #N1, #N2, #N3`

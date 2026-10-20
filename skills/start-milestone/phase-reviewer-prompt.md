@@ -1,149 +1,96 @@
-# Phase Reviewer Prompt Template
+# Phase Review — Agent Instructions
 
-Use this template when dispatching a review agent to review all changes from a phase before the orchestrator commits.
+You are the review agent for one phase of a milestone run by `/start-milestone`. The orchestrator dispatched you with a short prompt pointing here plus these values:
 
-**Key difference from PR review:** Phase review happens on UNCOMMITTED changes. The orchestrator pre-computes diffs and agent summaries to avoid redundant work.
+- **Phase** number and **milestone** title, **Branch**
+- **Working directory** (the worktree path)
+- **Design doc** path or "None"
+- **Stat summary** of the staged changes (`git diff --cached --stat`)
+- **Issues in this phase**, each with title and a brief acceptance-criteria summary
+- **Agent reports** per issue: what was built, files changed, self-review findings
 
-## Dispatch Pattern
+The orchestrator does not read this file — everything you need to act on is here.
 
-```
-Task tool (general-purpose):
-  description: "Review Phase N changes"
-  prompt: |
-    Review the implementation work from Phase N of milestone "[Milestone Title]".
+**These changes are UNCOMMITTED and STAGED.** The orchestrator ran `git add -A` before dispatching you and commits the staged state after you approve. Do not stage, unstage, modify, or commit anything.
 
-    ## Phase Context
+## Get the Diff
 
-    **Issues in this phase:**
-    - #70: [title] - [brief acceptance criteria summary]
-    - #71: [title] - [brief acceptance criteria summary]
-    - #72: [title] - [brief acceptance criteria summary]
+Always use `--cached` — a bare `git diff` misses the new files the implementation agents created:
 
-    **Branch:** `feature/branch-name`
-    **Working directory:** [path]
-    **Design doc:** [design_doc_path or "None"]
-
-    **Important:** These changes are UNCOMMITTED. The orchestrator has pre-computed the diffs below.
-
-    ## Changes to Review
-
-    ### Diff Summary (pre-computed)
-    [paste git diff --stat output here]
-
-    ### Full Diff (pre-computed)
-    [paste git diff output here — OR if large diff mode, replace with the note below]
-
-    > **Large diff mode (if diff > 1000 lines):** Instead of the full diff, the orchestrator
-    > pastes only the stat summary above. Pull diffs yourself using targeted per-file commands:
-    > `git diff --cached -- <file>` for specific files. Review in priority order from the stat
-    > summary — focus on high-change files and files central to the acceptance criteria.
-
-    ### Agent Reports
-    [For each issue: what was implemented, files changed, self-review findings]
-    - **#70:** [agent summary]
-    - **#71:** [agent summary]
-    - **#72:** [agent summary]
-
-    ## Your Task
-
-    Use the `superpowers:requesting-code-review` skill to review these changes.
-
-    Also invoke the `/simplify` skill for additional code reuse, quality, and efficiency checks. Run only its review phases (Phases 1-2) — do NOT auto-fix. Include any findings in your review report alongside the code review findings.
-
-    **Use the pre-computed diff above when provided.** In large diff mode, pull per-file diffs using `git diff --cached -- <file>` as needed. Only read full files if the diff is unclear or you need surrounding context for a specific concern.
-
-    Provide this context to the review:
-    1. **Scope:** The acceptance criteria for each issue listed above
-    2. **Standards:** Read CLAUDE.md for project coding standards
-    3. **Design doc:** Read the design doc at [design_doc_path] to verify design compliance (if provided)
-
-    ## Phase-Specific Review Focus
-
-    In addition to standard code review concerns, pay special attention to:
-
-    ### Cross-Issue Consistency
-    - Do all issues use consistent patterns?
-    - Are naming conventions consistent across the changes?
-    - Are similar problems solved the same way?
-
-    ### Integration
-    - Do the changes from different issues work together?
-    - Are there conflicts or overlaps between issues?
-    - Does the combined result make sense as a whole?
-
-    ## Output Format
-
-    After running the code review skill, report:
-
-    **If APPROVED:**
-    ```
-    ## Phase Review: APPROVED
-
-    All issues pass review. Ready for orchestrator to commit.
-
-    Summary:
-    - #70: [brief note]
-    - #71: [brief note]
-    - #72: [brief note]
-
-    Cross-issue consistency: OK
-    ```
-
-    **If CHANGES REQUESTED:**
-    ```
-    ## Phase Review: CHANGES REQUESTED
-
-    ### Issues Needing Fixes
-
-    **#70: [title]**
-    - [ ] [specific issue and fix needed]
-
-    **#71: [title]**
-    - Approved
-
-    ### Cross-Issue Concerns
-    - [any consistency or integration issues]
-
-    Fix agents should address the listed issues, then request re-review.
-    ```
+```bash
+git -C <worktree> diff --cached --stat
+git -C <worktree> diff --cached
 ```
 
-## Checklist
+Compare the totals line of your `--stat` (e.g. `5 files changed, 621 insertions(+)`) with the stat summary in your prompt. If they differ, stop and report the mismatch instead of reviewing — the orchestrator would otherwise commit something you did not see.
 
-**Follow this checklist for every phase review.**
+**Large diff (stat shows > 1000 changed lines):** don't pull the full diff at once. Use `git -C <worktree> diff --cached -- <file>` per file, in priority order from the stat — high-change files and files central to the acceptance criteria first.
 
-### Setup
-- [ ] Review the pre-computed diff summary for scope
-- [ ] Read the pre-computed full diff
-- [ ] Read agent reports for context on each issue
-- [ ] Read CLAUDE.md for project standards
-- [ ] Read design doc (if `design_doc_path` provided)
+Only read full files when the diff is unclear or you need surrounding context for a specific concern.
 
-### Review Execution
-- [ ] Invoke `superpowers:requesting-code-review` skill
-- [ ] Invoke `/simplify` skill (Phases 1-2 only, report findings, do NOT auto-fix)
-- [ ] Only read individual files if diff is unclear or you need surrounding context
-- [ ] Do NOT run tests or linters — pre-commit hooks handle both at commit time
+## Your Task
 
-### Phase-Specific Checks
-- [ ] **Cross-issue consistency:** Same patterns used across all issues?
-- [ ] **Naming conventions:** Consistent across changes?
-- [ ] **Integration:** Do changes from different issues work together?
-- [ ] **Conflicts/overlaps:** Any issues between changes?
+Use the `superpowers:requesting-code-review` skill to review these changes.
 
-### Decision
-- [ ] If ALL checks pass → Report **APPROVED**
-- [ ] If ANY issues found → Report **CHANGES REQUESTED** with specific feedback per issue
+Also invoke the `/simplify` skill for additional code reuse, quality, and efficiency checks. Run only its review phases (Phases 1-2) — do NOT auto-fix. Include any findings in your review report alongside the code review findings.
 
-### Output
-- [ ] List each issue with approval status or specific fixes needed
-- [ ] Note any cross-issue concerns
+Review against:
+1. **Scope:** The acceptance criteria for each issue you were given — check each one individually against the diff. The orchestrator batch-commits the phase on your approval, so this per-issue check is what makes the batch commit acceptable (see `~/.claude/shared/plan-execution.md`).
+2. **Standards:** CLAUDE.md project coding standards
+3. **Design doc:** Read it to verify design compliance (if a path was given)
 
-## Key Points
+Do NOT run tests or linters — pre-commit hooks handle both at commit time.
 
-- **Uses `superpowers:requesting-code-review`** for consistent review standards
-- **Pre-computed diffs** — orchestrator stages all changes (`git add -A`), then captures `git diff --cached --stat` and `git diff --cached`. If diff > 1000 lines, only stat is inlined and reviewer pulls per-file diffs via `git diff --cached -- <file>`. Changes stay staged for the batch commit step.
-- **Agent summaries** — orchestrator collects what each agent built, files changed, and self-review findings
-- **Design doc access** — reviewer receives `design_doc_path` to verify design compliance
-- **Fresh agent** - no implementation bias, dedicated context for review
-- **Quality gate** - must approve before orchestrator commits
+### Phase-Specific Review Focus
+
+**Cross-Issue Consistency**
+- Do all issues use consistent patterns?
+- Are naming conventions consistent across the changes?
+- Are similar problems solved the same way?
+
+**Integration**
+- Do the changes from different issues work together?
+- Are there conflicts or overlaps between issues?
+- Does the combined result make sense as a whole?
+
+## Output Format
+
+Start the report with the `--stat` totals line you reviewed. Then:
+
+**If APPROVED:**
+```
+Reviewed: 5 files changed, 621 insertions(+)
+
+## Phase Review: APPROVED
+
+All issues pass review. Ready for orchestrator to commit.
+
+Summary:
+- #70: [brief note]
+- #71: [brief note]
+- #72: [brief note]
+
+Cross-issue consistency: OK
+```
+
+**If CHANGES REQUESTED:**
+```
+Reviewed: 5 files changed, 621 insertions(+)
+
+## Phase Review: CHANGES REQUESTED
+
+### Issues Needing Fixes
+
+**#70: [title]**
+- [ ] [specific issue and fix needed]
+
+**#71: [title]**
+- Approved
+
+### Cross-Issue Concerns
+- [any consistency or integration issues]
+
+Fix agents should address the listed issues, then request re-review.
+```
+
+**On re-review** (after fixes, the orchestrator re-stages and sends a new stat): pull the staged diff again, confirm the new totals, and check that each requested fix is in place.

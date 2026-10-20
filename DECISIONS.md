@@ -110,3 +110,21 @@ Decisions are numbered for cross-reference (e.g., "see D7").
 **Alternatives Considered:**
 - Hiding unused superpowers skills via `skillOverrides`: not possible. Claude Code locks plugin skills to `on` (source `plugin`), and user overrides are ignored.
 - Editing the superpowers SessionStart hook: rejected, because plugin updates overwrite cache edits (see the plannotator gotcha).
+
+---
+
+## D7: Review Agents Pull Their Own Diff
+**Date:** 2026-10-20
+**Status:** Active (replaces the pre-computed full diff in /start-milestone and /create-pr)
+
+**Context:** Both skills had the orchestrator capture the full diff and paste it into the review agent's prompt, so the reviewer started with a fixed snapshot and needed no extra tool calls. In practice, the diff sat in the main session as a tool result and was typed out again as Agent input (output tokens, slow, and open to silent transcription errors). /start-milestone repeats this every phase in one long-lived session. Runs also diverged: pi-setup db7b15b6 wrote diffs to a scratch file instead, while 1ab28cdb pasted a 17k-char prompt and later re-read a 10k-char diff.
+
+**Decision:** The orchestrator pins the snapshot and passes only a reference to it. Agents run git themselves and read their own instruction files.
+- /start-milestone: stage with `git add -A`, pass the worktree path, the `--stat` output and the agent summaries. The reviewer runs `git -C <worktree> diff --cached` and reports the stat totals it reviewed. The orchestrator re-dispatches on a mismatch.
+- /create-pr: pass the merge-base hash. The agents run `git diff <merge_base>..HEAD`.
+
+**Rationale:** The snapshot guarantee is kept. For /start-milestone it comes from staging plus the rule that nothing touches the worktree between staging and review. For /create-pr it comes from the pinned hash. The stat-totals echo catches a reviewer that ran the wrong command, for example a bare `git diff` that misses new files. The reviewer pays for the diff either way; only the orchestrator saves.
+
+**Alternatives Considered:**
+- Keep pasting below 1000 lines: rejected. It is the common case and the one that accumulates across phases.
+- Scratch-file handoff (what db7b15b6 improvised): works, but `git diff --cached` is the same thing without a temp file.
