@@ -20,6 +20,7 @@ Execute all issues in a GitHub milestone using parallel subagents with crash rec
 
 ## High-Level Flow
 
+0. Fresh session check — suggest `/clear` once if earlier work is already in this conversation (see Checklist)
 1. Parse milestone, fetch issues, build dependency graph
 2. Setup branch/worktree (skip if already on correct branch for `[ACTIVE]` milestone)
 3. **Update milestone status to `[ACTIVE]`** (if currently `[READY]`)
@@ -392,6 +393,7 @@ mcp__workflow__gh_bulk_issues(action="label", issues=[15], label="blocked-failed
 When starting/resuming a milestone:
 
 ### Setup Phase
+- [ ] **Fresh session check:** if this conversation already holds earlier work (roughly 100k+ context), tell the user once that a fresh session (`/clear`, or `/resume-prompt` first) makes the whole milestone run cheaper, then continue unless they say otherwise
 - [ ] Parse milestone identifier (number, title, or URL)
 - [ ] Fetch milestone details and parse branch name from description
 - [ ] Extract `design_doc_path` from milestone description (do NOT read it)

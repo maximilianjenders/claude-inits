@@ -1,4 +1,5 @@
 import { gh } from "../lib/exec.js";
+import { slimRecord, toText } from "../lib/slim.js";
 
 const definition = {
   name: "gh_pr",
@@ -58,7 +59,7 @@ async function viewPR(pr, opts = {}) {
   }
 
   const { stdout } = await gh(ghArgs, opts);
-  return JSON.parse(stdout);
+  return slimRecord(JSON.parse(stdout));
 }
 
 async function listPRs({ head, base, state, author, limit }, opts = {}) {
@@ -90,7 +91,7 @@ async function listPRs({ head, base, state, author, limit }, opts = {}) {
   }
 
   const { stdout } = await gh(ghArgs, opts);
-  return JSON.parse(stdout);
+  return JSON.parse(stdout).map(slimRecord);
 }
 
 async function handler(args) {
@@ -101,13 +102,13 @@ async function handler(args) {
     case "view":
       const prData = await viewPR(pr, opts);
       return {
-        content: [{ type: "text", text: JSON.stringify(prData, null, 2) }],
+        content: [{ type: "text", text: toText(prData) }],
       };
 
     case "list":
       const prs = await listPRs({ head, base, state, author, limit }, opts);
       return {
-        content: [{ type: "text", text: JSON.stringify(prs, null, 2) }],
+        content: [{ type: "text", text: toText(prs) }],
       };
 
     default:

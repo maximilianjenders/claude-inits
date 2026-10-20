@@ -44,11 +44,11 @@ Also analyze the current conversation for:
 
 ### 2. Read ALL Target Docs
 
-**MANDATORY: Read every doc file BEFORE deciding what needs updating.** Do not reason about whether updates are needed until you've read the current content. You cannot judge staleness or completeness without seeing the file.
+**MANDATORY: Know the current content of every target doc BEFORE deciding what needs updating.** You cannot judge staleness or completeness without seeing it — but don't re-read what is already in context:
 
-Read each file individually:
-- [ ] Read `CLAUDE.md` (root and any sub-project CLAUDE.md files)
-- [ ] Read `README.md`
+- [ ] Root `CLAUDE.md`: **already in your context** (loaded at session start) — do not Read it again.
+- [ ] Nested `CLAUDE.md` (e.g. `frontend/CLAUDE.md`): only for directories this session's diff touched. If it was already loaded this session (shown when you read files there), don't re-read it.
+- [ ] `README.md`: list headings with `grep -n "^#" README.md`, then read only the sections the changes could make stale (feature lists, test lists, architecture, tables) by line range.
 - [ ] `GOTCHAS.md` (if exists): **do not read it in full** — it grows unbounded and is append-mostly. List its headings with `grep -n "^##" GOTCHAS.md`, then read only the sections related to this session's work (by line range) to check for duplicates or stale entries before adding.
 
 ### 3. Classify Changes
@@ -69,7 +69,7 @@ After reading all docs, determine what needs updating. Apply different tests per
 
 ### 4. Suggest Pruning
 
-Review CLAUDE.md for content that has become redundant or stale:
+Review CLAUDE.md (from context) for content that has become redundant or stale:
 - **Discoverable info:** Directory structures, command lists, file patterns that an agent can find by reading the code
 - **Stale entries:** Rules or conventions that no longer match the codebase
 - **Duplicated info:** Content already expressed in code comments or config files
@@ -130,9 +130,10 @@ Report what was updated and why.
 - [ ] Run `git diff master...HEAD --stat` to see changed files
 - [ ] Review conversation for architectural decisions, new features, conventions
 
-### Read ALL Docs (mandatory before any decisions)
-- [ ] Read `CLAUDE.md` (root + sub-project files)
-- [ ] Read `README.md`
+### Know ALL Docs (mandatory before any decisions)
+- [ ] Root `CLAUDE.md`: already in context — don't re-read
+- [ ] Nested `CLAUDE.md`: only for touched directories, and only if not already loaded
+- [ ] `README.md`: headings via `grep -n "^#"`, then only the sections the changes affect
 - [ ] `GOTCHAS.md` (if exists): headings via `grep -n "^##"`, then only the related sections — never the full file
 
 ### Classify Changes

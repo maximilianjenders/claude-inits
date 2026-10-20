@@ -44,4 +44,10 @@ The `plannotator` plugin ships with a hook that fires on `ExitPlanMode`, which t
 
 ## Debugging
 
-[Add debugging patterns as you discover them]
+### /create-pr Review Agent Stalls (One-Way Mailbox)
+
+When the plan-audit and code-review agents are dispatched in parallel, `SendMessage` to an agent can succeed while its replies never arrive. The dispatching session only sees repeated `idle_notification` messages and no report.
+
+**Fix:** after 3+ idle notifications with no report, stop polling. Either ask the user to inspect the subagent transcript (`~/.claude/projects/<project>/<session>/subagents/`), or `TaskStop` the agent and redispatch a fresh one with the same prompt — the dispatch prompt is short (template path + values), so redispatching is cheap.
+
+Moved from spendee-visualiser GOTCHAS.md (spendee-visualiser#714, claude-inits#26).

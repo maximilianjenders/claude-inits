@@ -33,6 +33,10 @@ This is the normal interactive mode. You implement the issue, run scoped tests, 
 
 Batch mode is handled by `implementer-prompt.md` directly — `/start-issue` is NOT used in batch context.
 
+## Fresh Session Check
+
+If this conversation already holds earlier work (another issue, a PR, a long investigation — roughly 100k+ context), tell the user once before starting: a fresh session (`/clear`, or `/resume-prompt` first if state must carry over) makes every later turn cheaper. Then continue unless they say otherwise.
+
 ## What This Does
 
 1. **Fetch issue details** - Read title, description, acceptance criteria
@@ -106,13 +110,13 @@ git worktree list
 
 ### 1b. Store Branch in Issue (Backlog items)
 
-If the issue has no milestone or is in the `Backlog` milestone (i.e., no milestone with a `## Branch` field), append a `## Branch` section to the issue body so `/create-pr` can resolve the worktree later:
+If the issue has no milestone or is in the `Backlog` milestone (i.e., no milestone with a `## Branch` field), append a `## Branch` section to the issue body so `/create-pr` can resolve the worktree later. `append_body` fetches the current body server-side — do not re-read or re-send it:
 
 ```
-mcp__workflow__gh_update_issue(issue=15, body="<existing body>\n\n## Branch\n`feature/branch-name`")
+mcp__workflow__gh_update_issue(issue=15, append_body="## Branch\n`feature/branch-name`")
 ```
 
-Skip this if the issue already has a `## Branch` section or belongs to a milestone that has one.
+Skip this if the body from the initial fetch already has a `## Branch` section, or the issue belongs to a milestone that has one.
 
 ### 2. Dependency Check
 - Parse issue body for "Blocked by: #X" references
@@ -140,31 +144,30 @@ mcp__workflow__gh_milestone(action="rename", identifier="5", new_title="[ACTIVE]
 
 After pre-flight checks pass:
 
-1. **Read CLAUDE.md** for project commands and conventions
-2. **Follow TDD** — write failing tests first, implement to pass
-3. **Run scoped tests** — only tests relevant to your changes (pre-commit runs the full suite at commit time)
-4. **Run linters/formatters**
-5. **Self-review** — check completeness, quality, CLAUDE.md compliance
+1. **Follow TDD** — write failing tests first, implement to pass
+2. **Run scoped tests** — only tests relevant to your changes (pre-commit runs the full suite at commit time)
+3. **Run linters/formatters**
+4. **Self-review** — check completeness, quality, CLAUDE.md compliance
 
 ## Checklist
 
 **Follow this checklist in order.**
 
 ### Context Gathering
+- [ ] Fresh Session Check — if earlier work is already in this conversation, suggest `/clear` or `/resume-prompt` once
 - [ ] Parse issue number from argument (number, `#N`, or URL)
 - [ ] Fetch issue details (title, body, labels, milestone)
 - [ ] Read acceptance criteria from issue body
 
 ### Pre-flight Checks
 - [ ] **Branch/Worktree Check** - Verify on correct feature branch or ask user
-- [ ] **Store Branch in Issue** - If backlog item (no milestone or Backlog milestone), append `## Branch` to issue body so `/create-pr` can resolve worktree later
+- [ ] **Store Branch in Issue** - If backlog item (no milestone or Backlog milestone), `gh_update_issue(append_body=...)` with `## Branch` so `/create-pr` can resolve worktree later
 - [ ] **Dependency Check** - Parse "Blocked by: #X" and verify blocking issues are closed
 - [ ] **Already In-Progress Check** - Note if issue already has label, warn about context switch
 - [ ] **Milestone Status Check** - If `[READY]` and first issue, update to `[ACTIVE]`
 
 ### Implementation
 - [ ] Mark issue as `in-progress` (add label)
-- [ ] Read CLAUDE.md for project standards
 - [ ] Write failing tests first (TDD)
 - [ ] Implement to make tests pass
 - [ ] Run scoped tests (changed files only)
