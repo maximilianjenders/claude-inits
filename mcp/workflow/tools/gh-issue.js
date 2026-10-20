@@ -1,4 +1,5 @@
 import { gh } from "../lib/exec.js";
+import { slimRecord, toText } from "../lib/slim.js";
 
 const definition = {
   name: "gh_issue",
@@ -50,7 +51,7 @@ async function viewIssue(issue, opts = {}) {
     "--json",
     "number,title,body,state,labels,milestone,assignees,url,createdAt,closedAt",
   ], opts);
-  return JSON.parse(stdout);
+  return slimRecord(JSON.parse(stdout));
 }
 
 async function listIssues({ labels, state, assignee, limit }, opts = {}) {
@@ -78,7 +79,7 @@ async function listIssues({ labels, state, assignee, limit }, opts = {}) {
   }
 
   const { stdout } = await gh(ghArgs, opts);
-  return JSON.parse(stdout);
+  return JSON.parse(stdout).map(slimRecord);
 }
 
 async function handler(args) {
@@ -92,13 +93,13 @@ async function handler(args) {
       }
       const issueData = await viewIssue(issue, opts);
       return {
-        content: [{ type: "text", text: JSON.stringify(issueData, null, 2) }],
+        content: [{ type: "text", text: toText(issueData) }],
       };
 
     case "list":
       const issues = await listIssues({ labels, state, assignee, limit }, opts);
       return {
-        content: [{ type: "text", text: JSON.stringify(issues, null, 2) }],
+        content: [{ type: "text", text: toText(issues) }],
       };
 
     default:

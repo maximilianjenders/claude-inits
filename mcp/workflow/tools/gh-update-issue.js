@@ -1,8 +1,9 @@
 import { gh } from "../lib/exec.js";
+import { slimRecord, appendSection, toText } from "../lib/slim.js";
 
 const definition = {
   name: "gh_update_issue",
-  description: "Update an existing GitHub issue (title, body, milestone, labels)",
+  description: "Update an existing GitHub issue (title, body, milestone, labels). Use append_body to add a section without re-reading the body.",
   inputSchema: {
     type: "object",
     properties: {
@@ -21,6 +22,10 @@ const definition = {
       body: {
         type: "string",
         description: "New body content (optional)",
+      },
+      append_body: {
+        type: "string",
+        description: "Markdown appended to the current body after a blank line; the server fetches the body (optional, not with body)",
       },
       milestone: {
         type: "string",
@@ -57,12 +62,17 @@ async function handler(args) {
     issue,
     title,
     body,
+    append_body,
     milestone,
     add_labels,
     remove_labels,
     add_assignees,
     remove_assignees,
   } = args;
+
+  if (body && append_body) {
+    throw new Error("Pass either body or append_body, not both");
+  }
 
   const opts = cwd ? { cwd } : {};
   const ghArgs = ["issue", "edit", String(issue)];
@@ -73,6 +83,11 @@ async function handler(args) {
 
   if (body) {
     ghArgs.push("--body", body);
+  }
+
+  if (append_body) {
+    const { stdout: current } = await gh(["issue", "view", String(issue), "--json", "body", "--jq", ".body"], opts);
+    ghArgs.push("--body", appendSection(current, append_body));
   }
 
   if (milestone) {
@@ -121,10 +136,10 @@ async function handler(args) {
     "number,title,state,labels,milestone,assignees,url",
   ], opts);
 
-  const result = JSON.parse(stdout);
+  const result = slimRecord(JSON.parse(stdout));
 
   return {
-    content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+    content: [{ type: "text", text: toText(result) }],
   };
 }
 
