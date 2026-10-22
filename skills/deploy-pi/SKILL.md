@@ -1,6 +1,6 @@
 ---
 name: deploy-pi
-description: Deploy food-butler or spendee to Pi environments
+description: Deploy food-butler, spendee, or done to Pi environments
 user_invocable: true
 argument-hint: "[project] [environment] [branch]"
 ---
@@ -16,6 +16,7 @@ Deploy applications to the Raspberry Pi.
 /deploy-pi food-butler prod                     # food-butler prod
 /deploy-pi food-butler staging feature/phase5  # staging from branch
 /deploy-pi food-butler dev feature/phase5      # dev from branch
+/deploy-pi done staging feature/m1             # done staging from branch
 ```
 
 ## What This Does
@@ -62,7 +63,7 @@ ssh max@pi.local "~/pi-setup/scripts/copy-prod-to-staging.sh food-butler"
 **Verify environment before deploying.**
 
 ### Pre-deploy Validation
-- [ ] Confirm project: `food-butler` or `spendee`
+- [ ] Confirm project: `food-butler`, `spendee`, or `done`
 - [ ] Confirm environment: `prod`, `staging`, or `dev`
 - [ ] **For prod:** Verify this is intentional (user explicitly requested)
 - [ ] **For staging/dev:** Verify branch argument is provided
@@ -80,8 +81,10 @@ ssh max@pi.local "~/pi-setup/scripts/copy-prod-to-staging.sh food-butler"
 
 ## Environments
 
-| Environment | URL | Purpose |
-|-------------|-----|---------|
-| Prod | http://butler.home | Production |
-| Staging | http://butler-staging.home | Feature testing |
-| Dev | http://butler-dev.home | E2E tests |
+| Environment | food-butler | done | Purpose |
+|-------------|-------------|------|---------|
+| Prod | http://butler.home | https://done.tailc2583b.ts.net | Production |
+| Staging | http://butler-staging.home | https://done-staging.tailc2583b.ts.net | Feature testing |
+| Dev | http://butler-dev.home | https://done-dev.tailc2583b.ts.net | E2E tests |
+
+done's URLs are Tailscale Services hostnames (done D25), not `.home` names.
