@@ -9,7 +9,7 @@ import { spawn } from "child_process";
 // Configuration
 // Use Tailscale MagicDNS name for remote access (pi.local only works on LAN)
 const PI_HOST = "max@pi";
-const VALID_APPS = ["food-butler", "spendee", "immich"];
+const VALID_APPS = ["food-butler", "spendee", "done", "immich"];
 const VALID_ENVS = ["prod", "staging", "dev"];
 const INFRA_SERVICE_DIRS = {
   traefik: "~/pi-setup",
@@ -40,6 +40,11 @@ const APP_CONFIG = {
     containerPrefix: "spendee",
     seedCommand: "python -m spendee_visualiser.scripts.seed_e2e_fixtures",
     dbPath: "/app/data/spendee.db",
+  },
+  // No seedCommand: the entrypoint migrates and seeds on start, so pi_reset_dev reseeds
+  done: {
+    containerPrefix: "done",
+    dbPath: "/app/data/done.db",
   },
   immich: {
     dbType: "postgres",
@@ -319,7 +324,7 @@ const TOOLS = [
       properties: {
         app: {
           type: "string",
-          description: "Application name (food-butler or spendee)",
+          description: "Application name (food-butler, spendee, or done)",
         },
         env: {
           type: "string",
@@ -364,7 +369,7 @@ const TOOLS = [
       properties: {
         app: {
           type: "string",
-          description: "Application name (food-butler or spendee)",
+          description: "Application name (food-butler, spendee, or done)",
         },
       },
       required: ["app"],
@@ -378,7 +383,7 @@ const TOOLS = [
       properties: {
         app: {
           type: "string",
-          description: "Application name (food-butler or spendee)",
+          description: "Application name (food-butler, spendee, or done)",
         },
       },
       required: ["app"],
@@ -392,7 +397,7 @@ const TOOLS = [
       properties: {
         app: {
           type: "string",
-          description: "Application name (food-butler or spendee)",
+          description: "Application name (food-butler or spendee; done seeds on start, use pi_reset_dev)",
         },
       },
       required: ["app"],
@@ -466,7 +471,7 @@ const TOOLS = [
     name: "pi_db_query",
     description:
       "Run a read-only SQL query against an app's database. " +
-      "SQLite databases: food-butler, spendee (require env: prod/staging/dev). " +
+      "SQLite databases: food-butler, spendee, done (require env: prod/staging/dev). " +
       "PostgreSQL databases: immich (no env needed, single instance). " +
       "Supports SELECT, PRAGMA, EXPLAIN, WITH. Results are pipe-delimited with headers. " +
       "Default limit: 500 rows. Use limit/offset for pagination.",
@@ -475,11 +480,11 @@ const TOOLS = [
       properties: {
         app: {
           type: "string",
-          description: "Application name (food-butler, spendee, or immich)",
+          description: "Application name (food-butler, spendee, done, or immich)",
         },
         env: {
           type: "string",
-          description: "Environment (prod, staging, or dev). Required for food-butler/spendee, not used for immich.",
+          description: "Environment (prod, staging, or dev). Required for food-butler/spendee/done, not used for immich.",
         },
         query: {
           type: "string",

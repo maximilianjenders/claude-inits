@@ -9,6 +9,9 @@ import {
   validateInfraService,
   validateQuery,
   applyPagination,
+  getContainerPrefix,
+  getSeedCommand,
+  getDbPath,
   getDbType,
   ALLOWED_COMMANDS,
   INFRA_SERVICE_DIRS,
@@ -212,6 +215,28 @@ describe("getDbType", () => {
 
   it("returns sqlite for spendee", () => {
     assert.equal(getDbType("spendee"), "sqlite");
+  });
+
+  it("returns sqlite for done", () => {
+    assert.equal(getDbType("done"), "sqlite");
+  });
+});
+
+describe("done app config", () => {
+  it("accepts done as a valid app", () => {
+    assert.equal(validateApp("done"), "done");
+  });
+
+  it("uses done as container prefix", () => {
+    assert.equal(getContainerPrefix("done"), "done");
+  });
+
+  it("points at the in-container done.db", () => {
+    assert.equal(getDbPath("done"), "/app/data/done.db");
+  });
+
+  it("has no seed command (entrypoint seeds on start)", () => {
+    assert.equal(getSeedCommand("done"), undefined);
   });
 });
 

@@ -27,10 +27,13 @@ Deploy the current branch to dev environment and run the Playwright E2E test sui
 
 ## Project Configuration
 
-| Project | Dev URL | Deploy Command |
-|---------|---------|----------------|
-| food-butler | http://butler-dev.home | `./build.sh food-butler dev $BRANCH` |
-| spendee | http://spendee-dev.home | `./build.sh spendee dev $BRANCH` |
+| Project | Container Prefix | Dev URL | Deploy Command | E2E Command |
+|---------|------------------|---------|----------------|-------------|
+| food-butler | `butler` | http://butler-dev.home | `./build.sh food-butler dev $BRANCH` | `npm --prefix frontend run test:e2e` |
+| spendee | `spendee` | http://spendee-dev.home | `./build.sh spendee dev $BRANCH` | `npm --prefix frontend run test:e2e` |
+| done | `done` | https://done-dev.tailc2583b.ts.net | `./build.sh done dev $BRANCH` | `npm --prefix e2e run test` |
+
+**done:** the Playwright suite starts its own local server and does not target dev. The dev deploy + health check still verify that the image builds and boots.
 
 ## Execution Steps
 
@@ -39,6 +42,7 @@ Deploy the current branch to dev environment and run the Playwright E2E test sui
 Check current working directory for project name:
 - Contains `food-butler` → food-butler
 - Contains `spendee` → spendee
+- Last path component is `done` (or a `done` worktree) → done
 - Otherwise → error "Unknown project. Run from a project directory."
 
 ### 2. Get Branch
@@ -59,8 +63,10 @@ pi_reset_dev("$PROJECT")
 
 **Fallback: SSH**
 ```bash
-ssh max@pi.local "rm -rf /data/$PROJECT/dev/* && docker restart $PROJECT-dev"
+ssh max@pi.local "rm -rf /data/$PREFIX/dev/* && docker restart $PREFIX-dev"
 ```
+
+`$PREFIX` is the container prefix from the table. done's entrypoint migrates and seeds on restart, so done needs no separate seed step.
 
 ### 4. Deploy to Dev
 
@@ -80,11 +86,12 @@ Wait for success message.
 
 Wait for dev environment to be ready:
 ```bash
-curl --retry 10 --retry-delay 3 --retry-connrefused -s http://$DEV_URL/api/health
+curl --retry 10 --retry-delay 3 --retry-connrefused -s $DEV_URL/api/health
 ```
 
 ### 6. Run E2E Tests
 
+Run the project's E2E command from the table, e.g.:
 ```bash
 npm --prefix frontend run test:e2e
 ```
@@ -96,7 +103,7 @@ npm --prefix frontend run test:e2e
 
 ## Error Handling
 
-- **Project not detected:** "Unknown project. Run /run-e2e from a project directory (food-butler or spendee)."
+- **Project not detected:** "Unknown project. Run /run-e2e from a project directory (food-butler, spendee, or done)."
 - **No dev environment:** "Dev environment not configured for $PROJECT. See deployment-pipeline.md."
 - **Deploy fails:** Show output and stop.
 - **Tests fail:** Show Playwright output with failure details.
@@ -122,17 +129,17 @@ This wipes the database and re-seeds from fixtures on container restart.
 **Follow these steps in order. Do not skip health check.**
 
 ### Setup
-- [ ] Detect project from working directory (food-butler or spendee)
+- [ ] Detect project from working directory (food-butler, spendee, or done)
 - [ ] Get branch (argument or `git branch --show-current`)
 
 ### Deploy
 - [ ] Reset dev data: `pi_reset_dev("$PROJECT")`
 - [ ] Deploy to dev: `pi_deploy("$PROJECT", "dev", "$BRANCH")`
-- [ ] **Health check** (REQUIRED): `curl --retry 10 --retry-delay 3 http://$DEV_URL/api/health`
+- [ ] **Health check** (REQUIRED): `curl --retry 10 --retry-delay 3 $DEV_URL/api/health`
 - [ ] Verify health check passes before proceeding
 
 ### Test
-- [ ] Run E2E tests: `npm --prefix frontend run test:e2e`
+- [ ] Run E2E tests: the project's E2E command from the table
 - [ ] Capture test output
 
 ### Report
@@ -144,4 +151,4 @@ This wipes the database and re-seeds from fixtures on container restart.
 
 - SSH access to Pi configured
 - Pi reachable on network
-- Playwright installed in project (`npm --prefix frontend install`)
+- Playwright installed in project (`npm --prefix frontend install`; done: `npm --prefix e2e install`)

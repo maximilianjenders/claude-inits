@@ -169,8 +169,8 @@ Proceeding with PR creation...
    - Reset dev data to ensure clean state: `pi_reset_dev("[project]")`
    - Deploy current branch to dev using MCP: `pi_deploy("[project]", "dev", "[branch]")`
    - Wait for container to be healthy
-   - Run E2E tests: `npm --prefix frontend run test:e2e`
-   - Stop dev container: `pi_docker_stop("$PROJECT-dev")` — no longer needed after E2E
+   - Run E2E tests: project E2E command (run-e2e table)
+   - Stop dev container: `pi_docker_stop("$PREFIX-dev")` — no longer needed after E2E
    - If E2E tests fail: **STOP and prominently report the failures.** Do NOT assume they were broken before this PR — treat them as regressions caused by this branch until proven otherwise. Do not proceed to staging deployment.
 
 7. **Deploy to Staging:**
@@ -201,7 +201,7 @@ Use after fixing issues found during manual staging testing. Skips PR creation, 
 4. Deploy to dev: `pi_deploy("[project]", "dev", "[branch]")`
 5. Health check dev
 6. Run E2E tests
-7. Stop dev container: `pi_docker_stop("$PROJECT-dev")`
+7. Stop dev container: `pi_docker_stop("$PREFIX-dev")`
 8. Deploy to staging: `pi_deploy("[project]", "staging", "[branch]")`
 8a. If `--wipe`: `pi_copy_prod_to_staging("[project]")`
 9. Health check staging
@@ -248,7 +248,7 @@ Use after fixing issues found during manual staging testing. Skips PR creation, 
 - [ ] Deploy to dev: `pi_deploy("[project]", "dev", "[branch]")`
 - [ ] Health check dev environment
 - [ ] Run E2E tests
-- [ ] Stop dev container: `pi_docker_stop("$PROJECT-dev")` — no longer needed after E2E
+- [ ] Stop dev container: `pi_docker_stop("$PREFIX-dev")` — no longer needed after E2E
 - [ ] **If E2E tests failed, STOP. Report failures prominently. Do NOT deploy to staging.**
 - [ ] Deploy to staging: `pi_deploy("[project]", "staging", "[branch]")`
 - [ ] If `--wipe`: sync prod data: `pi_copy_prod_to_staging("[project]")`
@@ -302,10 +302,10 @@ gh pr create --title "Title" --body "Description" --base master
 
 After PR is created (or immediately in `--retest` mode):
 
+Project detection, container prefix, dev URL and E2E command per project come from the **Project Configuration** table in `~/.claude/skills/run-e2e/SKILL.md` (food-butler, spendee, done).
+
 ```bash
-# 1. Detect project from current working directory
-# - Contains "food-butler" → food-butler
-# - Contains "spendee" → spendee
+# 1. Detect project from current working directory (see run-e2e table)
 
 # 2. Get current branch
 BRANCH=$(git branch --show-current)
@@ -317,13 +317,13 @@ pi_reset_dev("[project]")
 pi_deploy("[project]", "dev", "$BRANCH")
 
 # 5. Health check
-curl --retry 10 --retry-delay 3 --retry-connrefused -s http://[project]-dev.home/api/health
+curl --retry 10 --retry-delay 3 --retry-connrefused -s $DEV_URL/api/health
 
-# 6. Run E2E tests
+# 6. Run E2E tests (project's E2E command, e.g.)
 npm --prefix frontend run test:e2e
 
 # 6a. Stop dev container (no longer needed after E2E)
-pi_docker_stop("$PROJECT-dev")
+pi_docker_stop("$PREFIX-dev")
 
 # 7. Deploy to staging using MCP
 pi_deploy("[project]", "staging", "$BRANCH")
