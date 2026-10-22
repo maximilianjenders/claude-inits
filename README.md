@@ -378,6 +378,7 @@ When tests create/modify data:
 |---------|------------|-------------|-----------|
 | food-butler | Yes | Yes | Yes |
 | spendee-visualiser | Yes | Yes | Yes |
+| done | Yes | Yes (entrypoint seeds on start; no `pi_seed_dev`) | Yes (Playwright runs against its own local server) |
 
 To add E2E support to a project:
 1. Create `seed_fixtures.py` with test data
