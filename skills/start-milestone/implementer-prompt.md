@@ -6,6 +6,7 @@ Use this template when dispatching an implementation subagent for a milestone is
 
 ```
 Task tool (general-purpose):
+  model: sonnet
   description: "Implement Issue #N: [issue title]"
   prompt: |
     You are implementing Issue #N: [issue title]

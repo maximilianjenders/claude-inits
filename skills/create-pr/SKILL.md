@@ -128,7 +128,7 @@ Proceeding with PR creation...
    - Pin the merge base: `mcp__workflow__git_diff(mode="stat")` → `merge_base`. **Do NOT fetch the full diff and do NOT read the prompt templates** — the agents read both themselves, so neither enters this session.
    - Gather linked issue titles and acceptance criteria
    - Fetch design doc and implementation plan paths from milestone description
-   - Dispatch **two agents in parallel** with the short prompt below:
+   - Dispatch **two agents in parallel**, both with `model: opus` (judging gaps and bugs is where model quality pays off), with the short prompt below:
      - **Plan audit agent** → `~/.claude/skills/create-pr/plan-audit-prompt.md` — design doc + implementation plan vs actual changes
      - **Code review agent** → `~/.claude/skills/create-pr/reviewer-prompt.md` — code quality, standards, spec compliance
    - **If plan audit finds gaps:** STOP and present gaps prominently to user. User must acknowledge each gap (accept as-is, defer to backlog issue, or fix now) before proceeding to deploy.
@@ -234,7 +234,7 @@ Use after fixing issues found during manual staging testing. Skips PR creation, 
 - [ ] Pin merge base: `mcp__workflow__git_diff(mode="stat")` — no full diff, no template reads in this session
 - [ ] Gather linked issue titles and acceptance criteria
 - [ ] Fetch design doc and implementation plan paths from milestone description
-- [ ] Dispatch **two agents in parallel** with the short dispatch prompt (template path + values):
+- [ ] Dispatch **two agents in parallel** with `model: opus` and the short dispatch prompt (template path + values):
   - [ ] Plan audit agent → `plan-audit-prompt.md`
   - [ ] Code review agent → `reviewer-prompt.md`
 - [ ] **If plan audit found gaps: STOP and present to user.** User must acknowledge each gap (accept as-is, defer to backlog issue, or fix now) before proceeding to deploy.

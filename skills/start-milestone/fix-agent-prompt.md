@@ -6,6 +6,7 @@ Use this template when dispatching an agent to address specific feedback from co
 
 ```
 Task tool (general-purpose):
+  model: sonnet
   description: "Fix review feedback for #N"
   prompt: |
     You are fixing specific issues found during code review for Issue #N: [issue title]

@@ -308,7 +308,7 @@ Leave changes staged — the batch commit step uses them directly. Nothing touch
 
 **Do NOT capture the full diff or read `phase-reviewer-prompt.md`.** The reviewer runs `git -C <worktree-path> diff --cached` and reads its own instructions. A pasted diff would sit in this long-lived session for every later phase, cost output tokens to retype, and can be silently altered in transcription.
 
-Dispatch prompt (fill the values, nothing else):
+Dispatch with `model: opus` (see Subagent Models) and this prompt (fill the values, nothing else):
 ```
 Read ~/.claude/skills/start-milestone/phase-reviewer-prompt.md and follow it.
 Phase: <N> of milestone "<title>"
@@ -399,6 +399,19 @@ mcp__workflow__gh_bulk_issues(action="label", issues=[15], label="blocked-failed
 - `design_doc_path` — extracted from milestone description, so agents can read it if needed
 - Full issue body (verbatim from `gh_milestone_issues`)
 - Working directory path
+
+### Subagent Models
+
+Always pass `model` explicitly — omitting it inherits the orchestrator's model.
+
+| Agent | Model | Why |
+|-------|-------|-----|
+| Implementer | `sonnet` | Plan already did the thinking; bulk of subagent tokens |
+| Fix agent | `sonnet` | Concrete, scoped reviewer feedback |
+| Phase reviewer | `opus` | Catching subtle bugs is where model quality pays off |
+| Recovery agent | `opus` | Diagnosing half-finished, inconsistent state needs judgment |
+
+Rule of thumb: prompt fully specifies the work → `sonnet`; agent must judge whether something is wrong → `opus`.
 
 ## Checklist
 

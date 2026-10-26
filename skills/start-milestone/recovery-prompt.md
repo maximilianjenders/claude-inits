@@ -6,6 +6,7 @@ Use this template when dispatching a subagent to continue work on an in-progress
 
 ```
 Task tool (general-purpose):
+  model: opus
   description: "Continue Issue #N: [issue title]"
   prompt: |
     You are continuing work on Issue #N: [issue title]
