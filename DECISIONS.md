@@ -141,7 +141,7 @@ Decisions are numbered for cross-reference (e.g., "see D7").
 - Fix inline only for 1–2 small findings already in context, or when a fix needs back-and-forth with the user.
 - Re-review rounds pass `Reviewed through: <sha>` so the reviewer looks at only the new commits and checks the earlier findings.
 
-**Rationale:** The fixes are self-contained once filed as issues, so their context belongs in an agent. The main session keeps its context for deploy, E2E and the summary. A cold agent costs a baseline (35–50k), so tiny fixes stay inline.
+**Rationale:** The fixes are self-contained once filed as issues, so their context belongs in an agent. The main session keeps its context for deploy, E2E and the summary. A cold agent costs a baseline (35–50k), so tiny fixes stay inline. The fix agent runs on opus, not sonnet like start-milestone's fix agent: it works through many issues in one long context, including plan gaps, and has to judge when a finding is ambiguous enough to stop. That judgment is the work opus is for.
 
 **Alternatives Considered:**
 - Parallel fix agents in one worktree: rejected. They share the git index, and every commit runs the full pre-commit suite.

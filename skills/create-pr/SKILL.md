@@ -162,6 +162,7 @@ Proceeding with PR creation...
 
 5. **Resolve Review Issues (fix agent):**
    - **Default: one fix agent, sequential.** Dispatch a single agent with `model: opus` and the short prompt below. It works through every `pr-review` issue in order: one commit per issue, test-first, closed with evidence, no push. The file reads and test output stay in the agent's context, and the main session stays lean for deploy and E2E.
+   - **Why opus, not sonnet** (unlike start-milestone's fix agent): this agent works through many issues in one long context, including plan gaps, and must judge when a finding is ambiguous enough to stop. That is judgment work. Start-milestone's fix agent gets one concrete, scoped piece of feedback.
    - **Why not parallel:** the fixes share one worktree, and every commit runs the full pre-commit suite. Parallel agents would collide on the index and the hook run. Parallel worktrees plus cherry-picks cost more than they save.
    - **Fix inline instead** (main session, no agent) only when there are 1–2 small findings whose files are already in context, or when a fix needs back-and-forth with the user. Use the same rules: test-first, one commit per issue, close with evidence.
    - **Order:** blockers first, then fixes that unblock or change shared code (splits, helpers), then UI, docs, and E2E last (slowest to run).
@@ -256,7 +257,7 @@ Use after fixing issues found during manual staging testing. Skips PR creation, 
 - [ ] **If plan audit found gaps: STOP and present to user.** User must acknowledge each gap (accept as-is, defer to backlog issue, or fix now) before proceeding to deploy.
 - [ ] Triage findings: verify blockers, and ask the user about any finding that is a spec question
 - [ ] Create a GitHub issue with the `pr-review` label for EACH finding to fix and each "fix now" plan gap
-- [ ] Fix ALL pr-review issues: one sequential fix agent (`fixer-prompt.md`), or inline for 1–2 small ones
+- [ ] Fix ALL pr-review issues: one sequential fix agent with `model: opus` (`fixer-prompt.md`), or inline for 1–2 small ones
 - [ ] Check the fix agent's commits, surface any issue it left open, push the fixes
 - [ ] Re-run code review after fixes, scoped with `Reviewed through: <last reviewed sha>` (plan audit does NOT re-run)
 - [ ] **Only exit loop when code review passes with no new issues**
