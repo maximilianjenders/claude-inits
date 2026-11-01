@@ -131,7 +131,7 @@ Proceeding with PR creation...
    - Dispatch **two agents in parallel**, both with `model: opus` (judging gaps and bugs is where model quality pays off), with the short prompt below:
      - **Plan audit agent** → `~/.claude/skills/create-pr/plan-audit-prompt.md` — design doc + implementation plan vs actual changes
      - **Code review agent** → `~/.claude/skills/create-pr/reviewer-prompt.md` — code quality, standards, spec compliance
-   - **If plan audit finds gaps:** STOP and present gaps prominently to user. User must acknowledge each gap (accept as-is, defer to backlog issue, or fix now) before proceeding to deploy.
+   - **If plan audit finds gaps:** STOP and present gaps prominently to user. User must acknowledge each gap (accept as-is, defer to backlog issue, or fix now) before proceeding to deploy. Gaps marked "fix now" become `pr-review` issues (step 4) and go to the fix agent with the review findings (step 5).
    - **Stalled agent:** if an agent sends 3+ idle notifications with no report, stop waiting — see GOTCHAS.md "/create-pr review agent stalls". TaskStop it and redispatch the same prompt.
 
    Dispatch prompt (fill the values, nothing else):
@@ -144,25 +144,41 @@ Proceeding with PR creation...
    Merge base: <merge_base>
    Design doc: <path or None>
    Implementation plan: <path or None>   (plan audit only)
+   Reviewed through: <sha>   (re-review rounds only: review <sha>..HEAD plus what the fixes touch)
    Issues:
    - #12: <title> — <brief acceptance criteria>
    ```
 
-4. **Create Issues for Review Findings:**
-   - If review finds issues, create a GitHub issue for EACH finding
+4. **Triage and Create Issues for Review Findings (main session):**
+   - **Verify blockers before filing.** For any finding that claims data loss, a crash or a broken upgrade, reproduce it or read the cited code first. A few reads in the main session are worth it before a fix agent spends effort on a false alarm.
+   - **Ask the user only about findings that are spec questions** ("the code does X, the spec says Y, which do you want?"), using AskUserQuestion. Ask before dispatching the fix agent.
+   - Create a GitHub issue for EACH finding to fix, plus each plan-audit gap marked "fix now"
    - **Fix both critical AND reasonable minor issues** (not just critical ones)
    - Skip only trivial nitpicks (e.g., subjective style preferences with no clear benefit)
    - Add issues to the same milestone
    - Add `pr-review` label to distinguish from original scope
    - Format: `[PR Review] <finding title>`
-   - Include in body: file, line, description, suggested fix
+   - Include in body: file, line, description, suggested fix, acceptance criteria (with test names where possible)
 
-5. **Resolve Review Issues:**
-   - For each `pr-review` issue, transition through normal workflow:
-     - Mark `in-progress` → implement fix → mark `ready-for-review` → verify → mark `code-complete`
-   - Use `/start-issue <number>` for each review issue
-   - Push fixes to the PR branch
-   - Continue until ALL `pr-review` issues are `code-complete`
+5. **Resolve Review Issues (fix agent):**
+   - **Default: one fix agent, sequential.** Dispatch a single agent with `model: opus` and the short prompt below. It works through every `pr-review` issue in order: one commit per issue, test-first, closed with evidence, no push. The file reads and test output stay in the agent's context, and the main session stays lean for deploy and E2E.
+   - **Why not parallel:** the fixes share one worktree, and every commit runs the full pre-commit suite. Parallel agents would collide on the index and the hook run. Parallel worktrees plus cherry-picks cost more than they save.
+   - **Fix inline instead** (main session, no agent) only when there are 1–2 small findings whose files are already in context, or when a fix needs back-and-forth with the user. Use the same rules: test-first, one commit per issue, close with evidence.
+   - **Order:** blockers first, then fixes that unblock or change shared code (splits, helpers), then UI, docs, and E2E last (slowest to run).
+   - **When it reports:** check `git log` and a clean `git status`. Any issue it left open (ambiguous or blocked) goes to the user. Then push the fixes to the PR branch.
+   - Continue until ALL `pr-review` issues are closed `code-complete`
+   - **Stalled agent:** same rule as step 3.
+
+   Dispatch prompt (fill the values, nothing else):
+   ```
+   Read ~/.claude/skills/create-pr/fixer-prompt.md and follow it.
+   PR: #<N> — <title>
+   Branch: <branch>
+   Milestone: <title>
+   Working directory: <PROJECT_DIR>
+   Issues (fix in this order):
+   - #191: <title> — <notes: user decisions, files, anything not in the issue body>
+   ```
 
 6. **Deploy to Dev and Run E2E Tests (E2E only — no unit tests):**
    - Detect project from current working directory
@@ -238,9 +254,11 @@ Use after fixing issues found during manual staging testing. Skips PR creation, 
   - [ ] Plan audit agent → `plan-audit-prompt.md`
   - [ ] Code review agent → `reviewer-prompt.md`
 - [ ] **If plan audit found gaps: STOP and present to user.** User must acknowledge each gap (accept as-is, defer to backlog issue, or fix now) before proceeding to deploy.
-- [ ] If code review issues found: create GitHub issue for EACH finding with `pr-review` label
-- [ ] Fix ALL pr-review issues using `/start-issue` workflow
-- [ ] Re-run code review after fixes (plan audit does NOT re-run)
+- [ ] Triage findings: verify blockers, and ask the user about any finding that is a spec question
+- [ ] Create a GitHub issue with the `pr-review` label for EACH finding to fix and each "fix now" plan gap
+- [ ] Fix ALL pr-review issues: one sequential fix agent (`fixer-prompt.md`), or inline for 1–2 small ones
+- [ ] Check the fix agent's commits, surface any issue it left open, push the fixes
+- [ ] Re-run code review after fixes, scoped with `Reviewed through: <last reviewed sha>` (plan audit does NOT re-run)
 - [ ] **Only exit loop when code review passes with no new issues**
 
 ### Deploy & E2E (always runs)

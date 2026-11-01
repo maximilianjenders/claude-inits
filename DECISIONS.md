@@ -128,3 +128,22 @@ Decisions are numbered for cross-reference (e.g., "see D7").
 **Alternatives Considered:**
 - Keep pasting below 1000 lines: rejected. It is the common case and the one that accumulates across phases.
 - Scratch-file handoff (what db7b15b6 improvised): works, but `git diff --cached` is the same thing without a temp file.
+
+## D8: /create-pr Review Fixes Go to One Sequential Fix Agent
+**Date:** 2026-11-01
+**Status:** Active (replaces "use `/start-issue` for each review issue" in /create-pr step 5)
+
+**Context:** On done PR #190 the review loop produced 11 `pr-review` issues over 3 rounds. The first three fixes ran inline through `/start-issue`, and every file read and test run piled up in the main session that still had to deploy and run E2E. One agent then fixed the other six sequentially, using about 190k tokens of its own context and almost none of the orchestrator's. A round-3 re-review limited to the new commits cost 39k, against 163k for the full first review. `/start-issue` also didn't fit: its standalone mode says not to commit, and its fresh-session check works against a long orchestrator session.
+
+**Decision:**
+- The main session triages: it verifies blockers, asks the user about findings that are really spec questions, and files the issues.
+- One fix agent (`fixer-prompt.md`, opus) then works through all `pr-review` issues and "fix now" plan gaps in order: one commit per issue, test-first, each closed with evidence, no push.
+- Fix inline only for 1–2 small findings already in context, or when a fix needs back-and-forth with the user.
+- Re-review rounds pass `Reviewed through: <sha>` so the reviewer looks at only the new commits and checks the earlier findings.
+
+**Rationale:** The fixes are self-contained once filed as issues, so their context belongs in an agent. The main session keeps its context for deploy, E2E and the summary. A cold agent costs a baseline (35–50k), so tiny fixes stay inline.
+
+**Alternatives Considered:**
+- Parallel fix agents in one worktree: rejected. They share the git index, and every commit runs the full pre-commit suite.
+- Parallel agents in separate worktrees plus cherry-picks: rejected. Setup, a suite run per worktree and conflict handling cost more than they save at 5–10 fixes.
+- Keep `/start-issue` inline: rejected, for the context cost above.
