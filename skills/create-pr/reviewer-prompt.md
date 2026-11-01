@@ -71,4 +71,4 @@ Summary:
    - Suggested fix: [specific fix]
 ```
 
-**On re-review** (after fixes, sent the new HEAD): review only `<previous HEAD>..HEAD` plus anything the fixes touch, and report in the same format.
+**On re-review** (the dispatch prompt has `Reviewed through: <sha>`): review `<sha>..HEAD` plus anything the fixes touch, and verify that each earlier finding is actually resolved. Don't re-raise resolved findings, and don't re-review untouched code from earlier rounds. Report in the same format.
